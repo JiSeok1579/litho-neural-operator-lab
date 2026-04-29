@@ -1,0 +1,33 @@
+# Reference parameters for Phase 5 resist exposure + diffusion.
+# Demo scripts hard-code matching values; this file is the documentation.
+
+grid:
+  n: 256
+  extent: 10.0  # in wavelengths
+
+optics:
+  NA: 0.6
+  wavelength: 1.0
+
+mask:
+  type: line_space
+  pitch: 2.0       # lambda
+  duty: 0.5
+  orientation: vertical
+
+exposure:
+  eta: 1.0
+
+# 5-A: dose sweep (fixed diffusion length)
+dose_sweep:
+  doses: [0.5, 1.0, 1.5, 2.0]
+  diffusion_length: 0.10   # lambda
+  threshold: 0.40
+  beta: 25.0
+
+# 5-B: diffusion length sweep (fixed dose)
+diffusion_sweep:
+  dose: 1.5
+  diffusion_lengths: [0.0, 0.05, 0.10, 0.20, 0.40]   # lambda
+  threshold: 0.40
+  beta: 25.0
