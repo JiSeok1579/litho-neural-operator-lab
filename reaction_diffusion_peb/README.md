@@ -38,7 +38,7 @@ file-based hand-off (`outputs/aerial_image.npy` →
 | pre-Phase-7 diagnostics | ✅ done — mass-budget + PINN bound-penalty soft term (`weight_bound = 0.01` default), see [FUTURE_WORK.md](./FUTURE_WORK.md) items 1 & 4 |
 | 7 — acid–quencher reaction | ✅ done (FD only — safe + stiff `kq` regimes; PINN training deferred — see [FUTURE_WORK.md](./FUTURE_WORK.md)) |
 | 8 — full reaction-diffusion | ✅ done (FD only — Arrhenius-scaled (H, Q, P); term-disable check vs Phases 2/4/6/7 closes to machine precision; PINN deferred) |
-| 9 — dataset generation | planned |
+| 9 — dataset generation | ✅ done (FD only — safe-`kq` and stiff-`kq` `.npz` archives + metadata + train/val/test splits; PINN dataset deferred) |
 | 10 — DeepONet / FNO surrogate (optional) | planned |
 | 11 — advanced stochastic / Petersen / z-axis | planned |
 
@@ -86,6 +86,10 @@ python reaction_diffusion_peb/experiments/07_quencher_reaction/run_quencher_reac
 # Phase 8: full reaction-diffusion (T sweep + term-disable verification)
 python reaction_diffusion_peb/experiments/08_full_reaction_diffusion/run_full_model.py
 python reaction_diffusion_peb/experiments/08_full_reaction_diffusion/run_term_disable_check.py
+
+# Phase 9: dataset generation (FD only; safe + stiff .npz archives)
+python reaction_diffusion_peb/experiments/09_dataset_generation/generate_fd_dataset.py
+python reaction_diffusion_peb/experiments/09_dataset_generation/validate_dataset.py
 ```
 
 Outputs land under `reaction_diffusion_peb/outputs/{figures, logs,
