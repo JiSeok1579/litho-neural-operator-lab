@@ -1,8 +1,8 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 3 done (synthetic aerial + exposure, FD / FFT
-diffusion baselines, PINN diffusion vs FD / FFT). Phases 4 – 11
-planned. 52 PEB tests green; total repo tests at 184 / 184.
+**Status:** Phases 1 – 4 done (synthetic aerial + exposure, FD / FFT
+diffusion baselines, PINN diffusion, acid-loss reaction-diffusion).
+Phases 5 – 11 planned. 66 PEB tests green; total repo tests at 198 / 198.
 
 ## Goal
 
@@ -28,7 +28,7 @@ the submodule:
 | 1 | Synthetic aerial + exposure → initial acid `H0` | ✅ done |
 | 2 | Diffusion-only FD / FFT baselines | ✅ done |
 | 3 | PINN diffusion vs FD / FFT | ✅ done |
-| 4 | Acid loss `kloss` | planned |
+| 4 | Acid loss `kloss` | ✅ done |
 | 5 | Deprotection `kdep` (`P` field) | planned |
 | 6 | Arrhenius temperature dependence | planned |
 | 7 | Quencher reaction (`kq` safe vs stiff target) | planned |
@@ -158,13 +158,69 @@ Verified results from
 - The y=0 row cut shows PINN slightly under-diffusing the peak
   (PINN 0.105 vs truth 0.086) — error concentrated at the center.
 
+## Phase 4 — what's already there
+
+```text
+reaction_diffusion_peb/
+  src/reaction_diffusion.py           step_acid_loss_fd,
+                                       diffuse_acid_loss_fd
+                                       (CFL + loss-stability guarded),
+                                       diffuse_acid_loss_fft (closed
+                                       form), total_mass,
+                                       expected_mass_decay_factor.
+  src/pinn_reaction_diffusion.py       PINNDiffusionLoss (subclass of
+                                       PINNDiffusion; residual adds
+                                       + kloss * H).
+
+  experiments/04_acid_loss/
+    run_acid_loss_fd.py     kloss sweep {0, 0.001, 0.005, 0.01, 0.05},
+                             mass_FD vs analytic exp(-kloss * t).
+    run_acid_loss_pinn.py    Trains the loss-PINN and saves
+                             outputs/checkpoints/peb_phase4_pinn_acid_loss.pt.
+    compare_fd_pinn.py        Loads the checkpoint, runs FD / FFT /
+                             PINN; FFT is still the truth reference
+                             because the loss term is linear.
+```
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase4_fd_metrics.csv` and
+`peb_phase4_compare_fd_pinn_metrics.csv`:
+
+| kloss (1/s) | FD mass | analytic mass exp(-k t) | rel err |
+|---|---|---|---|
+| 0.000 | 144.149 | 144.149 | 0.000000 |
+| 0.001 | 135.754 | 135.755 | 5e-6 |
+| 0.005 | 106.776 | 106.788 | 1e-4 |
+| 0.010 | 79.074 | 79.111 | 5e-4 |
+| 0.050 | 7.093 | 7.177 | 1e-2 |
+
+3-way comparison at kloss = 0.005, t = 60 s, DH = 0.8 nm²/s:
+
+| solver | max\|err vs FFT\| | mean\|err\| | L2 rel err | wall-clock |
+|---|---|---|---|---|
+| FFT | 0 | 0 | 0 | 0.09 ms |
+| FD | 2.46e-05 | 1.78e-06 | 2.98e-04 | 17.17 ms |
+| PINN | 1.74e-02 | 2.18e-03 | 0.253 | 0.30 ms (+ 51 s training) |
+
+- The acid-loss PDE is **linear and homogeneous** in `H`, so the FFT
+  closed form survives: each Fourier mode picks up an extra
+  ``exp(-k_loss * t)`` factor and total mass decays exactly by the
+  same global factor.
+- FD mass tracks the analytic decay to 4–5 decimal places at moderate
+  ``kloss``; the 1 % gap at ``kloss = 0.05`` (95 % mass loss) is the
+  expected explicit-Euler truncation error.
+- PINN over-predicts both the peak (under-diffuses) and total mass
+  (under-decays) — a consistent ~1.7 % under-shoot in the decay
+  factor. Same magnitude of error as Phase 3.
+
 ## Where to start when reopening
 
-The next concrete milestone is Phase 4: add the acid-loss term
-``-k_loss * H`` and re-train both solvers + PINN to verify mass loss
-behaviour. The PEB submodule's PINN now has all the machinery
-needed (hard IC, normalized inputs, residual-loss trainer) — Phase 4
-just adds one more PDE term and a fresh comparison.
+Next milestone is Phase 5: deprotection. Add the `P` field with
+``dP/dt = k_dep * H * (1 - P)`` while keeping diffusion + acid-loss
+on `H`. From this phase onward the equation set is **nonlinear**
+(through the `H * (1 - P)` term), so FFT closed form will no longer
+be available; FD becomes the truth reference and PINN gets one more
+output channel (`P` alongside `H`).
 
 ## See also
 
