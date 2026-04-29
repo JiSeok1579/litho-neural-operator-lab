@@ -1,0 +1,29 @@
+# Reference parameters for PEB Phase 7 — acid–quencher reaction.
+# The H, P PDEs from Phase 5 stay; only the quencher field Q and the
+# bimolecular k_q * H * Q term are new.
+
+problem:
+  sigma_nm: 12.0
+  Hmax_mol_dm3: 0.2
+  eta: 1.0
+  dose: 1.0
+  DH_nm2_s: 0.8
+  DQ_ratio: 0.1                # DQ = DQ_ratio * DH
+  kdep_s_inv: 0.5
+  kloss_s_inv: 0.005
+  Q0_mol_dm3: 0.1
+  t_end_s: 60.0
+
+grid:
+  grid_size: 128
+  grid_spacing_nm: 1.0
+
+threshold:
+  P_threshold: 0.5
+
+# Phase 7 deliberately splits the kq sweep into two regimes — the
+# "safe" range stays well below the stiff CFL bound; the "target"
+# range hits realistic CAR / MOR values but needs ~10x more steps.
+sweep:
+  kq_safe_s_inv:   [1.0, 5.0, 10.0]
+  kq_stiff_s_inv:  [100.0, 300.0, 1000.0]
