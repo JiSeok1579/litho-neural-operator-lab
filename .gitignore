@@ -21,6 +21,14 @@ outputs/datasets/*
 !outputs/logs/.gitkeep
 !outputs/datasets/.gitkeep
 
+# Same convention for the PEB submodule
+reaction_diffusion_peb/outputs/figures/*
+reaction_diffusion_peb/outputs/logs/*
+reaction_diffusion_peb/outputs/arrays/*
+!reaction_diffusion_peb/outputs/figures/.gitkeep
+!reaction_diffusion_peb/outputs/logs/.gitkeep
+!reaction_diffusion_peb/outputs/arrays/.gitkeep
+
 # --- editor / OS ---------------------------------------------------------
 .vscode/
 .idea/
