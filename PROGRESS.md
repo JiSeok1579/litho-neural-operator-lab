@@ -67,6 +67,71 @@
 
 ---
 
+### A.5 Phase 2 — Coherent aerial imaging — ☑ done (2026-04-29)
+
+**What**
+- `src/optics/pupil.py` — `circular_pupil(grid, NA, wavelength=1.0)` returns
+  a hard binary low-pass filter with cutoff `NA / wavelength` in cycles per
+  length unit. `apodized_circular_pupil(..., roll_off=0.05)` adds a
+  cosine-tapered edge for differentiable use later.
+- `src/optics/coherent_imaging.py` — `coherent_field` returns the complex
+  pupil-filtered wafer field; `coherent_aerial_image` returns its squared
+  magnitude. Both are pure PyTorch and differentiable end-to-end.
+- `src/common/visualization.py` gained four helpers: `show_pupil`,
+  `show_aerial`, `show_aerial_sweep` (mask + N aerials in one row), and
+  `show_pipeline` (mask -> |T| -> P -> |T*P| -> aerial in five panels).
+- `experiments/01_scalar_diffraction/demo_coherent_aerial.py` runs at
+  `n=256, extent=20 lambda, wavelength=1` and produces five figures:
+  pupil sweep, the 5-panel pipeline at NA=0.6 line-space pitch=4 lambda,
+  and aerial NA sweeps over line-space, contact hole, and isolated line.
+- `tests/test_pupil.py` (8 tests) and `tests/test_coherent_imaging.py`
+  (9 tests) — 17 new tests, 33 / 33 green overall.
+
+**How**
+- Units convention: extent counted in wavelengths, `wavelength=1.0` by
+  default. `circular_pupil` uses the grid's `radial_freq()` directly so
+  the cutoff is expressed in the same physical units as the grid.
+- Imaging math: `E = ifft2c(fft2c(t) * P)`, `I = |E|^2 = E.real**2 + E.imag**2`.
+  Building the intensity as `real**2 + imag**2` (rather than `abs()**2`)
+  keeps the autograd graph entirely real, which is friendlier for the
+  Phase-3 mask-optimization gradient flow.
+- Optional per-panel normalization (`normalize=True`) divides by the local
+  max so brightness is comparable across NAs at the cost of losing
+  absolute-intensity information. Inverse design will use `False`.
+- The unaligned-pitch test uses a relative criterion (low-NA std must be
+  much smaller than high-NA std) instead of an absolute uniformity bound,
+  because rasterization noise from a non-pixel-aligned pitch contributes
+  spectral leakage at all frequencies. The aligned-pitch test does check
+  perfect uniformity — it picks `extent=16, n=256, pitch=1.0` so each
+  period spans exactly 16 pixels and the DFT is exact.
+
+**Why**
+- Putting `pupil` and `coherent_imaging` in separate modules keeps the
+  pupil reusable for Phase 4 (partial coherence sweeps over many shifted
+  pupils) without dragging the imaging pipeline along.
+- The `apodized_circular_pupil` is unused in the Phase-2 demos, but having
+  it ready saves a refactor when Phase-3 inverse optimization or Phase-8
+  surrogate training hits the gradient pathologies of a step-function
+  filter.
+- The 5-panel `show_pipeline` figure is the canonical "one picture of the
+  whole optics chain" that future phases can reuse to overlay corrections
+  (Phase 7 / 9 will diff `show_pipeline` outputs against true physics).
+
+**Why (this direction)**
+- Phase 2 is the bridge between "FFT a mask" (Phase 1) and "optimize a
+  mask" (Phase 3). Once the imaging chain is differentiable and tested,
+  Phase 3 collapses to choosing a loss and an optimizer.
+
+**Next**
+- Phase 3: `src/inverse/losses.py` (target / forbidden / TV / binarization),
+  `src/inverse/regularizers.py`, `src/inverse/optimize_mask.py` with an
+  Adam loop and binarization annealing. Demo a single contrast spot
+  (target: a small disk of intensity in the center, forbidden: a
+  surrounding annulus) and a forbidden-region case. Save before / after
+  mask + aerial figures and the loss-curve figure.
+
+---
+
 ### A.4 Phase 1 — Scalar diffraction — ☑ done (2026-04-29)
 
 **What**
@@ -152,7 +217,7 @@
 |---|---|---|---|
 | 0 | Env / scaffold / docs | ☑ | this scaffold + README + PROGRESS |
 | 1 | Scalar diffraction | ☑ | mask FFT, diffraction spectrum figures |
-| 2 | Coherent aerial imaging | ☐ | pupil filtering, NA sweep |
+| 2 | Coherent aerial imaging | ☑ | pupil filtering, NA sweep |
 | 3 | Inverse aerial optimization | ☐ | gradient-descent mask optimization |
 | 4 | Partial coherence / source integration | ☐ | annular / dipole / quadrupole |
 | 5 | Resist exposure + diffusion | ☐ | FD / FFT diffusion, threshold contour |
@@ -178,10 +243,12 @@
 - [x] `tests/test_fft_utils.py`, `tests/test_patterns.py`, `tests/test_scalar_diffraction.py` — 16 pass
 
 ### Phase 2 — Coherent aerial image
-- [ ] `src/optics/pupil.py` — circular pupil with NA cutoff
-- [ ] `src/optics/coherent_imaging.py` — `coherent_aerial_image(mask_t, pupil)`
-- [ ] `experiments/01_scalar_diffraction/demo_coherent_aerial.py`
-- [ ] NA sweep figure: `outputs/figures/phase2_aerial_NA_sweep.png`
+- [x] `src/optics/pupil.py` — `circular_pupil` (hard cutoff) + `apodized_circular_pupil` (cosine taper for differentiable settings)
+- [x] `src/optics/coherent_imaging.py` — `coherent_field`, `coherent_aerial_image(transmission, pupil, normalize=...)`
+- [x] `src/common/visualization.py` extended — `show_pupil`, `show_aerial`, `show_aerial_sweep`, `show_pipeline`
+- [x] `experiments/01_scalar_diffraction/demo_coherent_aerial.py` — pupil sweep + 5-panel pipeline + aerial sweeps for line-space, contact hole, isolated line
+- [x] NA sweep figures: `phase2_pupil_NA_sweep.png`, `phase2_pipeline_line_space.png`, `phase2_aerial_{line_space,contact_hole,isolated_line}.png`
+- [x] `tests/test_pupil.py`, `tests/test_coherent_imaging.py` — 17 added (33 total green)
 
 ### Phase 3 — Inverse aerial optimization
 - [ ] `src/inverse/losses.py` — target / forbidden / TV / binarization
@@ -290,6 +357,13 @@
   Cleaner alternatives (`pip install -e .` or running with `PYTHONPATH=.`)
   exist but the inline bootstrap keeps `experiments/*/demo_*.py` runnable
   with a plain `python path/to/demo.py` and no setup step.
+- **2026-04-29** Aerial intensity is built as `real**2 + imag**2` rather
+  than `field.abs()**2`. The two are mathematically identical, but the
+  former produces a real-only autograd graph which avoids unnecessary
+  complex-conjugate gradient overhead in Phase 3.
+- **2026-04-29** `extent` is counted in wavelengths, with `wavelength=1.0`
+  the default everywhere. Going forward, all `Grid2D(extent=...)` values
+  in optics code and demos are read as multiples of lambda.
 
 ---
 
@@ -307,3 +381,11 @@
   `src/optics/coherent_imaging.py` (`coherent_aerial_image(mask_t, pupil)`),
   then `experiments/01_scalar_diffraction/demo_coherent_aerial.py` for the
   NA sweep figure.
+- **2026-04-29** Phase 2 done (coherent aerial imaging). 33 tests green,
+  five new figures under `outputs/figures/phase2_*` clearly show the
+  cutoff cliff (line-space pitch=4 lambda goes flat at NA=0.2 and
+  sinusoidal at NA>=0.4) and the resolution gain on contact hole r=0.5
+  lambda. Resume with Phase 3: write `src/inverse/{losses,
+  regularizers, optimize_mask}.py`, add `configs/inverse_aerial.yaml`,
+  and run `experiments/02_inverse_aerial/demo_target_spot.py` to land a
+  before/after pair plus a loss curve under `outputs/figures/phase3_*`.
