@@ -544,6 +544,81 @@ def show_resist_sweep(
     return fig
 
 
+def show_pinn_vs_solvers(
+    A_truth: torch.Tensor,
+    A_fd: torch.Tensor,
+    A_fft: torch.Tensor,
+    A_pinn: torch.Tensor,
+    extent: float | None = None,
+    suptitle: str = "",
+):
+    """2x4 figure: top row = solutions, bottom row = absolute errors.
+
+    All four solutions share a colormap range; absolute errors share a
+    second range. The "analytic" panel in the bottom row is reserved as
+    a label slot showing 0 (reference).
+    """
+    fig, axes = plt.subplots(2, 4, figsize=(18, 8))
+    real_ext = None if extent is None else (-extent / 2, extent / 2, -extent / 2, extent / 2)
+
+    sols = [
+        ("analytic", A_truth),
+        ("FD", A_fd),
+        ("FFT", A_fft),
+        ("PINN", A_pinn),
+    ]
+    sol_max = max(float(s[1].max().item()) for s in sols)
+    err_max = max(float((s[1] - A_truth).abs().max().item()) for s in sols if s[0] != "analytic")
+    err_max = max(err_max, 1e-12)
+
+    for c, (name, A) in enumerate(sols):
+        im = axes[0, c].imshow(_to_numpy(A), cmap="viridis", extent=real_ext,
+                               origin="lower", vmin=0.0, vmax=sol_max)
+        axes[0, c].set_title(f"{name}  peak={float(A.max().item()):.4f}")
+        axes[0, c].set_xlabel("x"); axes[0, c].set_ylabel("y")
+        fig.colorbar(im, ax=axes[0, c], fraction=0.046, pad=0.04)
+
+        if name == "analytic":
+            err = torch.zeros_like(A)
+            title = "(reference)"
+        else:
+            err = (A - A_truth).abs()
+            title = f"|{name} - analytic|  max={float(err.max().item()):.4e}"
+        im = axes[1, c].imshow(_to_numpy(err), cmap="inferno", extent=real_ext,
+                               origin="lower", vmin=0.0, vmax=err_max)
+        axes[1, c].set_title(title)
+        axes[1, c].set_xlabel("x"); axes[1, c].set_ylabel("y")
+        fig.colorbar(im, ax=axes[1, c], fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
+def show_pinn_training(history: list[dict], suptitle: str = ""):
+    """Loss history for PINN training. ``history`` is a list of dicts with
+    keys ``iter``, ``loss_total``, ``loss_pde``, ``loss_ic``."""
+    its = [h["iter"] for h in history]
+    fig, ax = plt.subplots(figsize=(8, 4))
+    for key, label, color, ls in [
+        ("loss_total", "total", "black", "-"),
+        ("loss_pde", "PDE residual", "C0", "-"),
+        ("loss_ic", "initial condition", "C3", "-"),
+    ]:
+        ys = [max(h[key], 1e-20) for h in history]
+        ax.plot(its, ys, label=label, color=color, linestyle=ls)
+    ax.set_yscale("log")
+    ax.set_title("PINN training")
+    ax.set_xlabel("iteration"); ax.set_ylabel("loss (log)")
+    ax.legend()
+    ax.grid(alpha=0.3)
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

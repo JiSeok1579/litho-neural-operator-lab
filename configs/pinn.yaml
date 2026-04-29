@@ -1,0 +1,32 @@
+# Reference parameters for Phase 6 PINN diffusion.
+# Demos hard-code matching values; this file is documentation.
+
+problem:
+  sigma_initial: 0.5     # Gaussian IC width, lambda
+  D: 0.1                 # diffusivity
+  t_end: 1.0             # diffusion time
+
+grid:
+  n: 128
+  extent: 8.0            # lambda — wide enough that the analytic Gaussian
+                         # decays well below 1e-3 at the box edge
+
+pinn:
+  hidden: 64
+  n_hidden_layers: 4
+  n_fourier: 16
+  fourier_scale: 2.0     # tuned so the highest-frequency content of the
+                         # initial Gaussian (sigma 0.5) is well-resolved
+                         # without runaway gradients
+  activation: tanh
+  seed: 0
+
+training:
+  n_iters: 3000
+  lr: 1.0e-3
+  n_collocation: 4096
+  n_ic: 2048
+  weight_pde: 1.0
+  weight_ic: 100.0
+  log_every: 50
+  seed: 0

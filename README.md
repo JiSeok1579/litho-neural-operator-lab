@@ -30,18 +30,11 @@ greps and diffs harder to read.
 
 ## 1. Environment
 
-| Item | Value |
-|---|---|
-| OS | Ubuntu 24.04.3 LTS |
-| Python | 3.12.3 |
-| GPU | NVIDIA RTX 5080 (Blackwell, sm_120, 16 GB VRAM) |
-| CUDA driver | 580.x (CUDA 13 runtime compatible) |
-| PyTorch | 2.11.0+cu128 (sm_120-compatible build) |
-
-> ⚠️ **Blackwell caveat.** The default `pip install torch` pulls the cu126
-> stable wheel, which only ships kernels up to sm_90. On RTX 5080 this fails
-> at runtime with `no kernel image is available for execution`. You **must**
-> install via the **cu128 index** (or cu130).
+- Python 3.10+ with PyTorch (CUDA build recommended for GPU acceleration).
+- A modern NVIDIA GPU is helpful but not required; the entire pipeline
+  also runs on CPU at lower throughput.
+- Pick the PyTorch wheel that matches your CUDA driver — older stable
+  wheels may not ship kernels for the latest GPU compute capabilities.
 
 ---
 
@@ -53,17 +46,16 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip wheel setuptools
 
-# 2. PyTorch (cu128, Blackwell sm_120)
-pip install --index-url https://download.pytorch.org/whl/cu128 torch torchvision
+# 2. PyTorch — pick the CUDA index that matches your driver / hardware.
+#    See https://pytorch.org/get-started/locally/ for the right index URL.
+pip install torch torchvision
 
 # 3. the rest of the stack
 pip install -r requirements.txt
 
-# 4. GPU sanity check
-python -c "import torch; \
-print(torch.__version__, torch.cuda.is_available(), \
-torch.cuda.get_device_name(0) if torch.cuda.is_available() else None); \
-x=torch.randn(1024,1024,device='cuda'); print((x@x).mean().item())"
+# 4. sanity check
+python -c "import torch; print(torch.__version__, torch.cuda.is_available()); \
+x = torch.randn(1024, 1024); print((x @ x).mean().item())"
 ```
 
 ---
@@ -146,8 +138,8 @@ litho-neural-operator-lab/
   with the phase number as a filename prefix
   (e.g. `phase2_aerial_NA_sweep.png`).
 - Experiment configuration goes into `configs/*.yaml`, never hard-coded.
-- VRAM budget: 16 GB. Safe upper bound is grid 256² × FNO width 64 × Fourier
-  modes 16. Beyond that, use mixed precision (`bf16`).
+- For a typical 16 GB-class GPU, grid 256² × FNO width 64 × Fourier modes 16
+  is a safe upper bound. Beyond that, switch to mixed precision (`bf16`).
 
 ---
 
