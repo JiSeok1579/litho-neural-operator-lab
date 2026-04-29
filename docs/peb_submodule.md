@@ -1,12 +1,12 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 6 done plus a pre-Phase-7 diagnostics PR
-(mass-budget identity verified across all Phase 5/6 FD setups,
-PINN bound penalty added with ``weight_bound = 0.01`` default).
-Phases 7 – 11 planned. Open follow-ups in
+**Status:** Phases 1 – 7 done (Phase 7 is FD-only — safe and stiff
+``k_q`` regimes both verified with mass-budget closure; PINN training
+across the bimolecular term deferred). Phases 8 – 11 planned. Open
+follow-ups in
 [`reaction_diffusion_peb/FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md)
 (items 1 and 4 closed; items 2 and 3 still open).
-115 PEB tests green; total repo tests at 247 / 247.
+130 PEB tests green; total repo tests at 262 / 262.
 
 ## Goal
 
@@ -35,7 +35,7 @@ the submodule:
 | 4 | Acid loss `kloss` | ✅ done |
 | 5 | Deprotection `kdep` (`P` field) | ✅ done |
 | 6 | Arrhenius temperature dependence | ✅ done (FD-only) |
-| 7 | Quencher reaction (`kq` safe vs stiff target) | planned |
+| 7 | Quencher reaction (`kq` safe vs stiff target) | ✅ done (FD-only) |
 | 8 | Full reaction-diffusion (everything combined) | planned |
 | 9 | Save FD / PINN runs as a dataset | planned |
 | 10 | DeepONet / FNO operator surrogate (optional) | planned |
@@ -366,20 +366,104 @@ All five Phase-6 verification criteria pass:
 5. ✅ 125 °C MOR preset gives a clearly faster reaction (factor 7.57,
    area 3276 px) than the 100 °C reference (1876 px).
 
-## Where to start when reopening
+## Phase 7 — what's already there
 
-Phase 7 introduces the acid–quencher reaction:
+```text
+reaction_diffusion_peb/
+  src/quencher_reaction.py    step_quencher_fd, evolve_quencher_fd
+                              (CFL + loss + deprotection + bimolecular
+                              k_q stability guarded; clamps H/Q to ≥0
+                              and P to [0, 1]),
+                              evolve_quencher_fd_with_budget,
+                              QuencherBudgetSnapshot,
+                              stability_report (returns the four
+                              dt bounds and which one is binding).
+  configs/quencher_reaction.yaml   reference parameters + the
+                                   kq_safe / kq_stiff sweep split.
+
+  experiments/07_quencher_reaction/
+    run_quencher_reaction_safe.py    kq sweep {1, 5, 10} s⁻¹.
+    run_quencher_reaction_stiff.py   kq sweep {100, 300, 1000} s⁻¹
+                                     (separate stiff demo).
+```
+
+The Phase-7 system adds a quencher field ``Q`` and a bimolecular
+neutralization term to the (H, P) system from Phase 5/6:
 
 ```text
 dH/dt = D_H ∇²H − k_q H Q − k_loss H
 dQ/dt = D_Q ∇²Q − k_q H Q
+dP/dt = k_dep H (1 − P)
+
+H(x, y, 0) = H_0(x, y),   Q(x, y, 0) = Q_0,   P(x, y, 0) = 0
 ```
 
-with ``Q(x, y, 0) = Q_0`` constant. ``k_q`` in the realistic range
-``[100, 1000] s⁻¹`` is **stiff** — the PLAN explicitly says to start
-at ``k_q ∈ {1, 5, 10}`` and only push higher with semi-implicit /
-operator-splitting machinery in place. The deprotection equation
-from Phase 5 stays unchanged.
+PINN training is intentionally deferred — the bimolecular ``H * Q``
+term is a step beyond Phase 5 in difficulty (no closed form, two
+coupled fields) and the existing checkpoint generalizes neither across
+``kq`` nor to a non-zero ``Q``. Tracked alongside Phase-6 PINN extension
+in `FUTURE_WORK.md`.
+
+Stability — explicit Euler needs four time-step bounds, and the demo
+prints which one binds:
+
+```text
+dt ≤ dx² / (4 max(D_H, D_Q))    (diffusion CFL)
+dt ≤ 1 / k_loss                  (linear loss)
+dt ≤ 1 / (k_dep H_max)           (deprotection)
+dt ≤ 1 / (k_q max(H_max, Q_0))   (acid-quencher reaction)
+```
+
+For ``k_q ≤ 10 s⁻¹`` the diffusion CFL binds (``dt_max = 0.31 s``);
+for ``k_q ≥ 100 s⁻¹`` the bimolecular term binds and the step-count
+scales linearly with ``k_q``.
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase7_quencher_safe_metrics.csv`
+(safe regime — DH = 0.8, DQ = 0.08, Q_0 = 0.1, k_loss = 0.005,
+k_dep = 0.5, t = 60 s):
+
+| k_q (1/s) | binding term | H_peak | Q_min | P_max | area(P>0.5) px | H budget rel-err | Q budget rel-err | wall (s) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | dt_diff | 0.0082 | 0.0139 | 0.6407 | 392 | 3.6e-08 | 1.0e-06 | 0.04 |
+| 5 | dt_diff | 0.0027 | 0.0010 | 0.3899 | 0 | 3.9e-08 | 4.7e-07 | 0.04 |
+| 10 | dt_diff | 0.0025 | 0.0001 | 0.3279 | 0 | 3.7e-08 | 5.5e-07 | 0.04 |
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase7_quencher_stiff_metrics.csv`
+(stiff regime, same other parameters):
+
+| k_q (1/s) | binding term | n_steps | H_peak | Q_min | P_max | area(P>0.5) px | H budget rel-err | Q budget rel-err | wall (s) |
+|---|---|---|---|---|---|---|---|---|---|
+| 100 | dt_kq | 1515 | 0.0025 | 0.0000 | 0.2661 | 0 | 6.5e-09 | 1.3e-06 | 0.91 |
+| 300 | dt_kq | 4546 | 0.0024 | 0.0000 | 0.2608 | 0 | 1.4e-08 | 3.9e-06 | 3.16 |
+| 1000 | dt_kq | 15155 | 0.0024 | 0.0000 | 0.2587 | 0 | 2.1e-08 | 3.0e-05 | 11.31 |
+
+What the numbers say:
+
+1. ✅ ``H``, ``Q``, ``P`` stay non-negative and bounded across both
+   regimes — explicit Euler with the CFL-respecting ``dt`` is stable
+   even at ``k_q = 1000 s⁻¹``.
+2. ✅ Increasing ``k_q`` consumes more acid (``H_peak`` drops
+   monotonically) and more quencher (``Q_min`` → 0 in the bright zone).
+3. ✅ Threshold area drops from 392 px at ``k_q = 1`` to 0 px for
+   ``k_q ≥ 5``: at the realistic CAR / MOR rates the quencher fully
+   suppresses deprotection at this dose / Q_0 ratio. Exactly the
+   regime where dose / quencher loading have to be retuned.
+4. ✅ Mass budgets close to float-precision: H budget tracks both
+   ``k_loss`` and ``k_q`` sinks to ~3e-8; Q budget tracks the
+   ``k_q`` sink to ~3e-6 (rising to 3e-5 at ``k_q = 1000`` from the
+   accumulated ~15k-step round-off, still well within float32 noise).
+5. ✅ Wall-clock scales linearly with ``k_q`` in the stiff regime
+   (1.5k / 4.5k / 15k explicit steps) — predictable and tractable on
+   CPU for a 60 s evolution.
+
+## Where to start when reopening
+
+Phase 8 combines everything: the (H, Q, P) system from Phase 7 with the
+Arrhenius temperature scaling from Phase 6, and starts saving paired
+FD-truth runs that Phase 9 will reuse as a dataset for operator
+learning.
 
 ## See also
 

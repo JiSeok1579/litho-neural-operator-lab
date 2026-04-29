@@ -15,7 +15,7 @@ post-exposure-bake resist physics in parallel; its Phases 1-3 are done.
 
 - [PROGRESS.md](./PROGRESS.md) — running implementation log
   (What / How / Why / Next per change, plus §H wrap-up + reopen plan).
-- 227 / 227 tests green (132 main + 95 PEB Phases 1-6).
+- 262 / 262 tests green (132 main + 130 PEB Phases 1-7).
 
 **Headline result (Phase 9):** an FNO surrogate that scores 15.5 % test
 complex-relative error in Phase 8 produces an optimized mask whose
