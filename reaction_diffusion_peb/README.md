@@ -32,7 +32,7 @@ file-based hand-off (`outputs/aerial_image.npy` →
 | 1 — synthetic aerial + exposure | ✅ done |
 | 2 — diffusion-only FD / FFT baselines | ✅ done |
 | 3 — PINN diffusion vs FD / FFT | ✅ done |
-| 4 — acid loss | planned |
+| 4 — acid loss | ✅ done |
 | 5 — deprotection | planned |
 | 6 — Arrhenius temperature | planned |
 | 7 — acid–quencher reaction | planned |
@@ -59,6 +59,11 @@ python reaction_diffusion_peb/experiments/02_diffusion_baseline/compare_fd_fft.p
 # Phase 3: PINN diffusion (train + 3-way compare)
 python reaction_diffusion_peb/experiments/03_pinn_diffusion/run_pinn_diffusion.py
 python reaction_diffusion_peb/experiments/03_pinn_diffusion/compare_fd_fft_pinn.py
+
+# Phase 4: acid loss (FD sweep, PINN train, 3-way compare)
+python reaction_diffusion_peb/experiments/04_acid_loss/run_acid_loss_fd.py
+python reaction_diffusion_peb/experiments/04_acid_loss/run_acid_loss_pinn.py
+python reaction_diffusion_peb/experiments/04_acid_loss/compare_fd_pinn.py
 ```
 
 Outputs land under `reaction_diffusion_peb/outputs/{figures, logs,
