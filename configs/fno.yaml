@@ -1,0 +1,24 @@
+# Reference parameters for the Phase-8 FNO 2D correction surrogate.
+# Demos hard-code matching values; this file is documentation.
+
+dataset:
+  train_path: outputs/datasets/synthetic_3d_correction_train.npz
+  test_path:  outputs/datasets/synthetic_3d_correction_test.npz
+  target: delta_T          # "delta_T" or "T_3d"
+  batch_size: 8
+
+architecture:
+  in_channels: 9            # mask + T_thin (re, im) + 6 theta channels
+  out_channels: 2           # delta_T (re, im)
+  hidden: 32
+  modes_x: 16
+  modes_y: 16
+  n_layers: 4
+
+training:
+  n_epochs: 60
+  lr: 1.0e-3
+  weight_aerial: 0.0        # set > 0 to add a physics-aware aerial-image term
+  lr_decay_step: 25
+  lr_decay_gamma: 0.5
+  log_every: 2

@@ -56,8 +56,8 @@ OUT_FIG = Path("outputs/figures")
 OUT_LOG = Path("outputs/logs")
 N = 128
 EXTENT = 8.0
-N_TRAIN = 800
-N_TEST = 200
+N_TRAIN = 2000
+N_TEST = 400
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 

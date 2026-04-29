@@ -69,6 +69,136 @@
 
 ---
 
+### A.11 Phase 8 — FNO 2D correction surrogate — ☑ done (2026-04-29)
+
+**What**
+- `src/neural_operator/fno2d.py`
+  - `SpectralConv2d(in_channels, out_channels, modes_x, modes_y)`:
+    rfft2 -> low-mode (modes_x x modes_y) complex weight multiplication
+    -> irfft2. Two weight tensors handle the positive- and negative-x
+    Fourier bands.
+  - `FNOBlock2d`: `spectral_conv(x) + 1x1 conv(x)` followed by GELU.
+  - `FNO2d(in_channels, out_channels, hidden, modes_x, modes_y, n_layers)`:
+    1x1 lift -> N FNO blocks -> 2-layer 1x1 head.
+- `src/neural_operator/datasets.py` — `CorrectionDataset` reads the
+  Phase-7 NPZ archive and assembles a 9-channel input
+  ``(mask, T_thin_real, T_thin_imag, theta_0..theta_5)`` and a 2-channel
+  target ``(delta_T_real, delta_T_imag)`` per sample. ``target="T_3d"``
+  is also exposed for ablations that prefer absolute prediction.
+- `src/neural_operator/train_fno.py` — training loop with optional
+  weight decay (Adam vs AdamW), step LR schedule, and an optional
+  physics-aware aerial-intensity term controlled by ``weight_aerial``.
+  Also exposes the loss helpers (`spectrum_mse`,
+  `complex_relative_error`, `aerial_intensity_mse`) and `evaluate_fno`.
+- `src/common/visualization.py` gained `show_fno_predictions` (per-row
+  panels: |Delta T| true / |Delta T| pred / |error| / |T_3d pred|) and
+  `show_fno_training` (loss + complex relative error subplots).
+- `experiments/06_fno_correction/train_fno_correction.py` runs the full
+  recipe at ``hidden=32, modes=16, n_layers=4`` for 100 epochs of
+  AdamW (lr=1e-3, weight_decay=1e-4, step LR every 35 epochs).
+  Saves `outputs/checkpoints/fno_correction.pt` plus two figures and a
+  metrics CSV.
+- `configs/fno.yaml` — reference config.
+- `tests/test_fno.py` — 10 tests added (126 / 126 green) covering
+  spectral-conv shape, resolution-independent forward, FNO block /
+  full-stack shapes, autograd flow, complex-relative-error contract,
+  aerial-MSE zero-on-match, dataset channel layout (9-in / 2-out),
+  delta_T vs T_3d target modes, and a tiny end-to-end smoke run.
+
+**How**
+- Channel layout was chosen so the FNO sees both spatial-domain
+  (mask) and frequency-domain (T_thin) information, with theta as
+  spatial-broadcast channels. The FNO's internal rfft2 then runs over
+  this mixed-domain stack and learns the multiplicative correction
+  structure. Predicting `delta_T = T_3d - T_thin` instead of `T_3d`
+  directly turns the task into residual learning, which converges
+  faster on the same architecture.
+- Modes 16x16 truncation captures the smooth correction operator
+  well: ``C(fx, fy)`` is a low-frequency function (Gaussian taper +
+  polynomial phase + tanh asymmetry), so the high-frequency content
+  of the spectrum is mostly preserved by the mask spectrum itself.
+- Adam was upgraded to AdamW with `weight_decay=1e-4` after the first
+  pass at 800 train samples showed clear overfitting (train MSE
+  dropped to 5e-4 while test MSE stalled at ~4e-3). Weight decay
+  helped marginally (8.1x -> 9.0x baseline ratio at 800 samples).
+- Doubling the dataset to 2000 train + 400 test pushed the test
+  spectrum MSE to 9e-4 and the complex relative error to 15.5%, a
+  35x improvement over the identity baseline. The remaining train /
+  test gap (train MSE ~1e-4 vs test ~9e-4) is the residual
+  generalization gap; reducing it further is mainly a "more data"
+  problem on this synthetic operator.
+
+**Why**
+- A FNO is the right surrogate family for this dataset because the
+  target operator (multiplicative correction in spatial frequency
+  space, smooth in (fx, fy)) is naturally captured by low-mode
+  spectral convolutions. A plain CNN would have to learn the FFT
+  implicitly through repeated convolutions; FNO bakes it in.
+- Predicting Delta T rather than T_3d makes the regression target
+  smaller in magnitude and centers it on zero, which is friendlier
+  for fp32 training. Phase 9 still gets the full T_3d via
+  `T_thin + delta_T_pred` at inference time.
+- Adding `weight_aerial` as a configurable knob (currently 0.0) lets
+  Phase 9 turn on the physics-aware aerial-image term once the
+  surrogate is wired into the closed-loop optimization, without
+  rewriting the trainer.
+
+**Why (this direction)**
+- Phase 8 is the operator-learning answer to Phase 6's PINN: instead
+  of fitting a single PDE solution one (x, y, t) at a time, the FNO
+  learns an *operator family* — every (mask, theta) pair is one
+  query into the same trained network. Phase 9 puts this surrogate
+  in the gradient loop of the inverse mask design from Phase 3.
+
+**Verified results from `phase8_metrics.csv`**
+
+```
+metric                           value
+n_train                          2000
+n_test                           400
+grid_n                           128
+fno_params                       2,106,178
+epochs                           100
+batch_size                       8
+train_time_sec                   131.9
+final_test_spectrum_mse          9.038e-04
+final_test_complex_rel_err       1.550e-01     (15.5 %)
+final_test_aerial_mse            1.590e-03
+baseline_spectrum_mse_pred_0     3.044e-02
+improvement_over_baseline        35.0x
+```
+
+Findings:
+- 35x improvement over the identity baseline (predicting `delta_T = 0`)
+  at 100 epochs of AdamW on 2000 train samples.
+- Train MSE finishes at ~1.1e-4; test MSE at ~9e-4. The remaining
+  ~10x train / test gap is the dataset-size-limited generalization
+  ceiling on this synthetic correction.
+- Per-sample qualitative inspection (`phase8_fno_predictions.png`):
+  the FNO captures the spectrum structure on contact-hole, random,
+  and line-space masks; the largest absolute errors sit at the very
+  tall line-space peaks (where a 5-10% relative error still produces
+  ~0.7 absolute error on a tall narrow Bessel-like spike).
+- The DeepONet variant from study plan §8.3 was *not* implemented in
+  this phase — the FNO already serves the Phase-9 closed loop and
+  the DeepONet would be a parallel ablation rather than a new lesson.
+  Listed as deferred in the module checklist.
+
+**Next**
+- Phase 9: closed-loop surrogate-assisted inverse design. Take the
+  trained FNO and put it inside the Phase-3 mask-optimization loop:
+  mask -> T_thin -> FNO predicts delta_T -> T_3d_pred = T_thin +
+  delta_T_pred -> aerial -> region-based loss -> backprop into the
+  raw mask parameter. Compare three optimizations:
+  (A) physics-only (no correction),
+  (B) true synthetic correction (oracle),
+  (C) FNO-surrogate correction.
+  Re-validate (C)'s optimized mask under (B) to see whether the
+  surrogate is being "tricked" by the optimizer. Save results under
+  `outputs/figures/phase9_*` and a metrics CSV.
+
+---
+
 ### A.10 Phase 7 — Synthetic 3D mask correction dataset — ☑ done (2026-04-29)
 
 **What**
@@ -773,7 +903,7 @@ Physics from the table:
 | 5 | Resist exposure + diffusion | ☑ | FD / FFT diffusion, threshold contour |
 | 6 | PINN for diffusion | ☑ | PINN vs FD comparison |
 | 7 | Synthetic 3D mask correction | ☑ | correction dataset NPZ |
-| 8 | FNO / DeepONet surrogate | ☐ | surrogate `.pt` checkpoint |
+| 8 | FNO / DeepONet surrogate | ☑ | surrogate `.pt` checkpoint |
 | 9 | Closed-loop surrogate-assisted inverse | ☐ | surrogate vs true comparison |
 | 10 | Active learning (optional) | ☐ | ensemble uncertainty |
 
@@ -855,14 +985,17 @@ Physics from the table:
 - [x] `tests/test_synthetic_correction.py` — 11 added (116 total green)
 
 ### Phase 8 — FNO / DeepONet surrogate
-- [ ] `src/neural_operator/fno2d.py`
-- [ ] `src/neural_operator/deeponet.py`
-- [ ] `src/neural_operator/datasets.py`
-- [ ] `src/neural_operator/train_fno.py` / `train_deeponet.py`
-- [ ] `experiments/06_fno_correction/train_fno_correction.py`
-- [ ] `experiments/06_fno_correction/train_deeponet_correction.py`
-- [ ] `configs/fno.yaml`
-- [ ] `outputs/checkpoints/fno_correction.pt`
+- [x] `src/neural_operator/fno2d.py` — `SpectralConv2d`, `FNOBlock2d`, `FNO2d`
+- [x] `src/neural_operator/datasets.py` — `CorrectionDataset` (loads Phase-7 NPZ, builds 9-channel input + 2-channel target)
+- [x] `src/neural_operator/train_fno.py` — `train_fno_correction` (Adam / AdamW with optional weight decay, optional aerial-image physics-aware term), `evaluate_fno`, `spectrum_mse`, `complex_relative_error`, `aerial_intensity_mse`
+- [x] `src/common/visualization.py` extended — `show_fno_predictions` (per-sample 4-panel rows: |delta_T| true / pred / err / |T_3d| pred), `show_fno_training` (loss + complex rel err)
+- [x] `experiments/06_fno_correction/train_fno_correction.py`
+- [x] `configs/fno.yaml`
+- [x] `outputs/checkpoints/fno_correction.pt`
+- [x] `outputs/figures/phase8_fno_{training,predictions}.png`
+- [x] `outputs/logs/phase8_metrics.csv`
+- [x] `tests/test_fno.py` — 10 added (126 total green)
+- [ ] DeepONet variant (deferred — FNO already serves Phase 9; can revisit later)
 
 ### Phase 9 — Closed-loop surrogate inverse
 - [ ] `src/closed_loop/surrogate_optimizer.py`
@@ -1052,3 +1185,13 @@ Physics from the table:
   with Phase 8: train FNO 2D (and optional DeepONet) on the saved
   NPZs; report spectrum MSE, complex relative error, and downstream
   aerial-image MSE.
+- **2026-04-29** Phase 8 done (FNO 2D correction surrogate). 126 tests
+  green. After re-generating the dataset at 2000 train + 400 test, a
+  hidden=32 / modes=16 / 4-layer FNO trained 100 epochs of AdamW
+  (weight_decay=1e-4) reaches test spectrum MSE 9.0e-4 and complex
+  relative error 15.5 %, a 35x improvement over the identity baseline
+  (predict `delta_T = 0`). 132 s total training. Resume with Phase 9:
+  put the trained FNO inside the Phase-3 mask-optimization loop and
+  compare (A) physics-only, (B) true correction, and (C)
+  FNO-surrogate inverse runs. Re-validate (C) under (B) to detect
+  surrogate dishonesty.
