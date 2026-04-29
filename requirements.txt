@@ -1,28 +1,24 @@
 # ============================================================================
 # litho-neural-operator-lab :: requirements
 # ----------------------------------------------------------------------------
-# Hardware target : RTX 5080 (Blackwell, sm_120) / 16GB VRAM / 32GB RAM
-# OS              : Ubuntu 24.04, Python 3.12
-# CUDA driver     : 580.x (supports CUDA 13 runtime)
-# ----------------------------------------------------------------------------
-# PyTorch on Blackwell (sm_120) requires the cu128 (or cu130) wheels.
-# The cu126 stable wheel only ships kernels up to sm_90 — installs fine but
-# fails at runtime with "no kernel image is available for execution".
-# Verified working combo: torch 2.11.0+cu128 (this lab, 2026-04-29)
+# Python 3.10+. PyTorch is required; pick the CUDA wheel that matches your
+# driver / GPU compute capability. See https://pytorch.org/get-started/locally/
+# for the appropriate index URL. If a "no kernel image" error surfaces at
+# runtime, the installed wheel was built for an older compute capability —
+# install a newer cuXX wheel.
 #
 # Install order:
 #   python3 -m venv .venv && source .venv/bin/activate
 #   pip install --upgrade pip wheel setuptools
-#   pip install --index-url https://download.pytorch.org/whl/cu128 \
-#       torch torchvision
+#   pip install torch torchvision  # add --index-url ... if needed
 #   pip install -r requirements.txt
 # ============================================================================
 
 # --- core numerical / DL ---------------------------------------------------
 numpy>=1.26
 scipy>=1.13
-torch>=2.11           # Blackwell sm_120 support; install via cu128 index above
-torchvision>=0.26
+torch>=2.7            # picks up most recent compute-capability targets
+torchvision>=0.22
 
 # --- visualization ---------------------------------------------------------
 matplotlib>=3.8
