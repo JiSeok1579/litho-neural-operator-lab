@@ -36,7 +36,7 @@ file-based hand-off (`outputs/aerial_image.npy` →
 | 5 — deprotection | ✅ done |
 | 6 — Arrhenius temperature | ✅ done (FD-only; PINN deferred — see [FUTURE_WORK.md](./FUTURE_WORK.md)) |
 | pre-Phase-7 diagnostics | ✅ done — mass-budget + PINN bound-penalty soft term (`weight_bound = 0.01` default), see [FUTURE_WORK.md](./FUTURE_WORK.md) items 1 & 4 |
-| 7 — acid–quencher reaction | planned |
+| 7 — acid–quencher reaction | ✅ done (FD only — safe + stiff `kq` regimes; PINN training deferred — see [FUTURE_WORK.md](./FUTURE_WORK.md)) |
 | 8 — full reaction-diffusion | planned |
 | 9 — dataset generation | planned |
 | 10 — DeepONet / FNO surrogate (optional) | planned |
@@ -78,6 +78,10 @@ python reaction_diffusion_peb/experiments/pre_phase7_diagnostics/run_pinn_bound_
 python reaction_diffusion_peb/experiments/05_deprotection/run_deprotection_fd.py
 python reaction_diffusion_peb/experiments/05_deprotection/run_deprotection_pinn.py
 python reaction_diffusion_peb/experiments/05_deprotection/compare_fd_pinn.py
+
+# Phase 7: acid-quencher reaction (FD only; safe + stiff kq sweeps)
+python reaction_diffusion_peb/experiments/07_quencher_reaction/run_quencher_reaction_safe.py
+python reaction_diffusion_peb/experiments/07_quencher_reaction/run_quencher_reaction_stiff.py
 ```
 
 Outputs land under `reaction_diffusion_peb/outputs/{figures, logs,

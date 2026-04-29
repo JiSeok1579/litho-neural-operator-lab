@@ -471,6 +471,142 @@ def show_deprotection_fd_vs_pinn(
     return fig
 
 
+def show_quencher_chain(
+    H0: torch.Tensor,
+    H_t: torch.Tensor,
+    Q_t: torch.Tensor,
+    P_t: torch.Tensor,
+    Q0_mol_dm3: float,
+    dx_nm: float,
+    t_end_s: float,
+    P_threshold: float = 0.5,
+    Hmax: float | None = None,
+    suptitle: str = "",
+):
+    """5-panel figure for one quencher run: H_0 | H(t) | Q(t) | P(t) | P > thr."""
+    fig, axes = plt.subplots(1, 5, figsize=(22, 4))
+    n = H0.shape[-1]
+    extent_nm = n * dx_nm
+    real_ext = (-extent_nm / 2, extent_nm / 2, -extent_nm / 2, extent_nm / 2)
+    H_max_val = float(Hmax) if Hmax is not None else max(
+        float(H0.max().item()), float(H_t.max().item()), 1e-12)
+    Q_max_val = max(float(Q0_mol_dm3), float(Q_t.max().item()), 1e-12)
+
+    panels = [
+        ("H_0", H0, "magma", 0.0, H_max_val),
+        (f"H(t={t_end_s:g} s)", H_t, "magma", 0.0, H_max_val),
+        (f"Q(t={t_end_s:g} s)", Q_t, "Blues", 0.0, Q_max_val),
+        (f"P(t={t_end_s:g} s)", P_t, "Greens", 0.0, 1.0),
+    ]
+    for k, (name, img, cmap, lo, hi) in enumerate(panels):
+        im = axes[k].imshow(_to_numpy(img), cmap=cmap, extent=real_ext,
+                            origin="lower", vmin=lo, vmax=hi)
+        axes[k].set_title(f"{name}   peak={float(img.max().item()):.4f}")
+        axes[k].set_xlabel("x [nm]"); axes[k].set_ylabel("y [nm]")
+        fig.colorbar(im, ax=axes[k], fraction=0.046, pad=0.04)
+
+    R = (P_t > P_threshold).to(P_t.dtype)
+    n_pixels = int(R.sum().item())
+    im = axes[4].imshow(_to_numpy(R), cmap="Greens", extent=real_ext,
+                        origin="lower", vmin=0.0, vmax=1.0)
+    axes[4].set_title(f"P > {P_threshold} (area = {n_pixels} px)")
+    axes[4].set_xlabel("x [nm]"); axes[4].set_ylabel("y [nm]")
+    fig.colorbar(im, ax=axes[4], fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
+def show_quencher_kq_sweep(
+    H0: torch.Tensor,
+    P_results: list[torch.Tensor],
+    Q_results: list[torch.Tensor],
+    kq_values: list[float],
+    Q0_mol_dm3: float,
+    dx_nm: float,
+    t_end_s: float,
+    P_threshold: float = 0.5,
+    suptitle: str = "",
+):
+    """2-row figure: row 0 = P(t) per kq with threshold contour;
+    row 1 = Q(t) per kq. Column 0 holds H_0 (top) and Q_0 reference (bottom)."""
+    n_cols = 1 + len(P_results)
+    fig, axes = plt.subplots(2, n_cols, figsize=(4 * n_cols, 8))
+    n = H0.shape[-1]
+    extent_nm = n * dx_nm
+    real_ext = (-extent_nm / 2, extent_nm / 2, -extent_nm / 2, extent_nm / 2)
+    Hmax_val = max(float(H0.max().item()), 1e-12)
+    Q_max_val = max(float(Q0_mol_dm3), 1e-12)
+
+    im = axes[0, 0].imshow(_to_numpy(H0), cmap="magma", extent=real_ext,
+                           origin="lower", vmin=0.0, vmax=Hmax_val)
+    axes[0, 0].set_title(f"H_0   peak={Hmax_val:.4f}")
+    axes[0, 0].set_xlabel("x [nm]"); axes[0, 0].set_ylabel("y [nm]")
+    fig.colorbar(im, ax=axes[0, 0], fraction=0.046, pad=0.04)
+
+    Q0_ref = torch.full_like(H0, float(Q0_mol_dm3))
+    im = axes[1, 0].imshow(_to_numpy(Q0_ref), cmap="Blues", extent=real_ext,
+                           origin="lower", vmin=0.0, vmax=Q_max_val)
+    axes[1, 0].set_title(f"Q_0 = {Q0_mol_dm3:g} (uniform)")
+    axes[1, 0].set_xlabel("x [nm]"); axes[1, 0].set_ylabel("y [nm]")
+    fig.colorbar(im, ax=axes[1, 0], fraction=0.046, pad=0.04)
+
+    xs = np.linspace(-extent_nm / 2, extent_nm / 2, n)
+    for col, (P, Q, kq) in enumerate(zip(P_results, Q_results, kq_values), start=1):
+        im = axes[0, col].imshow(_to_numpy(P), cmap="Greens", extent=real_ext,
+                                 origin="lower", vmin=0.0, vmax=1.0)
+        n_pix = int((P > P_threshold).sum().item())
+        axes[0, col].set_title(f"P  kq={kq:g}  area={n_pix} px")
+        axes[0, col].contour(xs, xs, _to_numpy(P), levels=[P_threshold],
+                             colors="black", linewidths=1.0)
+        axes[0, col].set_xlabel("x [nm]"); axes[0, col].set_ylabel("y [nm]")
+        fig.colorbar(im, ax=axes[0, col], fraction=0.046, pad=0.04)
+
+        im = axes[1, col].imshow(_to_numpy(Q), cmap="Blues", extent=real_ext,
+                                 origin="lower", vmin=0.0, vmax=Q_max_val)
+        axes[1, col].set_title(
+            f"Q  kq={kq:g}  min={float(Q.min().item()):.4f}"
+        )
+        axes[1, col].set_xlabel("x [nm]"); axes[1, col].set_ylabel("y [nm]")
+        fig.colorbar(im, ax=axes[1, col], fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
+def show_quencher_mass_budget(
+    histories: list[list],
+    kq_values: list[float],
+    suptitle: str = "",
+):
+    """Plot the H/Q mass-budget relative errors over time.
+
+    ``histories[i]`` is a list of :class:`QuencherBudgetSnapshot` for kq[i].
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    for hist, kq in zip(histories, kq_values):
+        ts = [s.t_s for s in hist]
+        h_err = [max(s.H_budget_relative_error, 1e-20) for s in hist]
+        q_err = [max(s.Q_budget_relative_error, 1e-20) for s in hist]
+        axes[0].plot(ts, h_err, label=f"kq={kq:g}", marker="o", markersize=3)
+        axes[1].plot(ts, q_err, label=f"kq={kq:g}", marker="o", markersize=3)
+    for ax, name in zip(axes, ("H budget rel-err", "Q budget rel-err")):
+        ax.set_yscale("log")
+        ax.set_title(name)
+        ax.set_xlabel("t [s]")
+        ax.set_ylabel("|budget - initial| / initial")
+        ax.grid(alpha=0.3, which="both")
+        ax.legend()
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
