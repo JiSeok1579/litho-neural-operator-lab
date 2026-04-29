@@ -1,0 +1,30 @@
+# --- python --------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- venv ----------------------------------------------------------------
+.venv/
+venv/
+env/
+
+# --- experiment outputs (regenerable) ------------------------------------
+outputs/figures/*
+outputs/checkpoints/*
+outputs/logs/*
+outputs/datasets/*
+!outputs/figures/.gitkeep
+!outputs/checkpoints/.gitkeep
+!outputs/logs/.gitkeep
+!outputs/datasets/.gitkeep
+
+# --- editor / OS ---------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+
+# --- claude --------------------------------------------------------------
+.claude/settings.local.json
