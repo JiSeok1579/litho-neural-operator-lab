@@ -1,0 +1,50 @@
+# ============================================================================
+# litho-neural-operator-lab :: requirements
+# ----------------------------------------------------------------------------
+# Hardware target : RTX 5080 (Blackwell, sm_120) / 16GB VRAM / 32GB RAM
+# OS              : Ubuntu 24.04, Python 3.12
+# CUDA driver     : 580.x (supports CUDA 13 runtime)
+# ----------------------------------------------------------------------------
+# PyTorch on Blackwell (sm_120) requires the cu128 (or cu130) wheels.
+# The cu126 stable wheel only ships kernels up to sm_90 — installs fine but
+# fails at runtime with "no kernel image is available for execution".
+# Verified working combo: torch 2.11.0+cu128 (this lab, 2026-04-29)
+#
+# Install order:
+#   python3 -m venv .venv && source .venv/bin/activate
+#   pip install --upgrade pip wheel setuptools
+#   pip install --index-url https://download.pytorch.org/whl/cu128 \
+#       torch torchvision
+#   pip install -r requirements.txt
+# ============================================================================
+
+# --- core numerical / DL ---------------------------------------------------
+numpy>=1.26
+scipy>=1.13
+torch>=2.11           # Blackwell sm_120 support; install via cu128 index above
+torchvision>=0.26
+
+# --- visualization ---------------------------------------------------------
+matplotlib>=3.8
+
+# --- data IO ---------------------------------------------------------------
+h5py>=3.10
+pyyaml>=6.0
+pandas>=2.2
+
+# --- experiment config / logging ------------------------------------------
+hydra-core>=1.3
+omegaconf>=2.3
+tqdm>=4.66
+
+# --- notebooks (Phase 1~2 explore, final demo) -----------------------------
+jupyterlab>=4.0
+ipykernel>=6.29
+
+# --- testing ---------------------------------------------------------------
+pytest>=8.0
+
+# --- optional :: neural operator reference impl ----------------------------
+# Uncomment if you want to compare against the open-source FNO reference
+# instead of the self-written src/neural_operator/fno2d.py
+# neuraloperator>=0.3
