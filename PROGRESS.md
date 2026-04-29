@@ -69,6 +69,133 @@
 
 ---
 
+### A.12 Phase 9 — Closed-loop surrogate-assisted inverse design — ☑ done (2026-04-29)
+
+**What**
+- `src/closed_loop/surrogate_optimizer.py`
+  - `CorrectionFn` type — callable ``(mask, T_thin) -> T_3d``.
+  - `identity_correction_fn` (case A) returns ``T_3d = T_thin``.
+  - `true_correction_fn(grid, params)` (case B) precomputes the
+    closed-form ``C`` once and returns ``T_thin * C``.
+  - `fno_correction_fn(fno, params, device)` (case C) builds the
+    9-channel input from ``mask, T_thin, theta-broadcast``, calls the
+    trained FNO, and returns ``T_thin + delta_T_pred`` as a complex
+    tensor. Gradients flow from the mask through the FNO (eval mode,
+    weights frozen by being absent from the optimizer's parameter
+    list) back to the raw mask parameter.
+  - `optimize_mask_with_correction` is the Phase-3 inverse loop with
+    the correction injected between `fft2c(t)` and the pupil. Same
+    target / forbidden / TV / binarization losses, same Adam +
+    sigmoid-alpha annealing, same `OptimizationResult`-style return
+    object.
+  - `evaluate_mask_under_correction` computes the aerial intensity
+    of a *fixed* mask through any correction — the validation step
+    that turns "what FNO believed" into "what actually happens".
+- `src/common/visualization.py` gained `show_closed_loop_comparison`
+  with an optional `aerial_alt` curve overlaid as a dashed line on
+  the y=0 cut, used in the Phase-9 figure to show "FNO predicted"
+  next to "true correction" simultaneously.
+- `experiments/07_closed_loop_inverse/optimize_with_fno.py` loads the
+  Phase-8 checkpoint, runs the three optimizations and the
+  validation, and writes two figures + a metrics CSV.
+- `tests/test_surrogate_optimizer.py` — 6 tests added (132 / 132
+  green): identity, true-correction equality with direct call,
+  FNO-correction shape + gradient flow through mask, smoke
+  optimization with identity, evaluator helper, and a
+  loss-decreases-on-disk sanity check.
+
+**How**
+- The FNO is loaded from `outputs/checkpoints/fno_correction.pt` and
+  switched to ``eval()`` so any future-added BN / dropout would behave
+  deterministically. Weights are not in the Adam parameter list, so
+  they never update; gradients still propagate through the network
+  to the mask parameter.
+- The "true theta" used for cases B and C is fixed at
+  ``CorrectionParams(gamma=0.2, alpha=0.3, beta=-0.2, delta=0.1,
+  s=0.3, c=2.0)`` — strong enough that the correction visibly
+  changes the imaging chain. The FNO has seen similar magnitudes
+  during Phase-7 sampling but this exact theta is unlikely to be in
+  the training set.
+- The validation step takes the C-optimized mask and runs it through
+  ``evaluate_mask_under_correction(grid, mask_C, true_correction_fn(...),
+  NA, wavelength)``. This is the single measurement that exposes
+  surrogate dishonesty.
+
+**Why**
+- A single optimizer driving all three cases is the right
+  experimental control. If the optimizer changed between cases (e.g.
+  different lr schedule or mask parameterization for the FNO case),
+  any difference in outcomes would be confounded with optimizer
+  choice rather than correction model.
+- Predicting `delta_T` (Phase 8) instead of `T_3d` makes the FNO
+  case naturally compatible with the imaging chain: ``T_3d_pred =
+  T_thin + delta_T_pred`` is a single complex addition, no extra
+  scaling.
+- `evaluate_mask_under_correction` is decoupled from
+  `optimize_mask_with_correction` so any future surrogate (DeepONet,
+  diffusion model) can be plugged in for case C without touching the
+  optimizer.
+
+**Why (this direction)**
+- Phase 9 is the lab's payoff. Phases 1-5 build the physics, Phase 6
+  benchmarks PINN, Phase 7-8 train the surrogate. Phase 9 puts that
+  surrogate to work inside an actual decision-making loop and asks
+  the question that motivates the whole exercise: "does the
+  surrogate's optimization output survive a fall back to true
+  physics?" The lab's headline finding is that on a visibly
+  challenging correction (~30% asymmetric shadow + 20% Gaussian
+  taper), an FNO with 15% test complex-relative error produces an
+  optimized mask that ends up ~11% off in target intensity when
+  re-imaged through the truth.
+
+**Verified results from `phase9_metrics.csv`**
+
+```
+case                                target  forbidden  loss_target  loss_bg
+A physics-only                      0.989   0.070      0.0005       0.0341
+B true correction                   0.989   0.072      0.0005       0.0351
+C FNO (predicted)                   0.982   0.068      0.0021       0.0281
+C validated under true correction   1.091   0.075      0.0103       0.0352
+```
+
+Findings:
+- A and B converge to nearly identical mean intensities (target ~
+  0.99, forbidden ~ 0.07), but their *masks* differ — case B's
+  optimizer pre-compensates for the multiplicative correction so the
+  post-correction aerial matches the target. The lesson: when the
+  loss is on the post-correction output, the upstream mask shape
+  carries the correction's signature.
+- Case C's FNO believed it was producing a target intensity of 0.982
+  with loss_target 0.0021. After re-evaluating the same mask under
+  the true correction, the actual target intensity is 1.091 (a
+  ~11 % over-shoot beyond the requested 1.0) and loss_target jumps
+  ~5x to 0.0103.
+- Forbidden intensity stays roughly comparable (0.068 -> 0.075), so
+  the leakage-suppression part of the optimization survives the
+  surrogate; the failure mode here is in the target band.
+- The y=0 cut in `phase9_closed_loop_comparison.png` shows the
+  "predicted" and "true" aerials of case C as two visibly separated
+  curves crossing at the target threshold — the canonical "the
+  optimizer was lied to" picture from study plan §9.6.
+
+This validates exactly the lesson the lab was set up to teach: a
+neural surrogate that scores well on its training-distribution test
+metric (15.5 % complex relative error) can still mislead an
+optimizer that runs against it, and a re-imaging pass through the
+true physics is mandatory after any surrogate-assisted optimization.
+
+**Next**
+- Phase 10 (optional): active learning. Use the surrogate dishonesty
+  signal to pick which (mask, theta) pairs to add to the training
+  set, retrain, and check whether the gap between (C predicted) and
+  (C validated) shrinks. Three uncertainty signals on the menu —
+  ensemble variance, distance-to-training-distribution, or
+  oracle-disagreement — but for a study repo a single pass with
+  oracle disagreement (we already *have* the true correction) is the
+  highest-value version.
+
+---
+
 ### A.11 Phase 8 — FNO 2D correction surrogate — ☑ done (2026-04-29)
 
 **What**
@@ -904,7 +1031,7 @@ Physics from the table:
 | 6 | PINN for diffusion | ☑ | PINN vs FD comparison |
 | 7 | Synthetic 3D mask correction | ☑ | correction dataset NPZ |
 | 8 | FNO / DeepONet surrogate | ☑ | surrogate `.pt` checkpoint |
-| 9 | Closed-loop surrogate-assisted inverse | ☐ | surrogate vs true comparison |
+| 9 | Closed-loop surrogate-assisted inverse | ☑ | surrogate vs true comparison |
 | 10 | Active learning (optional) | ☐ | ensemble uncertainty |
 
 ---
@@ -998,9 +1125,13 @@ Physics from the table:
 - [ ] DeepONet variant (deferred — FNO already serves Phase 9; can revisit later)
 
 ### Phase 9 — Closed-loop surrogate inverse
-- [ ] `src/closed_loop/surrogate_optimizer.py`
-- [ ] `experiments/07_closed_loop_inverse/optimize_with_fno.py`
-- [ ] surrogate vs true correction comparison figure
+- [x] `src/closed_loop/surrogate_optimizer.py` — `optimize_mask_with_correction`, `evaluate_mask_under_correction`, three correction factories (identity / true / FNO)
+- [x] `src/common/visualization.py` extended — `show_closed_loop_comparison` (rows of mask | aerial | y=0 cut | regions overlay; supports a dashed alt-aerial curve for the validation row)
+- [x] `experiments/07_closed_loop_inverse/optimize_with_fno.py` — runs A / B / C plus the C-under-true validation
+- [x] `outputs/figures/phase9_closed_loop_comparison.png` (4 rows: A / B / C / C-validated)
+- [x] `outputs/figures/phase9_loss_history.png` (loss + region intensity per case)
+- [x] `outputs/logs/phase9_metrics.csv`
+- [x] `tests/test_surrogate_optimizer.py` — 6 added (132 total green)
 
 ### Phase 10 — Active learning (optional)
 - [ ] `src/closed_loop/active_learning.py`
@@ -1195,3 +1326,16 @@ Physics from the table:
   compare (A) physics-only, (B) true correction, and (C)
   FNO-surrogate inverse runs. Re-validate (C) under (B) to detect
   surrogate dishonesty.
+- **2026-04-29** Phase 9 done (closed-loop surrogate-assisted inverse
+  design). 132 tests green. The lab's payoff finding: an FNO with
+  15.5 % test complex-relative error produces an optimized mask that
+  the surrogate predicts has target intensity 0.982 (loss_target
+  0.0021), but when re-imaged through the true correction the same
+  mask gives target intensity 1.091 (loss_target 0.0103) — about
+  11 % over-shoot and 5x worse target loss. Forbidden intensity is
+  preserved (0.068 -> 0.075), so the leakage-suppression part of
+  the optimization survives, but the on-target dose is overstated.
+  This is the canonical "surrogate dishonesty" demonstration the
+  study plan §9.6 set up. Resume with Phase 10 (optional): active
+  learning using oracle disagreement to refine the training set and
+  shrink the predicted-vs-true gap.
