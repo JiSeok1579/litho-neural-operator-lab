@@ -194,3 +194,60 @@ This is exactly the expected behavior because the mass change per
 explicit-Euler step is itself ``-dt * k_loss * sum(H_n)``, which is
 what we accumulate. Any future drift from this baseline will flag a
 real bug in the evolver.
+
+---
+
+## 5. z-axis / 3D film thickness extension (Phase 11 follow-up)
+
+**Status:** open · **Source:** Phase 11 plan deferral · **Target
+file(s):** new `src/full_reaction_diffusion_3d.py` (or extension of
+`petersen_diffusion.py`), new `pinn_3d.py` if PINN coverage is wanted.
+
+The plan's Phase 11 §"z-axis / film thickness" calls for extending the
+``(H, Q, P)`` system from 2D to 3D:
+
+```text
+H(x, y, z, t)
+Q(x, y, z, t)
+P(x, y, z, t)
+domain: z in [0, film_thickness_nm]
+```
+
+Phase 11 in this submodule (PR #27) covers Petersen nonlinear
+diffusion, the temperature-uniformity ensemble, and molecular blur —
+all 2D operations on top of the existing Phase-8 evolver. The 3D
+extension is intentionally **not** included because:
+
+1. The 5-point Laplacian and the variable-coefficient operator both
+   need 3D rewrites (7-point stencil; new face-diffusivity averages
+   along ``z``).
+2. The ``z`` boundary conditions are not periodic — typical resist
+   physics has a no-flux or open boundary at the air interface and a
+   no-flux boundary at the substrate interface. That is a different
+   discretization than the rest of the submodule's periodic
+   `torch.roll` machinery.
+3. Memory scales by ``Nz``: a 128 × 128 × 32 grid is 32 × the current
+   working size; the existing demos / dataset builder would have to
+   be revisited for cost.
+
+A future PR should: pick the ``z`` discretization (no-flux Neumann is
+the most common), add ``laplacian_7pt`` and ``divergence_diffusion_7pt``,
+write `evolve_full_reaction_diffusion_3d_fd_at_T`, and verify that
+``Nz = 1`` reduces to the 2D evolvers — the same disable-each-term
+pattern as Phase 8.
+
+---
+
+## 6. Per-rate Arrhenius activation energies (Phase 11 follow-up)
+
+**Status:** open · **Source:** Phase 6 / 8 / 11 single-Ea
+simplification.
+
+The current Arrhenius scaling in
+``apply_arrhenius_to_full_rates`` multiplies ``k_dep``, ``k_loss``,
+and ``k_q`` by the same factor — equivalent to assuming a single
+activation energy ``Ea`` for all three reactions. Real CAR / MOR
+chemistries can have distinct ``Ea_dep``, ``Ea_loss``, ``Ea_q``. Adding
+that flexibility is a one-helper change but it triples the parameter
+space the PINN / FNO surrogate has to span and is therefore left as a
+follow-up rather than a Phase-11 inclusion.
