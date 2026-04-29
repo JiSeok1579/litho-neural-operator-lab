@@ -143,6 +143,139 @@ def show_field_pair(
     return fig
 
 
+def show_pupil(
+    pupil: torch.Tensor,
+    df: float | None = None,
+    title: str = "pupil",
+):
+    """Single-panel binary or apodized pupil view in frequency space."""
+    fig, ax = plt.subplots(figsize=(4, 4))
+    n = pupil.shape[-1]
+    ext = None if df is None else (-(n / 2) * df, (n / 2) * df, -(n / 2) * df, (n / 2) * df)
+    im = ax.imshow(_to_numpy(pupil), cmap="gray", extent=ext, origin="lower",
+                   vmin=0.0, vmax=1.0)
+    ax.set_title(title)
+    ax.set_xlabel("fx"); ax.set_ylabel("fy")
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    fig.tight_layout()
+    return fig
+
+
+def show_aerial(
+    aerial: torch.Tensor,
+    extent: float | None = None,
+    title: str = "aerial intensity",
+    vmax: float | None = 1.0,
+    cmap: str = "inferno",
+):
+    """Single-panel aerial-image view (real, non-negative)."""
+    fig, ax = plt.subplots(figsize=(4, 4))
+    real_ext = None if extent is None else (-extent / 2, extent / 2, -extent / 2, extent / 2)
+    im = ax.imshow(_to_numpy(aerial), cmap=cmap, extent=real_ext, origin="lower",
+                   vmin=0.0, vmax=vmax)
+    ax.set_title(title)
+    ax.set_xlabel("x"); ax.set_ylabel("y")
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    fig.tight_layout()
+    return fig
+
+
+def show_aerial_sweep(
+    mask: torch.Tensor,
+    aerials: list[torch.Tensor],
+    NAs: list[float],
+    extent: float | None = None,
+    suptitle: str = "",
+    cmap: str = "inferno",
+):
+    """One-row figure: mask | aerial(NA_0) | aerial(NA_1) | ...
+
+    Each aerial is assumed normalized to [0, 1] (e.g. via
+    ``coherent_aerial_image(..., normalize=True)``); the colormap is fixed
+    to vmin=0, vmax=1 so brightness is comparable across panels.
+    """
+    n_cols = 1 + len(aerials)
+    fig, axes = plt.subplots(1, n_cols, figsize=(4 * n_cols, 4))
+    real_ext = None if extent is None else (-extent / 2, extent / 2, -extent / 2, extent / 2)
+
+    mask_img = _to_numpy(mask.real if torch.is_complex(mask) else mask)
+    axes[0].imshow(mask_img, cmap="gray", extent=real_ext, origin="lower",
+                   vmin=0.0, vmax=1.0)
+    axes[0].set_title("mask"); axes[0].set_xlabel("x"); axes[0].set_ylabel("y")
+
+    for ax, aerial, NA in zip(axes[1:], aerials, NAs):
+        im = ax.imshow(_to_numpy(aerial), cmap=cmap, extent=real_ext, origin="lower",
+                       vmin=0.0, vmax=1.0)
+        ax.set_title(f"aerial  NA={NA:g}")
+        ax.set_xlabel("x"); ax.set_ylabel("y")
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
+def show_pipeline(
+    mask: torch.Tensor,
+    spectrum: torch.Tensor,
+    pupil: torch.Tensor,
+    filtered_spectrum: torch.Tensor,
+    aerial: torch.Tensor,
+    extent: float | None = None,
+    df: float | None = None,
+    freq_zoom: int | None = 32,
+    suptitle: str = "",
+):
+    """Five-panel pipeline view: mask -> |T| -> pupil -> |T*P| -> aerial."""
+    fig, axes = plt.subplots(1, 5, figsize=(20, 4))
+    n = spectrum.shape[-1]
+    real_ext = None if extent is None else (-extent / 2, extent / 2, -extent / 2, extent / 2)
+    if freq_zoom is not None and df is not None:
+        f_max = freq_zoom * df
+        freq_ext = (-f_max, f_max, -f_max, f_max)
+        amp_T = _crop_center(_to_numpy(spectrum.abs()), freq_zoom)
+        amp_TP = _crop_center(_to_numpy(filtered_spectrum.abs()), freq_zoom)
+        pup = _crop_center(_to_numpy(pupil), freq_zoom)
+    else:
+        if df is None:
+            freq_ext = None
+        else:
+            f_max = (n / 2) * df
+            freq_ext = (-f_max, f_max, -f_max, f_max)
+        amp_T = _to_numpy(spectrum.abs())
+        amp_TP = _to_numpy(filtered_spectrum.abs())
+        pup = _to_numpy(pupil)
+
+    mask_img = _to_numpy(mask.real if torch.is_complex(mask) else mask)
+    axes[0].imshow(mask_img, cmap="gray", extent=real_ext, origin="lower", vmin=0.0, vmax=1.0)
+    axes[0].set_title("mask"); axes[0].set_xlabel("x"); axes[0].set_ylabel("y")
+
+    vmax_T = float(np.percentile(amp_T, 99.0))
+    axes[1].imshow(amp_T, cmap="viridis", extent=freq_ext, origin="lower", vmin=0, vmax=vmax_T)
+    axes[1].set_title("|T|  (clip @ p99)")
+    axes[1].set_xlabel("fx"); axes[1].set_ylabel("fy")
+
+    axes[2].imshow(pup, cmap="gray", extent=freq_ext, origin="lower", vmin=0.0, vmax=1.0)
+    axes[2].set_title("pupil  P")
+    axes[2].set_xlabel("fx"); axes[2].set_ylabel("fy")
+
+    vmax_TP = float(np.percentile(amp_TP, 99.0)) if amp_TP.max() > 0 else 1.0
+    axes[3].imshow(amp_TP, cmap="viridis", extent=freq_ext, origin="lower", vmin=0, vmax=vmax_TP)
+    axes[3].set_title("|T * P|  (clip @ p99)")
+    axes[3].set_xlabel("fx"); axes[3].set_ylabel("fy")
+
+    axes[4].imshow(_to_numpy(aerial), cmap="inferno", extent=real_ext, origin="lower",
+                   vmin=0.0, vmax=1.0)
+    axes[4].set_title("aerial  |E|^2")
+    axes[4].set_xlabel("x"); axes[4].set_ylabel("y")
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
