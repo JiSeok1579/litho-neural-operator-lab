@@ -1,12 +1,12 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 7 done (Phase 7 is FD-only — safe and stiff
-``k_q`` regimes both verified with mass-budget closure; PINN training
-across the bimolecular term deferred). Phases 8 – 11 planned. Open
-follow-ups in
+**Status:** Phases 1 – 8 done (Phase 8 integrates Arrhenius from
+Phase 6 with the (H, Q, P) quencher system from Phase 7; the
+disable-each-term equivalence check reproduces Phases 2 / 4 / 6 / 7
+to machine precision). Phases 9 – 11 planned. Open follow-ups in
 [`reaction_diffusion_peb/FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md)
 (items 1 and 4 closed; items 2 and 3 still open).
-130 PEB tests green; total repo tests at 262 / 262.
+147 PEB tests green; total repo tests at 279 / 279.
 
 ## Goal
 
@@ -36,7 +36,7 @@ the submodule:
 | 5 | Deprotection `kdep` (`P` field) | ✅ done |
 | 6 | Arrhenius temperature dependence | ✅ done (FD-only) |
 | 7 | Quencher reaction (`kq` safe vs stiff target) | ✅ done (FD-only) |
-| 8 | Full reaction-diffusion (everything combined) | planned |
+| 8 | Full reaction-diffusion (everything combined) | ✅ done (FD-only) |
 | 9 | Save FD / PINN runs as a dataset | planned |
 | 10 | DeepONet / FNO operator surrogate (optional) | planned |
 | 11 | Petersen / temperature uniformity / z-axis | planned |
@@ -458,12 +458,90 @@ What the numbers say:
    (1.5k / 4.5k / 15k explicit steps) — predictable and tractable on
    CPU for a 60 s evolution.
 
+## Phase 8 — what's already there
+
+```text
+reaction_diffusion_peb/
+  src/full_reaction_diffusion.py     apply_arrhenius_to_full_rates,
+                                     evolve_full_reaction_diffusion_fd_at_T,
+                                     evolve_full_reaction_diffusion_fd_at_T_with_budget,
+                                     stability_report_at_T.
+  configs/full_reaction_diffusion.yaml   reference parameters + the
+                                         T sweep.
+
+  experiments/08_full_reaction_diffusion/
+    run_full_model.py             T sweep {80, 90, 100, 110, 120} °C
+                                  on the integrated (H, Q, P) system.
+    run_term_disable_check.py     equivalence check vs every earlier
+                                  phase at the production grid.
+```
+
+Phase 8 is the smallest possible integration step: a thin wrapper that
+applies the Phase-6 Arrhenius factor to ``k_q``, ``k_dep`` and
+``k_loss`` before calling the Phase-7 quencher evolver. It does not
+introduce any new physics, and the entire point of the phase is the
+disable-each-term equivalence check — proof that the integrated
+solver reduces to every earlier phase as a limit case.
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase8_full_T_sweep_metrics.csv`
+(`DH = 0.8`, `DQ = 0.08`, `Q_0 = 0.1`, `kq_ref = 1`, `kdep_ref = 0.5`,
+`kloss_ref = 0.005`, `Ea = 100 kJ/mol`, `T_ref = 100 °C`, `t = 60 s`):
+
+| T (°C) | factor | k_q_eff | k_dep_eff | binding | H_peak | Q_min | P_max | area(P>0.5) px | H rel-err | Q rel-err |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 80 | 0.16 | 0.16 | 0.08 | dt_diff | 0.0415 | 0.0499 | 0.2993 | 0 | 6.2e-08 | 8.3e-07 |
+| 90 | 0.41 | 0.41 | 0.21 | dt_diff | 0.0213 | 0.0279 | 0.4811 | 0 | 2.3e-08 | 8.8e-07 |
+| 100 | 1.00 | 1.00 | 0.50 | dt_diff | 0.0082 | 0.0139 | 0.6407 | 392 | 3.6e-08 | 1.0e-06 |
+| 110 | 2.32 | 2.32 | 1.16 | dt_diff | 0.0021 | 0.0070 | 0.7538 | 540 | 7.6e-08 | 3.7e-07 |
+| 120 | 5.15 | 5.15 | 2.58 | dt_diff | 0.0003 | 0.0039 | 0.8258 | 576 | 7.5e-08 | 4.0e-07 |
+
+The 100 °C row matches the Phase-7 safe-`kq` run with `k_q = 1` exactly
+(by construction — the test suite asserts bit-equality).
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase8_term_disable_check.csv`
+(production grid, `t = 60 s`):
+
+| disabled term(s) | compared against | max\|H_full − H_ref\| | max\|P_full − P_ref\| | tol |
+|---|---|---|---|---|
+| T = T_ref | Phase 7 quencher | 0.000e+00 | 0.000e+00 | 1e-10 |
+| Ea = 0 (T = 125 °C) | Phase 7 quencher | 0.000e+00 | 0.000e+00 | 1e-10 |
+| k_q = 0 (T = 110 °C) | Phase 6 Arrhenius (H, P) | 0.000e+00 | 0.000e+00 | 1e-5 |
+| k_q = 0, k_dep = 0 | Phase 4 acid loss | 0.000e+00 | 0.000e+00 | 1e-5 |
+| k_q = 0, k_dep = 0, k_loss = 0 | Phase 2 pure diffusion | 8.9e-08 | 0.000e+00 | 1e-5 |
+
+What the numbers say:
+
+1. ✅ ``T = T_ref`` and ``Ea = 0`` are bit-identical to Phase 7 — the
+   Arrhenius factor multiplies through cleanly without floating-point
+   reordering.
+2. ✅ ``k_q = 0`` matches the Phase-6 (H, P) evolver to floating-point
+   precision; ``Q`` stays exactly uniform-and-constant.
+3. ✅ Stripping ``k_q`` and ``k_dep`` recovers Phase 4 acid loss; the
+   ``P`` field is identically zero.
+4. ✅ Stripping all three reactions recovers Phase 2 pure diffusion to
+   ~9e-8 (the tiny residual is float32 round-off in the explicit-Euler
+   step — well within tolerance).
+5. ✅ Per-T mass-budget identities (H budget tracks the ``k_loss`` and
+   ``k_q`` sinks, Q budget tracks the ``k_q`` sink) close to ~1e-7
+   across the sweep.
+6. ✅ Threshold area increases monotonically with T (0 → 0 → 392 →
+   540 → 576 px), and ``Q_min`` decreases monotonically — exactly the
+   physics expected when both the deprotection and quencher rates
+   speed up with temperature.
+
+PINN training across the integrated system is intentionally deferred —
+the bimolecular ``H * Q`` term plus a temperature input would need a
+fresh training rig and is tracked alongside the Phase-6/7 PINN
+extensions in `FUTURE_WORK.md`.
+
 ## Where to start when reopening
 
-Phase 8 combines everything: the (H, Q, P) system from Phase 7 with the
-Arrhenius temperature scaling from Phase 6, and starts saving paired
-FD-truth runs that Phase 9 will reuse as a dataset for operator
-learning.
+Phase 9 starts saving paired FD-truth runs (parameters → final
+``H, Q, P, R``) that Phase 10 will reuse as a dataset for operator
+learning. The integrated Phase-8 evolver is the single source of truth
+the dataset builder will call.
 
 ## See also
 
