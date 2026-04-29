@@ -460,6 +460,90 @@ def show_partial_coherence_sweep(
     return fig
 
 
+def show_resist_chain(
+    aerial: torch.Tensor,
+    acid_initial: torch.Tensor,
+    acid_diffused: torch.Tensor,
+    resist: torch.Tensor,
+    extent: float | None = None,
+    threshold: float | None = None,
+    suptitle: str = "",
+):
+    """4-panel chain: aerial -> acid -> diffused acid -> resist.
+
+    For ``threshold`` not None, an isocontour is overlaid on the diffused
+    acid panel to mark the developer cut.
+    """
+    fig, axes = plt.subplots(1, 4, figsize=(16, 4))
+    real_ext = None if extent is None else (-extent / 2, extent / 2, -extent / 2, extent / 2)
+    panels = [
+        ("aerial  |E|^2", aerial, "inferno", 0.0, max(float(aerial.max().item()), 1e-6)),
+        ("acid  A_0", acid_initial, "magma", 0.0, max(float(acid_initial.max().item()), 1e-6)),
+        ("acid (after diffusion)", acid_diffused, "magma", 0.0, max(float(acid_diffused.max().item()), 1e-6)),
+        ("resist  R = sigmoid(beta(A - A_th))", resist, "Greens", 0.0, 1.0),
+    ]
+    for ax, (name, img, cmap, vmin, vmax) in zip(axes, panels):
+        im = ax.imshow(_to_numpy(img), cmap=cmap, extent=real_ext, origin="lower",
+                       vmin=vmin, vmax=vmax)
+        ax.set_title(name)
+        ax.set_xlabel("x"); ax.set_ylabel("y")
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+    if threshold is not None:
+        # Add a contour at the threshold on the diffused-acid panel.
+        n = acid_diffused.shape[-1]
+        if extent is not None:
+            xs = np.linspace(-extent / 2, extent / 2, n)
+        else:
+            xs = np.arange(n)
+        axes[2].contour(xs, xs, _to_numpy(acid_diffused), levels=[threshold],
+                        colors="cyan", linewidths=1.0)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
+def show_resist_sweep(
+    rows_data: list[tuple[str, torch.Tensor, torch.Tensor]],
+    extent: float | None = None,
+    suptitle: str = "",
+    cmap_acid: str = "magma",
+    cmap_resist: str = "Greens",
+):
+    """Stack of (label, acid_diffused, resist) rows in a 2-column layout.
+
+    Each row plots the diffused acid on the left and the resist (sigmoid
+    threshold) on the right, with the label in the row title. Used for
+    dose / diffusion-length sweeps.
+    """
+    n_rows = len(rows_data)
+    fig, axes = plt.subplots(n_rows, 2, figsize=(8, 4 * n_rows))
+    if n_rows == 1:
+        axes = axes.reshape(1, 2)
+    real_ext = None if extent is None else (-extent / 2, extent / 2, -extent / 2, extent / 2)
+
+    for r, (label, acid, resist) in enumerate(rows_data):
+        a_max = max(float(acid.max().item()), 1e-6)
+        im = axes[r, 0].imshow(_to_numpy(acid), cmap=cmap_acid, extent=real_ext,
+                               origin="lower", vmin=0.0, vmax=a_max)
+        axes[r, 0].set_title(f"{label}  acid (diffused)")
+        axes[r, 0].set_xlabel("x"); axes[r, 0].set_ylabel("y")
+        fig.colorbar(im, ax=axes[r, 0], fraction=0.046, pad=0.04)
+
+        im2 = axes[r, 1].imshow(_to_numpy(resist), cmap=cmap_resist, extent=real_ext,
+                                origin="lower", vmin=0.0, vmax=1.0)
+        axes[r, 1].set_title(f"{label}  resist")
+        axes[r, 1].set_xlabel("x"); axes[r, 1].set_ylabel("y")
+        fig.colorbar(im2, ax=axes[r, 1], fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

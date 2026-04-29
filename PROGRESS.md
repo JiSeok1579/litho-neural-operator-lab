@@ -67,6 +67,134 @@
 
 ---
 
+### A.8 Phase 5 — Resist exposure + diffusion — ☑ done (2026-04-29)
+
+**What**
+- `src/resist/exposure.py` — `acid_from_aerial(I, dose, eta=1)`
+  implementing Dill saturation `A0 = 1 - exp(-eta * dose * I)`. Pure
+  PyTorch, differentiable, vectorized.
+- `src/resist/diffusion_fd.py` — `laplacian_5pt` (5-point stencil with
+  periodic BC via ``torch.roll``), `step_diffusion_fd`, `diffuse_fd`.
+  Auto-selects ``n_steps`` to satisfy CFL ``dt <= cfl_safety * dx**2 /
+  (4 D)`` and rejects user-provided steps that violate it.
+- `src/resist/diffusion_fft.py` — exact heat-kernel diffusion in two
+  flavors: `diffuse_fft(A, grid, D, t)` and the more sweep-friendly
+  `diffuse_fft_by_length(A, grid, L)` parameterized directly by the
+  diffusion length ``L = sqrt(2 D t)``. Returns the real part of the
+  inverse FFT (imaginary part is zero up to round-off for real input).
+- `src/resist/reaction_diffusion.py` — coupled `dA/dt = D laplacian(A)
+  - k A Q`, `dQ/dt = -k A Q` with explicit Euler and a coarse
+  reaction-stability bound. Includes a non-negative clamp because Euler
+  can dip slightly below zero near gradient peaks at large `dt`.
+- `src/resist/threshold.py` — `soft_threshold` (sigmoid), the binary
+  `hard_threshold`, `measure_cd_horizontal` (longest contiguous
+  above-threshold run on the central row, returned in length units),
+  and `thresholded_area`.
+- `src/common/visualization.py` gained `show_resist_chain` (the
+  aerial → acid → diffused acid → resist 4-panel chain with an
+  optional threshold contour overlay) and `show_resist_sweep` (rows of
+  (acid_diffused, resist) across a swept knob).
+- `experiments/04_resist_diffusion/demo_dose_sweep.py` runs the chain
+  for a vertical line-space (pitch 2 lambda, NA 0.6) at dose ∈ {0.5,
+  1.0, 1.5, 2.0} with `L_diff = 0.10 lambda`, `A_th = 0.40`, beta = 25.
+  Saves `phase5_dose_sweep.png`, `phase5_dose_chain_dose1.5.png`, and
+  `phase5_dose_sweep_metrics.csv`.
+- `experiments/04_resist_diffusion/demo_diffusion_length.py` fixes
+  dose at 1.5 and sweeps `L_diff ∈ {0, 0.05, 0.10, 0.20, 0.40} lambda`.
+  Saves `phase5_diffusion_length_sweep.png` and a metrics CSV.
+- `configs/resist.yaml` — reference parameter sheet.
+- `tests/test_resist.py` — 21 new tests (91 / 91 green): exposure
+  saturation + zero-dose identity + monotonicity, FD Laplacian on
+  constant / quadratic fields + zero-time identity + mass conservation
+  + CFL rejection, FFT identity at zero D or t + constant-field
+  invariance + mass conservation + agreement with FD on a smooth
+  Gaussian, by-length parameterization equivalence, reaction-diffusion
+  conservation of `(A - Q)` when `D = 0`, soft / hard thresholds, CD
+  measurement, and area counts.
+
+**How**
+- Periodic BCs (FD) and the FFT both assume torus topology — fine for
+  the periodic line-space and the central contact hole pattern this
+  phase uses. Phase 7+ may need Dirichlet BCs at hard wafer edges; we
+  defer until that need is real.
+- The FFT decay factor uses the standard form
+  `exp(-4 pi^2 D t |f|^2)` and the by-length variant absorbs
+  `4 pi^2 D t = 2 pi^2 L^2`. Both reuse the existing centered FFT
+  helpers, so the convention from Phase 1 is preserved.
+- The FD-vs-FFT agreement test uses a smooth Gaussian initial field
+  rather than a random field. With random input at near-Nyquist
+  frequencies, the second-order FD truncation gives ~10% error per
+  step; a Gaussian at sigma 0.25 (≈4 dx) sits comfortably in the
+  resolved regime where the agreement is < 5%.
+- `acid_from_aerial` is built from `1 - exp(-…)`, which keeps autograd
+  through the exposure step real-valued and avoids issues that arise
+  if you implement it as a sigmoid of a log-domain accumulator.
+
+**Why**
+- Splitting FD and FFT into two modules makes the phase teach both
+  perspectives explicitly: FD is the textbook stencil that any PDE
+  course shows; FFT is the analytic Fourier solution that scales
+  better but requires a periodic grid.
+- `diffuse_fft_by_length` exists because every Phase-5+ sweep that
+  matters operates on the geometric scale `L`, not on `(D, t)` pair
+  separately. Hiding the redundant degree of freedom prevents
+  dimensional bugs in later experiments.
+- `measure_cd_horizontal` is intentionally simple: it counts the
+  longest above-threshold run on the y=0 row. For periodic patterns
+  this gives a stable scalar that tracks CD changes; production
+  lithography uses contour-following with sub-pixel interpolation,
+  but a study repo doesn't need that.
+
+**Verified results from `phase5_*_metrics.csv`**
+
+Dose sweep (line-space pitch=2 lambda, NA=0.6, L_diff=0.10 lambda,
+A_th=0.40, beta=25):
+
+```
+  dose  acid_max  acid_diffused_max  resist_max  cd_lambda  thresh_pix
+  0.5   0.394     0.377              0.362       0.000      0          <- nothing prints
+  1.0   0.632     0.612              0.995       0.664      21504
+  1.5   0.777     0.758              1.000       0.859      27648
+  2.0   0.865     0.848              1.000       0.938      30208
+```
+
+Diffusion-length sweep (dose=1.5 fixed):
+
+```
+  L_diff  acid_max  acid_min  acid_contrast  cd_lambda  thresh_pix
+  0.00    0.777     0.000     1.000          0.859      27648
+  0.05    0.772     0.004     0.991          0.859      27648
+  0.10    0.758     0.010     0.974          0.859      27648
+  0.20    0.695     0.023     0.937          0.820      26624
+  0.40    0.520     0.136     0.586          0.742      23040
+```
+
+Physics confirmed:
+- At dose 0.5, peak acid (0.394) sits **just below** the threshold
+  (0.40), so nothing prints — the canonical "under-exposure cliff".
+  Doubling the dose puts the peak well above threshold and CD jumps
+  from 0 to 0.66 lambda; further dose increases widen lines smoothly.
+- For small diffusion lengths (L < 0.10 lambda) CD is invariant — the
+  blur is smaller than the threshold band so the contour position is
+  preserved. At L = 0.20 lambda the acid bulk peak drops to 0.695 and
+  the contour starts retreating; at L = 0.40 lambda the contrast
+  collapses to 0.59 and CD shrinks 14% to 0.74 lambda.
+- This is the "aerial vs resist" duality from study plan §5.10:
+  diffusion shrinks signal **and** leakage in absolute terms, but the
+  threshold cut is what determines whether sub-threshold features
+  print at all — exactly the point of resist contrast modeling.
+
+**Next**
+- Phase 6: PINN diffusion. `src/pinn/{pinn_base,pinn_diffusion,
+  pinn_reaction_diffusion}.py` and
+  `experiments/05_pinn_diffusion/compare_fd_pinn.py`. Compare the
+  trained PINN against the Phase-5 FD and FFT solutions on the same
+  initial condition; report MSE, edge error, training time, and
+  inference time. Save figures as `outputs/figures/phase6_*` and a
+  metrics CSV.
+
+---
+
 ### A.7 Phase 4 — Partial coherence / source integration — ☑ done (2026-04-29)
 
 **What**
@@ -422,7 +550,7 @@ Physics from the table:
 | 2 | Coherent aerial imaging | ☑ | pupil filtering, NA sweep |
 | 3 | Inverse aerial optimization | ☑ | gradient-descent mask optimization |
 | 4 | Partial coherence / source integration | ☑ | annular / dipole / quadrupole |
-| 5 | Resist exposure + diffusion | ☐ | FD / FFT diffusion, threshold contour |
+| 5 | Resist exposure + diffusion | ☑ | FD / FFT diffusion, threshold contour |
 | 6 | PINN for diffusion | ☐ | PINN vs FD comparison |
 | 7 | Synthetic 3D mask correction | ☐ | correction dataset NPZ |
 | 8 | FNO / DeepONet surrogate | ☐ | surrogate `.pt` checkpoint |
@@ -474,14 +602,17 @@ Physics from the table:
 - [x] Results table saved to `outputs/logs/phase4_metrics.csv`
 
 ### Phase 5 — Resist exposure + diffusion
-- [ ] `src/resist/exposure.py` — Dill-style acid generation
-- [ ] `src/resist/diffusion_fd.py` — explicit FD with CFL check
-- [ ] `src/resist/diffusion_fft.py` — FFT heat kernel
-- [ ] `src/resist/reaction_diffusion.py` — A·Q reaction term
-- [ ] `src/resist/threshold.py` — soft sigmoid threshold
-- [ ] `experiments/04_resist_diffusion/demo_dose_sweep.py`
-- [ ] `experiments/04_resist_diffusion/demo_diffusion_length.py`
-- [ ] `configs/resist.yaml`
+- [x] `src/resist/exposure.py` — `acid_from_aerial(aerial, dose, eta)` (Dill saturation)
+- [x] `src/resist/diffusion_fd.py` — `laplacian_5pt`, `step_diffusion_fd`, `diffuse_fd` (explicit Euler with CFL guard, periodic BC via `torch.roll`)
+- [x] `src/resist/diffusion_fft.py` — `diffuse_fft` (D, t) and `diffuse_fft_by_length` (single-knob L)
+- [x] `src/resist/reaction_diffusion.py` — `step_reaction_diffusion`, `evolve_reaction_diffusion` (acid + quencher with non-negative clamp)
+- [x] `src/resist/threshold.py` — `soft_threshold` (sigmoid), `hard_threshold`, `measure_cd_horizontal`, `thresholded_area`
+- [x] `src/common/visualization.py` extended — `show_resist_chain` (aerial → acid → diffused → resist) and `show_resist_sweep` (rows of (acid, resist))
+- [x] `experiments/04_resist_diffusion/demo_dose_sweep.py` (5-A) — doses {0.5, 1.0, 1.5, 2.0}
+- [x] `experiments/04_resist_diffusion/demo_diffusion_length.py` (5-B) — L_diff {0, 0.05, 0.10, 0.20, 0.40} lambda
+- [x] `configs/resist.yaml`
+- [x] `tests/test_resist.py` — 21 added (91 total green)
+- [x] Metrics CSVs: `phase5_dose_sweep_metrics.csv`, `phase5_diffusion_length_metrics.csv`
 
 ### Phase 6 — PINN diffusion
 - [ ] `src/pinn/pinn_base.py` — MLP / SIREN / Fourier feature
@@ -592,6 +723,16 @@ Physics from the table:
   `(K, N, N)` pupil stack rather than a Python loop. With ~300 source
   points (annular) on n=256 the loop cost is dominated by FFT and the
   whole demo finishes in under a second on RTX 5080.
+- **2026-04-29** Diffusion exposed via two parameterizations: the raw
+  ``(D, t)`` pair and the more useful ``L = sqrt(2 D t)``. Sweeps in
+  Phase 5 / 6 / 9 use ``L`` because the geometric scale is the only
+  thing that physically matters; ``D`` and ``t`` separately are
+  redundant degrees of freedom that introduce dimensional bookkeeping
+  bugs.
+- **2026-04-29** FD-vs-FFT agreement test uses a smooth Gaussian rather
+  than a random field. The 5-point stencil is second-order accurate in
+  dx; near-Nyquist random content makes a single explicit Euler step
+  drift by ~10 % even when both solvers are correct.
 
 ---
 
@@ -636,3 +777,14 @@ Physics from the table:
   threshold}.py` + the two `experiments/04_resist_diffusion/demo_*.py`
   scripts, save figures as `outputs/figures/phase5_*`, and add a
   `phase5_metrics.csv` with CD-like width vs dose / diffusion length.
+- **2026-04-29** Phase 5 done (resist exposure + diffusion). 91 tests
+  green. Two demos run: dose sweep finds the under-exposure cliff at
+  dose=0.5 (acid_max 0.39 just below threshold 0.40 -> nothing prints,
+  CD jumps from 0 to 0.66 lambda when dose reaches 1.0); diffusion
+  sweep shows CD invariant up to L=0.10 lambda then shrinking 14% by
+  L=0.40 lambda as acid contrast collapses from 1.00 to 0.59. Resume
+  with Phase 6: write `src/pinn/{pinn_base,pinn_diffusion,
+  pinn_reaction_diffusion}.py`, run
+  `experiments/05_pinn_diffusion/compare_fd_pinn.py` on the same
+  initial condition as Phase 5, save figures + a metrics CSV with
+  PINN vs FD MSE, edge error, training time, and inference time.
