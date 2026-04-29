@@ -1,0 +1,36 @@
+# Reference parameters for Phase 3 inverse aerial optimization.
+# This file documents the standard run; demo scripts currently hard-code
+# matching values rather than load YAML to keep the dependency surface small.
+
+grid:
+  n: 128
+  extent: 10.0  # in wavelengths
+
+optics:
+  NA: 0.4
+  wavelength: 1.0
+
+target:
+  type: disk
+  radius: 1.0      # in wavelengths
+  center: [0.0, 0.0]
+  intensity: 1.0   # desired aerial intensity inside the target
+
+forbidden:
+  type: complement       # everywhere outside the target
+  buffer: 0.0            # no neutral ring between target and forbidden
+
+optimization:
+  n_iters: 800
+  lr: 5.0e-2
+  weights:
+    target: 1.0
+    background: 1.0
+    tv: 1.0e-3
+    binarization: 0.0
+  alpha_schedule:
+    - [0, 1.0]
+    - [300, 4.0]
+    - [600, 12.0]
+  log_every: 10
+  seed: 0

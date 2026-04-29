@@ -276,6 +276,121 @@ def show_pipeline(
     return fig
 
 
+def show_inverse_result(
+    initial_mask: torch.Tensor,
+    final_mask: torch.Tensor,
+    initial_aerial: torch.Tensor,
+    final_aerial: torch.Tensor,
+    target_region: torch.Tensor,
+    forbidden_region: torch.Tensor,
+    extent: float | None = None,
+    target_value: float = 1.0,
+    suptitle: str = "",
+):
+    """2-row x 4-col before / after view of an inverse-mask optimization.
+
+    Row 0 (initial): mask | aerial | aerial vs target row-cut | regions overlay
+    Row 1 (final):   mask | aerial | aerial vs target row-cut | regions overlay
+    """
+    fig, axes = plt.subplots(2, 4, figsize=(16, 8))
+    real_ext = None if extent is None else (-extent / 2, extent / 2, -extent / 2, extent / 2)
+
+    rows = [
+        ("initial", initial_mask, initial_aerial),
+        ("final", final_mask, final_aerial),
+    ]
+    for r, (label, m, a) in enumerate(rows):
+        # mask
+        axes[r, 0].imshow(_to_numpy(m.real if torch.is_complex(m) else m),
+                          cmap="gray", extent=real_ext, origin="lower",
+                          vmin=0.0, vmax=1.0)
+        axes[r, 0].set_title(f"{label} mask")
+        axes[r, 0].set_xlabel("x"); axes[r, 0].set_ylabel("y")
+
+        # aerial
+        a_max = float(a.max().item())
+        im = axes[r, 1].imshow(_to_numpy(a), cmap="inferno", extent=real_ext,
+                               origin="lower", vmin=0.0, vmax=max(a_max, 1e-6))
+        axes[r, 1].set_title(f"{label} aerial  (peak={a_max:.3f})")
+        axes[r, 1].set_xlabel("x"); axes[r, 1].set_ylabel("y")
+        fig.colorbar(im, ax=axes[r, 1], fraction=0.046, pad=0.04)
+
+        # row cut through y=0 (middle row of the array)
+        n = a.shape[-1]
+        cut = _to_numpy(a[n // 2, :])
+        x_axis = (np.arange(n) - n / 2) * (extent / n if extent else 1.0)
+        axes[r, 2].plot(x_axis, cut, label="aerial", color="C1")
+        axes[r, 2].axhline(target_value, color="C2", linestyle="--", label=f"target={target_value}")
+        # mark target region extent along the cut
+        tr_cut = _to_numpy(target_region[n // 2, :])
+        axes[r, 2].fill_between(x_axis, 0, max(target_value, a_max), where=tr_cut > 0.5,
+                                alpha=0.15, color="green", label="target")
+        fr_cut = _to_numpy(forbidden_region[n // 2, :])
+        axes[r, 2].fill_between(x_axis, 0, max(target_value, a_max), where=fr_cut > 0.5,
+                                alpha=0.10, color="red", label="forbidden")
+        axes[r, 2].set_title(f"{label} aerial  (y=0 cut)")
+        axes[r, 2].set_xlabel("x"); axes[r, 2].set_ylabel("intensity")
+        axes[r, 2].legend(loc="upper right", fontsize=8)
+        axes[r, 2].grid(alpha=0.3)
+
+        # regions overlay (target green, forbidden red, on top of aerial)
+        rgb = np.stack([
+            _to_numpy(forbidden_region) * 0.6,                 # R
+            _to_numpy(target_region) * 0.6,                    # G
+            np.zeros_like(_to_numpy(target_region)),           # B
+        ], axis=-1)
+        bg = _to_numpy(a) / max(a_max, 1e-12)
+        gray = np.stack([bg, bg, bg], axis=-1) * 0.4
+        composite = np.clip(gray + rgb, 0, 1)
+        axes[r, 3].imshow(composite, extent=real_ext, origin="lower")
+        axes[r, 3].set_title(f"{label} regions on aerial")
+        axes[r, 3].set_xlabel("x"); axes[r, 3].set_ylabel("y")
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
+def show_loss_history(history: list[dict], suptitle: str = ""):
+    """Two-panel loss / intensity history figure.
+
+    Panel A (log y): total / target / background / tv / binarization losses
+    Panel B (linear): mean target intensity, mean forbidden intensity
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    its = [h["iter"] for h in history]
+
+    keys = [
+        ("loss_total", "total", "black", "-"),
+        ("loss_target", "target", "C0", "-"),
+        ("loss_background", "background", "C3", "-"),
+        ("loss_tv", "tv", "C2", "--"),
+        ("loss_binarization", "binarization", "C4", ":"),
+    ]
+    for key, label, color, ls in keys:
+        ys = [h[key] for h in history]
+        if max(ys) > 0:
+            axes[0].plot(its, ys, label=label, color=color, linestyle=ls)
+    axes[0].set_yscale("log")
+    axes[0].set_title("loss components")
+    axes[0].set_xlabel("iteration"); axes[0].set_ylabel("loss (log)")
+    axes[0].legend(fontsize=8); axes[0].grid(alpha=0.3)
+
+    target_int = [h["mean_intensity_target"] for h in history]
+    bg_int = [h["mean_intensity_background"] for h in history]
+    axes[1].plot(its, target_int, label="mean(I) in target", color="C2")
+    axes[1].plot(its, bg_int, label="mean(I) in forbidden", color="C3")
+    axes[1].set_title("mean aerial intensity per region")
+    axes[1].set_xlabel("iteration"); axes[1].set_ylabel("intensity")
+    axes[1].legend(fontsize=8); axes[1].grid(alpha=0.3)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

@@ -67,6 +67,98 @@
 
 ---
 
+### A.6 Phase 3 — Inverse aerial optimization — ☑ done (2026-04-29)
+
+**What**
+- `src/inverse/losses.py` — `masked_mse(field, region, target)` and the
+  two convenience aliases `target_loss` and `background_loss`. The
+  helper `mean_intensity_in_region` is a non-loss diagnostic used in the
+  optimization history.
+- `src/inverse/regularizers.py` — `total_variation` (mean L1 first
+  difference) and `binarization_penalty` (mean of `m * (1 - m)`).
+- `src/inverse/optimize_mask.py` — `optimize_mask(grid, target_region,
+  forbidden_region, config)` runs Adam on a real-valued raw parameter
+  `theta`. Mask `m = sigmoid(alpha * theta)`; `alpha` follows a step
+  schedule (default `(0,1) -> (300,4) -> (700,12)`). Returns an
+  `OptimizationResult` dataclass with theta, mask, both aerials, the
+  pupil, and a per-iteration history of loss components and mean
+  intensities.
+- `src/common/visualization.py` extended with `show_inverse_result`
+  (2 rows x 4 cols: mask | aerial | y=0 row-cut with regions shaded |
+  RGB overlay of regions on aerial) and `show_loss_history` (loss
+  components on log-y, region-mean intensities on linear).
+- `experiments/02_inverse_aerial/demo_target_spot.py` — study plan
+  §3-A reproduction. Target = central disk r=1 lambda; forbidden =
+  complement; NA=0.4; 800 iters; alpha=(0,1)/(300,4)/(600,12).
+- `experiments/02_inverse_aerial/demo_forbidden_region.py` — same
+  target but forbidden = four explicit side-lobe disks at +/-3 lambda
+  along x and y; background weight bumped to 4 to compensate for the
+  smaller forbidden area.
+- `configs/inverse_aerial.yaml` — reference parameter sheet. Demos
+  currently hard-code matching values; YAML loading deferred until a
+  later phase needs sweep automation.
+- `tests/test_inverse_losses.py` (10) and `tests/test_optimize_mask.py`
+  (5) — 16 added, 49 / 49 green overall.
+
+**How**
+- Parameterization: `m = sigmoid(alpha * theta)`. `theta` is
+  unconstrained on the real line; `alpha` is the binarization sharpness.
+  `theta = 0` gives `m = 0.5` everywhere, which is a neutral starting
+  point — initial aerial is constant at `|0.5|^2 = 0.25`.
+- Annealing: at the alpha step boundaries the mask suddenly becomes
+  more contrasted, which spikes the loss (visible in
+  `phase3_*_loss.png`); the optimizer then recovers within tens of
+  iterations.
+- Aerial intensity is **not** normalized inside the optimizer — the
+  loss is on absolute intensity so the target value of 1.0 is meaningful.
+- The `target_loss` test "decreases" guard uses NA=0.6 and disables
+  annealing so the budget of 80 iters is enough to reliably drop the
+  loss from its initial value; the production demos use NA=0.4 with the
+  full annealing schedule.
+
+**Why**
+- `sigmoid(alpha * theta)` keeps the mask differentiably bounded in
+  (0, 1) without explicit projection. Compared to a clamped
+  parameterization, this produces smoother gradients and avoids the
+  zero-gradient plateaus of saturation.
+- Target / forbidden separation is the inverse-problem framing the
+  study plan (§3.3) calls for: an explicit knob for "what should be
+  bright" and "what should be dark" with weights tuning the trade-off.
+- TV regularization with a tiny weight (1e-3) is enough to keep the
+  mask geometrically coherent without dominating the loss; raising it
+  noticeably blurs the final binary pattern.
+- Returning a dataclass (`OptimizationResult`) instead of a tuple
+  matters once Phase 9 wraps `optimize_mask` inside a closed loop —
+  named fields make the plumbing readable.
+
+**Why (this direction)**
+- Phase 3 closes the "physics direction": Phase 1 makes a spectrum,
+  Phase 2 turns it into intensity, Phase 3 inverts the chain via
+  gradients. Phase 4-7 add complexity (partial coherence, resist,
+  3D correction) on top of this same `optimize_mask` skeleton.
+
+**Verified results from the demos**
+- `demo_target_spot`: target loss 0.5625 -> 0.0005 (~1100x), mean(I)
+  in target 0.250 -> 0.992, mean(I) in forbidden (entire complement)
+  0.250 -> 0.078. The optimizer parks substantial energy outside the
+  target because the target is sub-Rayleigh at NA=0.4 (Rayleigh ~
+  3.05 lambda, target r = 1 lambda).
+- `demo_forbidden_region`: target loss 0.5625 -> 0.0066, background
+  loss 0.0625 -> 0.0004. mean(I) in the four explicit forbidden disks
+  drops to 0.015 — about 5x stronger suppression than the
+  complement case, at the cost of slightly worse target fidelity and
+  visible energy in the neutral diagonal regions. This is the
+  fidelity-vs-leakage trade-off study plan §3.7 explicitly flags.
+
+**Next**
+- Phase 4: `src/optics/source.py` (coherent / annular / dipole /
+  quadrupole / random-points source shapes), `src/optics/partial_coherence.py`
+  (incoherent sum over shifted pupils), then a sweep demo on a
+  vertical line-space and a contact hole comparing illumination
+  shapes. Save under `outputs/figures/phase4_*`.
+
+---
+
 ### A.5 Phase 2 — Coherent aerial imaging — ☑ done (2026-04-29)
 
 **What**
@@ -218,7 +310,7 @@
 | 0 | Env / scaffold / docs | ☑ | this scaffold + README + PROGRESS |
 | 1 | Scalar diffraction | ☑ | mask FFT, diffraction spectrum figures |
 | 2 | Coherent aerial imaging | ☑ | pupil filtering, NA sweep |
-| 3 | Inverse aerial optimization | ☐ | gradient-descent mask optimization |
+| 3 | Inverse aerial optimization | ☑ | gradient-descent mask optimization |
 | 4 | Partial coherence / source integration | ☐ | annular / dipole / quadrupole |
 | 5 | Resist exposure + diffusion | ☐ | FD / FFT diffusion, threshold contour |
 | 6 | PINN for diffusion | ☐ | PINN vs FD comparison |
@@ -251,12 +343,14 @@
 - [x] `tests/test_pupil.py`, `tests/test_coherent_imaging.py` — 17 added (33 total green)
 
 ### Phase 3 — Inverse aerial optimization
-- [ ] `src/inverse/losses.py` — target / forbidden / TV / binarization
-- [ ] `src/inverse/regularizers.py`
-- [ ] `src/inverse/optimize_mask.py` — Adam loop, binarization annealing
-- [ ] `experiments/02_inverse_aerial/demo_target_spot.py`
-- [ ] `experiments/02_inverse_aerial/demo_forbidden_region.py`
-- [ ] `configs/inverse_aerial.yaml`
+- [x] `src/inverse/losses.py` — `masked_mse`, `target_loss`, `background_loss`, `mean_intensity_in_region`
+- [x] `src/inverse/regularizers.py` — `total_variation`, `binarization_penalty`
+- [x] `src/inverse/optimize_mask.py` — `optimize_mask` + `OptimizationConfig` + `LossWeights` + `OptimizationResult` (Adam, sigmoid(alpha * theta), step alpha schedule)
+- [x] `src/common/visualization.py` — added `show_inverse_result` (2x4 before/after) and `show_loss_history` (2-panel)
+- [x] `experiments/02_inverse_aerial/demo_target_spot.py` — central r=1 lambda disk, complement forbidden, NA=0.4
+- [x] `experiments/02_inverse_aerial/demo_forbidden_region.py` — central target + 4 explicit side-lobe forbidden disks
+- [x] `configs/inverse_aerial.yaml` — reference config (documentation; demos still hard-code matching values)
+- [x] `tests/test_inverse_losses.py`, `tests/test_optimize_mask.py` — 16 added (49 total green)
 
 ### Phase 4 — Partial coherence
 - [ ] `src/optics/source.py` — coherent / annular / dipole / quadrupole / random
@@ -364,6 +458,16 @@
 - **2026-04-29** `extent` is counted in wavelengths, with `wavelength=1.0`
   the default everywhere. Going forward, all `Grid2D(extent=...)` values
   in optics code and demos are read as multiples of lambda.
+- **2026-04-29** Mask parameterization is `m = sigmoid(alpha * theta)` with
+  unconstrained `theta`. Picked over a clamped real-valued mask because
+  the sigmoid form is differentiable everywhere and pairs naturally with
+  a binarization annealing schedule on `alpha`. `theta = 0` gives a
+  neutral half-tone start (`m = 0.5`), which is also why the initial
+  aerial in every Phase-3 figure is a flat 0.25.
+- **2026-04-29** `OptimizationResult` is a dataclass instead of a tuple.
+  Phase 9 will wrap this function inside a surrogate-assisted loop where
+  named fields make the plumbing far more readable than positional
+  unpacks would.
 
 ---
 
@@ -389,3 +493,12 @@
   regularizers, optimize_mask}.py`, add `configs/inverse_aerial.yaml`,
   and run `experiments/02_inverse_aerial/demo_target_spot.py` to land a
   before/after pair plus a loss curve under `outputs/figures/phase3_*`.
+- **2026-04-29** Phase 3 done (inverse aerial optimization). 49 tests
+  green. Two demos run successfully: target_spot pulls mean target
+  intensity from 0.25 to 0.99 with mean forbidden 0.08; forbidden_region
+  drives four explicit side-lobe disks down to mean intensity 0.015.
+  Resume with Phase 4: add `src/optics/source.py` (coherent / annular /
+  dipole / quadrupole / random-points source shapes) and
+  `src/optics/partial_coherence.py` (incoherent sum over shifted
+  pupils), then run a sweep demo on a vertical line-space and a contact
+  hole — save figures as `outputs/figures/phase4_*`.
