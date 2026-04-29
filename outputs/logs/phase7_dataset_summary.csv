@@ -1,0 +1,3 @@
+split,n_samples,T_thin_l2_mean,T_3d_l2_mean,delta_T_l2_mean,gamma_mean,alpha_mean,beta_mean,delta_mean,s_mean,c_mean
+train,2000,0.1560,0.0621,0.1202,+0.1489,-0.0069,-0.0064,-0.0035,+0.0019,1.9979
+test,400,0.1462,0.0582,0.1113,+0.1520,+0.0033,-0.0283,+0.0135,+0.0147,1.9468

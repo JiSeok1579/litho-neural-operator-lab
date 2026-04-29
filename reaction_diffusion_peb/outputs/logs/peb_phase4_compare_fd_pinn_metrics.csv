@@ -1,0 +1,4 @@
+solver,max_abs_err_vs_fft,mean_abs_err_vs_fft,L2_rel_err_vs_fft,wallclock_per_call_ms,mass,mass_expected_decay,extra_info
+FFT,0.000e+00,0.000e+00,0.000e+00,0.094,106.7884,106.7884,exact heat kernel + decay
+FD,2.456e-05,1.779e-06,2.980e-04,17.171,106.7759,106.7884,"dx=1.0 nm, periodic BC"
+PINN,1.741e-02,2.182e-03,2.534e-01,0.298,106.9436,106.7884,after 51.2 s training

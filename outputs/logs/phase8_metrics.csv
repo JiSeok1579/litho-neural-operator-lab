@@ -1,0 +1,13 @@
+metric,value
+n_train,2000
+n_test,400
+grid_n,128
+fno_params,2106178
+epochs,100
+batch_size,8
+train_time_sec,131.85
+final_test_spectrum_mse,9.038387e-04
+final_test_complex_rel_err,1.549637e-01
+final_test_aerial_mse,1.590209e-03
+baseline_spectrum_mse_pred_0,3.159427e-02
+improvement_over_baseline,34.96x

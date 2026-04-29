@@ -1,0 +1,3 @@
+solver,max_abs_err_H_vs_FD,max_abs_err_P_vs_FD,P_max,P_min,area(P>0.5)_px,wallclock_per_call_ms,extra_info
+FD (truth),0.000e+00,0.000e+00,0.9358,0.0000,1876,24.935,"dx=1.0 nm, periodic BC"
+PINN,2.300e-02,2.891e-01,0.9246,-0.1910,1468,0.304,after 57.7 s training

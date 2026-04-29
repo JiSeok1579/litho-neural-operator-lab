@@ -1,0 +1,11 @@
+mask,source,n_src_points,peak_in_target,contrast_full_field,leakage_ring_3to6_lambda
+line_space,coherent,1,0.3214,0.2471,3399.3235
+line_space,annular,332,0.3980,0.3478,3492.3950
+line_space,dipole-x,52,0.6683,0.8093,4161.5020
+line_space,dipole-y,52,0.2872,0.1445,3389.8604
+line_space,quadrupole,112,0.4351,0.4156,3558.9473
+contact_hole,coherent,1,0.1237,1.0000,1.5737
+contact_hole,annular,332,0.1106,0.9999,1.5584
+contact_hole,dipole-x,52,0.1048,0.9999,1.5003
+contact_hole,dipole-y,52,0.1048,0.9999,1.5003
+contact_hole,quadrupole,112,0.1101,0.9999,1.5576
