@@ -1032,7 +1032,7 @@ Physics from the table:
 | 7 | Synthetic 3D mask correction | ☑ | correction dataset NPZ |
 | 8 | FNO / DeepONet surrogate | ☑ | surrogate `.pt` checkpoint |
 | 9 | Closed-loop surrogate-assisted inverse | ☑ | surrogate vs true comparison |
-| 10 | Active learning (optional) | ☐ | ensemble uncertainty |
+| 10 | Active learning (optional) | 💤 deferred | future work, see §H |
 
 ---
 
@@ -1133,7 +1133,9 @@ Physics from the table:
 - [x] `outputs/logs/phase9_metrics.csv`
 - [x] `tests/test_surrogate_optimizer.py` — 6 added (132 total green)
 
-### Phase 10 — Active learning (optional)
+### Phase 10 — Active learning (deferred / optional)
+> See §H for the reopen plan. Lab paused in good standing after Phase 9.
+
 - [ ] `src/closed_loop/active_learning.py`
 - [ ] one of: ensemble uncertainty / distance-to-distribution / oracle validation
 
@@ -1160,6 +1162,107 @@ Physics from the table:
 7. **PROGRESS.md update rule.**
    On every commit add a What/How/Why/Next entry to the matching phase
    section, and flip checklist items ☐ → ◐ → ☑.
+
+---
+
+## H. Lab wrap-up (paused after Phase 9)
+
+The 9-phase study plan has been worked through end-to-end. Phase 10
+(active learning) is deliberately left as future work — the place to
+resume if the lab is reopened.
+
+### What the lab now demonstrates, end to end
+
+```
+mask
+   │  Phase 1   FFT (centered)                              ✅
+   ▼
+diffraction spectrum
+   │  Phase 2   pupil filtering, NA cutoff                   ✅
+   ▼
+coherent aerial image
+   │  Phase 3   differentiable inverse mask design           ✅
+   │  Phase 4   partial coherence (Hopkins integral)         ✅
+   ▼
+aerial image (under arbitrary illumination)
+   │  Phase 5   exposure + diffusion + threshold             ✅
+   ▼
+resist contour
+   │  Phase 6   PINN benchmark vs FD / FFT                   ✅
+   │            (PINN underperforms grid solvers here)
+   ▼
+synthetic 3D mask correction
+   │  Phase 7   closed-form correction operator + dataset    ✅
+   │  Phase 8   FNO surrogate (35x over baseline)            ✅
+   │  Phase 9   closed-loop inverse + surrogate validation   ✅
+   ▼
+mask whose true-physics aerial deviates ~11% from the surrogate's
+prediction — the canonical "surrogate dishonesty" finding.
+```
+
+### Headline numbers
+
+- **132 / 132 tests** green at the end of Phase 9.
+- 11 PRs merged into ``main`` (see ``git log --oneline``).
+- Phase 6 PINN: MSE ≈ 4e-4 / max abs err ≈ 0.17 vs analytic Gaussian
+  after 80 s of training — 6 orders of magnitude worse than FFT.
+- Phase 8 FNO: 35× over the identity baseline at 132 s training,
+  test complex-relative error 15.5 %.
+- Phase 9 closed-loop: FNO predicts target intensity 0.982,
+  re-imaging through truth gives 1.091 (an 11 % over-shoot that
+  pushes loss_target from 0.0021 to 0.0103).
+
+### Phase 10 reopen plan (future work)
+
+When picking the lab back up, the highest-value Phase 10 starting
+point is **oracle-disagreement active learning** — we already have
+the true correction operator from Phase 7, so we can score the FNO's
+honesty directly without ensembles or distribution-distance metrics.
+Concrete steps:
+
+1. ``src/closed_loop/active_learning.py``
+   - ``oracle_disagreement_score(fno, mask, params)``: returns
+     ``|delta_T_pred - delta_T_true|`` summed over the spectrum.
+   - ``rank_candidates(fno, masks, params_set)``: returns the top-k
+     (mask, params) pairs by disagreement.
+2. Generate a *candidate pool* of (mask, params) — e.g. 5000 random
+   draws using the Phase-7 sampler, each scored against the truth.
+3. Take the top-k disagreement samples, append them to the Phase-7
+   train NPZ, and retrain the FNO from the existing checkpoint.
+4. Repeat the Phase-9 closed-loop experiment and verify that the
+   "predicted vs validated" gap on case C shrinks. Save figures as
+   ``outputs/figures/phase10_*`` and metrics as
+   ``outputs/logs/phase10_metrics.csv``.
+
+Two stretch variants on the menu but not required:
+
+- **Ensemble uncertainty.** Train 3-5 FNOs with different seeds; use
+  variance across them as the uncertainty signal. Pure ML approach
+  (no oracle access). More expensive than oracle disagreement but
+  the only option once the true correction is unavailable.
+- **Distance-to-training-distribution.** Build a feature vector per
+  mask (area fraction, perimeter, spectrum energy distribution,
+  minimum feature size), then compute the nearest-neighbor distance
+  in feature space against the training set. Cheap heuristic; fails
+  for adversarial-looking masks that match training-set statistics
+  but live in genuinely new geometric regimes.
+
+### Files / artifacts left in good standing
+
+```
+outputs/checkpoints/fno_correction.pt        — Phase-8 trained FNO (~25 MB)
+outputs/datasets/synthetic_3d_correction_*.npz — Phase-7 paired data
+outputs/figures/phase{1..9}_*.png             — every phase's figures
+outputs/logs/phase{4,5,7,8,9}_metrics.csv     — per-phase numerical results
+configs/*.yaml                                 — reference configs
+src/                                           — all 9 phases of code
+tests/                                         — 132 tests (regression-tested)
+```
+
+The ``.gitkeep`` files preserve the empty ``outputs/*`` directories
+in the repo even though the artifacts themselves are git-ignored.
+Anyone cloning the repo can rerun the demos to regenerate everything
+from scratch.
 
 ---
 
@@ -1339,3 +1442,12 @@ Physics from the table:
   study plan §9.6 set up. Resume with Phase 10 (optional): active
   learning using oracle disagreement to refine the training set and
   shrink the predicted-vs-true gap.
+- **2026-04-29** **Lab paused after Phase 9 in good standing.**
+  Phase 10 (active learning) is the natural next step but is left
+  as documented future work — see PROGRESS §H for the reopen plan.
+  The 9 completed phases trace the full mask → spectrum → aerial →
+  resist → surrogate → closed-loop optimization chain; the
+  surrogate-dishonesty finding is the right place to take a break.
+  When the lab reopens, start at the
+  ``oracle_disagreement_score`` plan in §H and then re-run the
+  Phase-9 demo to confirm the predicted-vs-validated gap narrows.

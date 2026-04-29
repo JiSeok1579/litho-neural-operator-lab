@@ -12,6 +12,22 @@ The full step-by-step study plan lives in
 Implementation progress is tracked cumulatively in
 [`PROGRESS.md`](./PROGRESS.md).
 
+## Status
+
+Phases **1 – 9 are complete**. Phase 10 (active learning) is deliberately
+left as future work. See [`PROGRESS.md`](./PROGRESS.md) §B for the phase
+roadmap and §H for the wrap-up + Phase-10 reopen plan. As of the wrap-up
+commit, 132 / 132 tests are green.
+
+Headline result (Phase 9): an FNO surrogate that scores 15.5 % test
+complex-relative error in Phase 8 produces an optimized mask whose
+*predicted* aerial misleads the inverse-design optimizer — re-imaging
+the same mask through the true physics gives an 11 % over-shoot in
+target intensity and a 5× worse target loss than the surrogate
+believed. The lab's design lets you reproduce this finding end-to-end:
+generate the synthetic dataset, train the FNO, run the closed-loop
+experiment, and inspect `outputs/figures/phase9_closed_loop_comparison.png`.
+
 ---
 
 ## Project rule — language
