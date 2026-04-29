@@ -9,7 +9,13 @@ of the lab. Items are ordered by perceived priority.
 
 ## 1. PINN bound-penalty constraint (Phase 5 follow-up)
 
-**Status:** open · **Source:** Phase 5 finding · **Target file(s):**
+**Status:** ✅ **closed by the pre-Phase-7 diagnostics PR** (Option A
+soft penalty implemented; Option B sigmoid wrapper not pursued —
+no longer needed at this scope). Original analysis kept below for
+reference; the result block at the end of this section records what
+landed.
+
+**Source:** Phase 5 finding · **Target file(s):**
 `src/pinn_reaction_diffusion.py`, `src/train_pinn_deprotection.py`
 
 **Problem.** The Phase-5 `PINNDeprotection` parameterizes the
@@ -90,6 +96,35 @@ and report:
 | area(P>0.5) | 1468 | (target: closer to 1876) |
 | max\|P_PINN - P_FD\| | 0.289 | (target: < 0.1) |
 
+### Result (closed)
+
+Implemented as **Option A (soft penalty)** with a configurable
+``weight_bound`` knob in ``src/train_pinn_deprotection.py`` and a
+sweep demo at
+``experiments/pre_phase7_diagnostics/run_pinn_bound_penalty.py``.
+
+Sweep at the Phase-5 setting (``DH=0.8, kloss=0.005, kdep=0.5,
+t=60 s``):
+
+| weight_bound | P_min | P_max | area(P>0.5) | max\|P-P_FD\| |
+|---|---|---|---|---|
+| 0 (baseline) | −0.183 | 0.944 | 1656 | 0.291 |
+| 0.001 | −0.118 | 0.916 | 1434 | 0.281 |
+| **0.01** | **−0.011** | **0.939** | 1536 | **0.226** |
+| 0.1 | −0.017 | 0.919 | 1461 | 0.237 |
+| 1.0 | 0.004 | 0.896 | 1295 | 0.240 |
+| FD truth | 0.000 | 0.936 | 1876 | 0 |
+
+**weight_bound = 0.01** is the chosen default: P_min ≥ −0.05 is met
+with ample headroom (−0.011), P_max stays at the FD truth value
+(0.939 vs 0.936), and max-error drops 22 % from the baseline (0.291
+→ 0.226). Larger weights ≥ 0.1 over-penalize and under-fit the peak.
+
+A residual area gap remains (PINN 1536 vs FD 1876) — this is now a
+PDE-fitting capacity issue, not a bound-violation issue. Closing it
+further is item 2's job (T-as-input PINN with longer training) or a
+deeper architecture, not more bound-penalty.
+
 ---
 
 ## 2. PINN with temperature as an extra input (Phase 6 follow-up)
@@ -131,20 +166,31 @@ place to surface the bound-penalty fix from item 1 too.
 
 ## 4. Mass-conservation diagnostic for the (H, P) system
 
-**Status:** open · **Source:** Phase 5/6 metrics CSVs already log
-``P_max`` / ``P_mean`` / threshold area; total mass of acid + losses
-is not yet aggregated.
+**Status:** ✅ **closed by the pre-Phase-7 diagnostics PR.**
 
-In the absence of quencher (out of scope until Phase 7), the only
-acid sink is the loss term ``- k_loss * H``. A clean conservation
-identity:
+Implemented as ``src/mass_budget.py``
+(``evolve_acid_loss_deprotection_fd_with_budget`` and the
+Arrhenius-aware ``..._at_T`` wrapper) plus
+``experiments/pre_phase7_diagnostics/run_mass_budget_check.py`` and
+12 tests in ``tests/test_mass_budget.py``.
 
-```text
-M(t) = total_mass(H(t)) + integral_0^t k_loss * total_mass(H(tau)) dtau
-     = total_mass(H_0)                      (for the closed system)
-```
+Result on the eight Phase-5 / Phase-6 scenarios — relative error of
+``M_budget(t_end)`` against ``M(0)``:
 
-Adding this as a column in the metrics CSV gives a global sanity
-check that the FD evolver does not drift, especially at large
-Arrhenius-corrected ``k_loss`` (e.g. 125 °C runs reach ``k_loss_eff``
-of 0.038 — still small but worth tracking).
+| scenario | mass_H_initial | mass_H_final | rel err |
+|---|---|---|---|
+| phase5  kloss=0           kdep=0.0 | 144.149 | 144.149 | 3.2e-07 |
+| phase5  kloss=0           kdep=0.5 | 144.149 | 144.149 | 3.2e-07 |
+| phase5  kloss=0.005       kdep=0.5 | 144.149 | 106.776 | 1.1e-07 |
+| phase5  kloss=0.05 (10x)  kdep=0.5 | 144.149 |   7.093 | 2.3e-08 |
+| phase6  T= 80 °C  (factor 0.16) | 144.149 | 137.346 | 9.9e-08 |
+| phase6  T=100 °C  (factor 1.00) | 144.149 | 106.776 | 1.1e-07 |
+| phase6  T=120 °C  (factor 5.15) | 144.149 |  30.617 | 1.1e-08 |
+| phase6  T=125 °C MOR (factor 7.57) | 144.149 |  14.786 | 1.5e-08 |
+
+All scenarios — including the high-T 125 °C case where 90 % of the
+acid is consumed — close the budget to **float32 round-off** (~1e-7).
+This is exactly the expected behavior because the mass change per
+explicit-Euler step is itself ``-dt * k_loss * sum(H_n)``, which is
+what we accumulate. Any future drift from this baseline will flag a
+real bug in the evolver.

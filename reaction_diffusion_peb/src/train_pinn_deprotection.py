@@ -4,6 +4,18 @@ Sums the H and P PDE residual MSEs and runs Adam (or AdamW) on the
 combined loss. ``hard_ic=True`` makes the soft-IC term redundant by
 construction; the trainer still keeps a ``weight_ic`` knob in case
 someone wants a soft-IC sanity check.
+
+Pre-Phase-7 follow-up adds an optional **bound-penalty** term on the
+predicted ``P`` field:
+
+    L_bound = mean(relu(-P)^2) + mean(relu(P - 1)^2)
+
+evaluated at the same collocation points as the PDE residuals. The
+penalty is zero whenever ``P in [0, 1]`` and grows quadratically
+outside that band, which discourages the network from drifting to
+the negative-P fringe regions observed in the Phase-5 experiment
+(``P_min = -0.19``). Setting ``weight_bound = 0`` recovers the
+original Phase-5 behavior bit-for-bit.
 """
 
 from __future__ import annotations
@@ -17,6 +29,16 @@ import torch
 from reaction_diffusion_peb.src.pinn_reaction_diffusion import PINNDeprotection
 
 
+def bound_penalty_P(P_pred: torch.Tensor) -> torch.Tensor:
+    """Soft penalty that is zero for ``P in [0, 1]`` and quadratic outside.
+
+        L_bound = mean(relu(-P)^2) + mean(relu(P - 1)^2)
+    """
+    below = torch.relu(-P_pred)
+    above = torch.relu(P_pred - 1.0)
+    return below.pow(2).mean() + above.pow(2).mean()
+
+
 @dataclass
 class DeprotectionTrainingHistory:
     iters: list[int]
@@ -24,6 +46,7 @@ class DeprotectionTrainingHistory:
     loss_pde_H: list[float]
     loss_pde_P: list[float]
     loss_ic: list[float]
+    loss_bound: list[float]
     train_time_sec: float
 
 
@@ -41,6 +64,7 @@ def train_pinn_deprotection(
     weight_pde_H: float = 1.0,
     weight_pde_P: float = 1.0,
     weight_ic: float = 0.0,
+    weight_bound: float = 0.0,
     lr_decay_step: int | None = None,
     lr_decay_gamma: float = 0.5,
     log_every: int = 50,
@@ -48,6 +72,8 @@ def train_pinn_deprotection(
 ) -> DeprotectionTrainingHistory:
     if n_iters < 1:
         raise ValueError("n_iters must be >= 1")
+    if weight_bound < 0:
+        raise ValueError("weight_bound must be non-negative")
     device = next(pinn.parameters()).device
     pinn.train()
     if weight_decay > 0:
@@ -72,6 +98,7 @@ def train_pinn_deprotection(
     losses_pde_H: list[float] = []
     losses_pde_P: list[float] = []
     losses_ic: list[float] = []
+    losses_bound: list[float] = []
 
     side = torch.linspace(x_low, x_high, n_ic_grid_side)
     XX, YY = torch.meshgrid(side, side, indexing="xy")
@@ -92,6 +119,26 @@ def train_pinn_deprotection(
         loss_pde_H = (r_H ** 2).mean()
         loss_pde_P = (r_P ** 2).mean()
 
+        # --- bound penalty on P at the collocation points ----------
+        # Re-call forward with detached coordinates: bound penalty
+        # depends on P_pred values only, not on derivatives w.r.t.
+        # (x, y, t), so we don't need a second autograd path on the
+        # inputs. Gradients still flow into the network's weights.
+        if weight_bound > 0:
+            _, P_at_col = pinn(
+                x_col.detach(), y_col.detach(), t_col.detach()
+            )
+            loss_bound = bound_penalty_P(P_at_col)
+        else:
+            # Compute (without grad) only for logging. Saves the second
+            # forward pass when the term has no effect on training.
+            with torch.no_grad():
+                _, P_at_col = pinn(
+                    x_col.detach(), y_col.detach(), t_col.detach()
+                )
+                loss_bound_value = float(bound_penalty_P(P_at_col).item())
+            loss_bound = torch.tensor(loss_bound_value, device=device)
+
         # Sanity-only IC penalty (zero weight by default).
         x_ic_rand = (x_low + torch.rand(n_ic, generator=g_cpu) * extent_x).to(device)
         y_ic_rand = (x_low + torch.rand(n_ic, generator=g_cpu) * extent_x).to(device)
@@ -109,7 +156,8 @@ def train_pinn_deprotection(
 
         loss = (weight_pde_H * loss_pde_H
                 + weight_pde_P * loss_pde_P
-                + weight_ic * loss_ic)
+                + weight_ic * loss_ic
+                + weight_bound * loss_bound)
         optim.zero_grad(set_to_none=True)
         loss.backward()
         optim.step()
@@ -122,6 +170,9 @@ def train_pinn_deprotection(
             losses_pde_H.append(float(loss_pde_H.item()))
             losses_pde_P.append(float(loss_pde_P.item()))
             losses_ic.append(float(loss_ic.item()))
+            losses_bound.append(float(loss_bound.item())
+                                if torch.is_tensor(loss_bound)
+                                else float(loss_bound))
 
     if device.type == "cuda":
         torch.cuda.synchronize()
@@ -133,6 +184,7 @@ def train_pinn_deprotection(
         loss_pde_H=losses_pde_H,
         loss_pde_P=losses_pde_P,
         loss_ic=losses_ic,
+        loss_bound=losses_bound,
         train_time_sec=train_time,
     )
 
