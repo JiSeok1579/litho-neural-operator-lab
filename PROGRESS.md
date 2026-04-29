@@ -67,6 +67,116 @@
 
 ---
 
+### A.7 Phase 4 — Partial coherence / source integration — ☑ done (2026-04-29)
+
+**What**
+- `src/optics/source.py` — five source-shape factories
+  (`coherent_source`, `annular_source`, `dipole_source`,
+  `quadrupole_source`, `random_source`) plus `sigma_axis` /
+  `sigma_meshgrid` / `source_points` (decode a 2D source tensor into
+  a `(K, 2)` sigma list and a `(K,)` weight list).
+- `src/optics/pupil.py` extended with `circular_pupil_at(grid, NA,
+  center_freq, wavelength)` — same API as `circular_pupil` but
+  centered at an arbitrary spatial frequency.
+- `src/optics/partial_coherence.py` —
+  `partial_coherent_aerial_image(transmission, grid, source, NA,
+  wavelength, normalize)`. Builds a `(K, N, N)` stack of shifted
+  pupils, runs the FFT chain in one batched pass, and sums weighted
+  intensities. End-to-end differentiable, so Phase 9's closed loop
+  can swap `coherent_aerial_image` for this with no plumbing change.
+- `src/common/metrics.py` (new module) — `image_contrast`,
+  `peak_intensity_in_region`, `integrated_leakage`, and a study-grade
+  `normalized_image_log_slope` for NILS.
+- `src/common/visualization.py` gained `show_source` (single panel in
+  sigma-space) and `show_partial_coherence_sweep` (3 rows: mask
+  reference, source, aerial — fixed mask, varying source).
+- `experiments/03_partial_coherence/demo_source_shapes.py` runs at
+  `n=256, extent=20 lambda, NA=0.4` and writes
+  `phase4_sources.png`, `phase4_aerial_line_space.png`,
+  `phase4_aerial_contact_hole.png`, plus a metrics CSV.
+- `configs/partial_coherence.yaml` — reference parameters.
+- `tests/test_source.py` (10), `tests/test_partial_coherence.py` (6),
+  `tests/test_metrics.py` (5) — 21 new tests, 70 / 70 green overall.
+
+**How**
+- Source coordinates are normalized partial-coherence factors
+  ``sigma in [-1, 1]^2``: ``sin(theta_source) = sigma * NA``.
+  Off-axis source point at ``sigma`` shifts the equivalent pupil to
+  ``sigma * NA / wavelength`` in cycles per length.
+- ``sigma_axis`` is built as ``arange(-half, half+1) / half`` rather
+  than ``linspace(-1, 1)`` so the center pixel is bit-exactly
+  ``sigma=0``. Without this, ``coherent_source`` fed through the
+  partial-coherence engine drifted ~2 % from a direct
+  `coherent_aerial_image` reference because a few-bin shift swapped
+  one or two boundary pixels of the pupil.
+- All shifted pupils are stacked along a leading batch dim and
+  multiplied with the (single) mask spectrum via broadcasting; the
+  whole sum is one ``ifft2c`` call on a ``(K, N, N)`` tensor.
+- Source weight normalization is **optional** (``normalize=True`` by
+  default for demos so different source densities are visually
+  comparable; ``False`` for inverse design where absolute intensity
+  matters).
+
+**Why**
+- Putting source factories into a dedicated module makes Phase 8 (FNO
+  surrogate) and Phase 9 (closed-loop) trivial: every illumination
+  is just a 2D float tensor, so we can mix-and-match without changing
+  the imaging engine.
+- Building the Hopkins integral as a batched FFT (instead of a Python
+  loop) keeps the cost flat: even with 332 source points (annular)
+  the demo runs sub-second on RTX 5080.
+- `circular_pupil_at` lives in `pupil.py` rather than
+  `partial_coherence.py` so other phases (e.g. tilted single-plane-wave
+  studies) can reuse it without importing the partial-coherence
+  module.
+
+**Why (this direction)**
+- Phase 4 is the first phase where "the mask is not the only thing
+  that matters" — illumination shape can rescue or destroy
+  resolution. This sets up Phase 9's surrogate-assisted inverse design,
+  which can co-optimize mask + source.
+
+**Verified results from `phase4_metrics.csv` (NA=0.4, lambda=1)**
+
+```
+vertical line-space, pitch=1.5 lambda
+  source       peak    contrast   leakage(3-6 lam)
+  coherent     0.321   0.247       3399
+  annular      0.398   0.348       3492
+  dipole-x     0.668   0.809       4162   <-- best on vertical lines
+  dipole-y     0.287   0.144       3390   <-- worst (perpendicular axis)
+  quadrupole   0.435   0.416       3559
+
+contact hole, r=0.5 lambda
+  source       peak    contrast   leakage(3-6 lam)
+  coherent     0.124   1.000       1.574  <-- best peak
+  annular      0.111   0.9999      1.558
+  dipole-x     0.105   0.9999      1.500
+  dipole-y     0.105   0.9999      1.500
+  quadrupole   0.110   0.9999      1.558
+```
+
+Physics from the table:
+- Vertical line-space at pitch 1.5 lambda has its fundamental at
+  fx = 0.667 cycles/lambda. On-axis NA=0.4 cannot capture it (cutoff
+  is 0.4 < 0.667), so coherent contrast collapses to 0.25.
+- Dipole-x at sigma=0.7 places the right pole's pupil center at fx ~
+  +0.28 cycles/lambda, whose +0.4 reach hits 0.68 — just above the
+  fundamental. Contrast jumps 3.3x and peak doubles.
+- Dipole-y is the worst case for vertical lines: it shifts only along
+  fy, leaving fx out of reach.
+- For the contact hole, coherent gives the highest peak (0.124);
+  off-axis sources spread energy and suppress the peak by ~10-15 %.
+
+**Next**
+- Phase 5: `src/resist/{exposure,diffusion_fd,diffusion_fft,
+  reaction_diffusion,threshold}.py` plus
+  `experiments/04_resist_diffusion/demo_dose_sweep.py` and
+  `demo_diffusion_length.py`. Land `outputs/figures/phase5_*` and a
+  metrics CSV showing CD-like width vs dose / diffusion length.
+
+---
+
 ### A.6 Phase 3 — Inverse aerial optimization — ☑ done (2026-04-29)
 
 **What**
@@ -311,7 +421,7 @@
 | 1 | Scalar diffraction | ☑ | mask FFT, diffraction spectrum figures |
 | 2 | Coherent aerial imaging | ☑ | pupil filtering, NA sweep |
 | 3 | Inverse aerial optimization | ☑ | gradient-descent mask optimization |
-| 4 | Partial coherence / source integration | ☐ | annular / dipole / quadrupole |
+| 4 | Partial coherence / source integration | ☑ | annular / dipole / quadrupole |
 | 5 | Resist exposure + diffusion | ☐ | FD / FFT diffusion, threshold contour |
 | 6 | PINN for diffusion | ☐ | PINN vs FD comparison |
 | 7 | Synthetic 3D mask correction | ☐ | correction dataset NPZ |
@@ -353,10 +463,15 @@
 - [x] `tests/test_inverse_losses.py`, `tests/test_optimize_mask.py` — 16 added (49 total green)
 
 ### Phase 4 — Partial coherence
-- [ ] `src/optics/source.py` — coherent / annular / dipole / quadrupole / random
-- [ ] `src/optics/partial_coherence.py` — incoherent sum over source points
-- [ ] `experiments/03_partial_coherence/demo_source_shapes.py`
-- [ ] `configs/partial_coherence.yaml`
+- [x] `src/optics/source.py` — `sigma_axis`, `sigma_meshgrid`, `coherent_source`, `annular_source`, `dipole_source` (x / y), `quadrupole_source` (cross / X), `random_source`, `source_points` decoder
+- [x] `src/optics/pupil.py` extended with `circular_pupil_at(grid, NA, center_freq, wavelength)` — off-axis pupil for the Hopkins integral
+- [x] `src/optics/partial_coherence.py` — `partial_coherent_aerial_image` (batched over source points, autograd-friendly)
+- [x] `src/common/metrics.py` (new) — `image_contrast`, `peak_intensity_in_region`, `integrated_leakage`, `normalized_image_log_slope`
+- [x] `src/common/visualization.py` extended with `show_source` and `show_partial_coherence_sweep` (3 rows: mask | source | aerial)
+- [x] `experiments/03_partial_coherence/demo_source_shapes.py` — line-space (pitch 1.5 lambda) and contact hole (r 0.5 lambda) imaged through 5 sources
+- [x] `configs/partial_coherence.yaml`
+- [x] `tests/test_source.py`, `tests/test_partial_coherence.py`, `tests/test_metrics.py` — 21 added (70 total green)
+- [x] Results table saved to `outputs/logs/phase4_metrics.csv`
 
 ### Phase 5 — Resist exposure + diffusion
 - [ ] `src/resist/exposure.py` — Dill-style acid generation
@@ -468,6 +583,15 @@
   Phase 9 will wrap this function inside a surrogate-assisted loop where
   named fields make the plumbing far more readable than positional
   unpacks would.
+- **2026-04-29** `sigma_axis` uses `arange(-half, half+1) / half` rather
+  than `linspace(-1, 1)`. The float32 rounding of linspace put the center
+  pixel at ~5e-8 instead of 0, which shifted the equivalent pupil enough
+  to swap a few boundary pixels and broke the "delta source = coherent
+  imaging" sanity check by ~2 %.
+- **2026-04-29** Hopkins integral evaluated as a batched FFT over a
+  `(K, N, N)` pupil stack rather than a Python loop. With ~300 source
+  points (annular) on n=256 the loop cost is dominated by FFT and the
+  whole demo finishes in under a second on RTX 5080.
 
 ---
 
@@ -502,3 +626,13 @@
   `src/optics/partial_coherence.py` (incoherent sum over shifted
   pupils), then run a sweep demo on a vertical line-space and a contact
   hole — save figures as `outputs/figures/phase4_*`.
+- **2026-04-29** Phase 4 done (partial coherence). 70 tests green. Five
+  source shapes imaged on two masks; metrics CSV saved at
+  `outputs/logs/phase4_metrics.csv`. Verified that dipole-x triples the
+  contrast of vertical line-space at pitch 1.5 lambda (0.81 vs
+  coherent 0.25), dipole-y is the worst, and the contact hole prefers
+  coherent illumination for peak intensity. Resume with Phase 5: add
+  `src/resist/{exposure,diffusion_fd,diffusion_fft,reaction_diffusion,
+  threshold}.py` + the two `experiments/04_resist_diffusion/demo_*.py`
+  scripts, save figures as `outputs/figures/phase5_*`, and add a
+  `phase5_metrics.csv` with CD-like width vs dose / diffusion length.
