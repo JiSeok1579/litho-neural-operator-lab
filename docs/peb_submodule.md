@@ -1,8 +1,10 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 5 done (synthetic aerial + exposure, FD / FFT
-diffusion baselines, PINN diffusion, acid loss, deprotection P-field).
-Phases 6 – 11 planned. 83 PEB tests green; total repo tests at 215 / 215.
+**Status:** Phases 1 – 6 done (synthetic aerial + exposure, FD / FFT
+diffusion baselines, PINN diffusion, acid loss, deprotection P-field,
+Arrhenius temperature). Phases 7 – 11 planned. Open follow-ups in
+[`reaction_diffusion_peb/FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md).
+95 PEB tests green; total repo tests at 227 / 227.
 
 ## Goal
 
@@ -30,7 +32,7 @@ the submodule:
 | 3 | PINN diffusion vs FD / FFT | ✅ done |
 | 4 | Acid loss `kloss` | ✅ done |
 | 5 | Deprotection `kdep` (`P` field) | ✅ done |
-| 6 | Arrhenius temperature dependence | planned |
+| 6 | Arrhenius temperature dependence | ✅ done (FD-only) |
 | 7 | Quencher reaction (`kq` safe vs stiff target) | planned |
 | 8 | Full reaction-diffusion (everything combined) | planned |
 | 9 | Save FD / PINN runs as a dataset | planned |
@@ -302,13 +304,80 @@ PINN comparison at ``kdep = 0.5, t = 60 s``:
   phases that need bounded outputs should add a soft penalty on
   ``relu(-P) + relu(P - 1)`` to the PINN loss.
 
+## Phase 6 — what's already there
+
+```text
+reaction_diffusion_peb/
+  src/arrhenius.py                arrhenius_factor(T_c, T_ref_c, Ea_kj_mol),
+                                  apply_arrhenius_to_rates,
+                                  evolve_acid_loss_deprotection_fd_at_T
+                                  (Phase-5 evolver wrapper that scales
+                                  kdep / kloss before calling).
+
+  experiments/06_temperature_peb/
+    run_temperature_sweep.py    T sweep {80, 90, 100, 110, 120, 125} °C
+                                + Ea=0 control (criterion 3).
+    run_time_sweep.py            t sweep {60, 75, 90} s at T = T_ref.
+```
+
+PINN is intentionally not retrained in Phase 6 — the existing
+Phase-5 PINN was trained for one fixed (kdep, kloss) and cannot
+generalize across temperatures without taking T as an extra input.
+That extension is tracked in
+[`reaction_diffusion_peb/FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md)
+item 2.
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase6_fd_temperature_sweep_metrics.csv`
+(T_ref = 100 °C, Ea = 100 kJ/mol, kdep_ref = 0.5 s⁻¹, kloss_ref = 0.005
+s⁻¹, t = 60 s):
+
+| T (°C) | factor | kdep_eff | kloss_eff | P_max | P_mean | area(P>0.5) px |
+|---|---|---|---|---|---|---|
+| 80 | 0.1611 | 0.0806 | 0.000806 | 0.3901 | 0.0368 | 0 |
+| 90 | 0.4116 | 0.2058 | 0.002058 | 0.7051 | 0.0771 | 820 |
+| 100 | **1.0000** | 0.5000 | 0.005000 | 0.9358 | 0.1310 | 1876 |
+| 110 | 2.3193 | 1.1597 | 0.011597 | 0.9955 | 0.1801 | 2684 |
+| 120 | 5.1539 | 2.5769 | 0.025769 | 0.9998 | 0.2101 | 3196 |
+| 125 (MOR) | 7.5682 | 3.7841 | 0.037841 | 1.0000 | 0.2159 | 3276 |
+
+`Ea = 0` control (criterion 3): for T ∈ {80, 100, 125} the factor is
+1.0000, ``P_max`` is 0.9358 and threshold area is 1876 — identical
+across temperatures, confirming the temperature dependence is gated
+by the Arrhenius term alone.
+
+Time sweep at T = T_ref (factor = 1):
+
+| t (s) | P_max | P_mean | area(P>0.5) px |
+|---|---|---|---|
+| 60 | 0.9358 | 0.1310 | 1876 |
+| 75 | 0.9588 | 0.1485 | 2136 |
+| 90 | 0.9719 | 0.1638 | 2348 |
+
+All five Phase-6 verification criteria pass:
+
+1. ✅ T = T_ref → factor = 1.0000 exactly.
+2. ✅ T > T_ref with Ea > 0 → factor > 1 (110 °C: 2.32, 125 °C: 7.57).
+3. ✅ Ea = 0 → factor identically 1 at every T.
+4. ✅ P_max and area(P > 0.5) increase monotonically with T
+   (0.39 → 1.00 ; 0 → 3276 px).
+5. ✅ 125 °C MOR preset gives a clearly faster reaction (factor 7.57,
+   area 3276 px) than the 100 °C reference (1876 px).
+
 ## Where to start when reopening
 
-Next milestone is Phase 6: Arrhenius temperature dependence. The H
-and P equations from Phase 5 stay the same, but ``k_loss``,
-``k_dep`` (and later ``k_q``) become temperature-dependent through
-``k(T) = k_ref * exp(-Ea / R * (1/T - 1/T_ref))``. The PINN will see
-``T`` as either a fixed scalar or an additional input feature.
+Phase 7 introduces the acid–quencher reaction:
+
+```text
+dH/dt = D_H ∇²H − k_q H Q − k_loss H
+dQ/dt = D_Q ∇²Q − k_q H Q
+```
+
+with ``Q(x, y, 0) = Q_0`` constant. ``k_q`` in the realistic range
+``[100, 1000] s⁻¹`` is **stiff** — the PLAN explicitly says to start
+at ``k_q ∈ {1, 5, 10}`` and only push higher with semi-implicit /
+operator-splitting machinery in place. The deprotection equation
+from Phase 5 stays unchanged.
 
 ## See also
 
