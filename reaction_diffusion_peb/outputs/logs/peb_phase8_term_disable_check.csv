@@ -1,0 +1,6 @@
+case,compared_against,max|H_full - H_ref|,max|P_full - P_ref|,tolerance,pass
+T = T_ref,Phase 7 quencher,0.000e+00,0.000e+00,1e-10,yes
+Ea = 0  (T = 125 C),Phase 7 quencher,0.000e+00,0.000e+00,1e-10,yes
+kq = 0  (T = 110 C),"Phase 6 Arrhenius (H, P)",0.000e+00,0.000e+00,1e-5,yes
+"kq = 0, kdep = 0",Phase 4 acid loss,0.000e+00,0.000e+00,1e-5,yes
+"kq = 0, kdep = 0, kloss = 0",Phase 2 pure diffusion,8.941e-08,0.000e+00,1e-5,yes

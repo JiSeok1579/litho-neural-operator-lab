@@ -1,0 +1,4 @@
+solver,max_abs_err_vs_fft,mean_abs_err_vs_fft,L2_rel_err_vs_fft,wallclock_per_call_ms,extra_info
+FFT,0.000e+00,0.000e+00,0.000e+00,0.0914,exact heat kernel
+FD,2.584e-06,6.009e-07,4.683e-05,13.820,"dx=1.0 nm, periodic BC"
+PINN,1.851e-02,2.311e-03,1.980e-01,0.300,after 42.0 s training

@@ -1,0 +1,9 @@
+scenario,mass_H_initial,mass_H_final,acid_loss_integral,mass_budget_final,mass_budget_relative_error
+phase5  kloss=0           kdep=0.0,144.1492,144.1492,0.0000,144.1492,3.176e-07
+phase5  kloss=0           kdep=0.5,144.1492,144.1492,0.0000,144.1492,3.176e-07
+phase5  kloss=0.005       kdep=0.5,144.1492,106.7759,37.3734,144.1492,1.056e-07
+phase5  kloss=0.05 (10x)  kdep=0.5,144.1492,7.0927,137.0565,144.1492,2.321e-08
+phase6  T= 80 °C  (factor 0.16),144.1492,137.3461,6.8031,144.1492,9.934e-08
+phase6  T=100 °C  (factor 1.00),144.1492,106.7759,37.3734,144.1492,1.056e-07
+phase6  T=120 °C  (factor 5.15),144.1492,30.6171,113.5321,144.1492,1.060e-08
+phase6  T=125 °C MOR (factor 7.57),144.1492,14.7857,129.3635,144.1492,1.455e-08

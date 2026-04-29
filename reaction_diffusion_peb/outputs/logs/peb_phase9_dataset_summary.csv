@@ -1,0 +1,3 @@
+regime,file,n_samples,grid,kq_min,kq_max,mean_P_max,mean_R_px,train,val,test
+safe,peb_phase9_safe_dataset.npz,64,128x128,0.502,4.95,0.3947,573,52,6,6
+stiff,peb_phase9_stiff_dataset.npz,8,128x128,281,969,0.0824,0,6,1,1

@@ -1,0 +1,5 @@
+case,mean_intensity_target,mean_intensity_forbidden,loss_target,loss_background
+A physics-only,0.9890,0.0701,0.0005,0.0341
+B true correction,0.9893,0.0717,0.0005,0.0351
+C FNO (predicted),0.9817,0.0678,0.0021,0.0281
+C validated under true correction,1.0913,0.0749,0.0103,0.0352
