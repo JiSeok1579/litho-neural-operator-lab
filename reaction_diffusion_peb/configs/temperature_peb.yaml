@@ -1,0 +1,40 @@
+# Reference parameters for PEB Phase 6 — Arrhenius temperature dependence.
+# Strict scope: only kdep(T) and kloss(T) get the Arrhenius correction.
+# kq_ref is listed for forward compatibility but is NOT used in this phase.
+
+problem:
+  sigma_nm: 12.0
+  Hmax_mol_dm3: 0.2
+  eta: 1.0
+  dose: 1.0
+  DH_nm2_s: 0.8
+  kdep_ref_s_inv: 0.5
+  kloss_ref_s_inv: 0.005
+  # kq_ref is reserved for Phase 7. Phase 6 uses no quencher reaction.
+  kq_ref_s_inv: 1.0
+
+arrhenius:
+  enabled: true
+  activation_energy_kj_mol: 100.0
+  temperature_ref_c: 100.0
+
+peb:
+  temperature_c: 100.0
+  time_s: 60.0
+
+grid:
+  grid_size: 128
+  grid_spacing_nm: 1.0
+
+threshold:
+  P_threshold: 0.5
+
+# Phase 6 sweeps
+sweep:
+  temperature_c: [80, 90, 100, 110, 120, 125]
+  time_s: [60, 75, 90]
+  activation_energy_kj_mol: [100]
+
+# 125°C is the MOR preset — the high-T preset used as a stress test.
+mor_preset:
+  temperature_c: 125.0
