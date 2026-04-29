@@ -39,7 +39,7 @@ file-based hand-off (`outputs/aerial_image.npy` →
 | 7 — acid–quencher reaction | ✅ done (FD only — safe + stiff `kq` regimes; PINN training deferred — see [FUTURE_WORK.md](./FUTURE_WORK.md)) |
 | 8 — full reaction-diffusion | ✅ done (FD only — Arrhenius-scaled (H, Q, P); term-disable check vs Phases 2/4/6/7 closes to machine precision; PINN deferred) |
 | 9 — dataset generation | ✅ done (FD only — safe-`kq` and stiff-`kq` `.npz` archives + metadata + train/val/test splits; PINN dataset deferred) |
-| 10 — DeepONet / FNO surrogate (optional) | planned |
+| 10 — DeepONet / FNO surrogate (optional) | ✅ done (FNO only — train + eval on safe / stiff Phase-9 archives; small-data + wide-parameter regime degrades sharply; informative failure logged) |
 | 11 — advanced stochastic / Petersen / z-axis | planned |
 
 ## Quick start
@@ -90,6 +90,10 @@ python reaction_diffusion_peb/experiments/08_full_reaction_diffusion/run_term_di
 # Phase 9: dataset generation (FD only; safe + stiff .npz archives)
 python reaction_diffusion_peb/experiments/09_dataset_generation/generate_fd_dataset.py
 python reaction_diffusion_peb/experiments/09_dataset_generation/validate_dataset.py
+
+# Phase 10: FNO operator surrogate (optional; train + evaluate)
+python reaction_diffusion_peb/experiments/10_operator_learning_optional/train_fno.py
+python reaction_diffusion_peb/experiments/10_operator_learning_optional/evaluate_operator_surrogate.py
 ```
 
 Outputs land under `reaction_diffusion_peb/outputs/{figures, logs,

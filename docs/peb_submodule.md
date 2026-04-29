@@ -1,13 +1,14 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 9 done (Phase 9 packages the Phase-8 integrated
-FD evolver into ``.npz`` datasets — separate safe-``k_q`` and
-stiff-``k_q`` archives with metadata + train/val/test splits, ready
-for Phase 10 surrogate training). Phases 10 – 11 planned. Open
-follow-ups in
+**Status:** Phases 1 – 10 done (Phase 10 trains a small 2D FNO on the
+safe Phase-9 archive and evaluates it on the safe-test split plus the
+full stiff archive; the surrogate degrades sharply at this
+sample count and parameter range — that mirrors the main project's
+Phase-9 finding and is logged as an informative failure). Phase 11
+planned. Open follow-ups in
 [`reaction_diffusion_peb/FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md)
 (items 1 and 4 closed; items 2 and 3 still open).
-161 PEB tests green; total repo tests at 293 / 293.
+177 PEB tests green; total repo tests at 309 / 309.
 
 ## Goal
 
@@ -39,7 +40,7 @@ the submodule:
 | 7 | Quencher reaction (`kq` safe vs stiff target) | ✅ done (FD-only) |
 | 8 | Full reaction-diffusion (everything combined) | ✅ done (FD-only) |
 | 9 | Save FD / PINN runs as a dataset | ✅ done (FD-only) |
-| 10 | DeepONet / FNO operator surrogate (optional) | planned |
+| 10 | DeepONet / FNO operator surrogate (optional) | ✅ done (FNO-only) |
 | 11 | Petersen / temperature uniformity / z-axis | planned |
 
 ## Key constraints (from the plan)
@@ -618,14 +619,99 @@ matching `generate_pinn_dataset.py` script is not implemented in this
 phase. The ``solver`` field in metadata is reserved as the
 discriminator for when that future dataset arrives.
 
+## Phase 10 — what's already there
+
+```text
+reaction_diffusion_peb/
+  src/fno_surrogate.py         SpectralConv2d, FNOBlock, FNO2d,
+                               INPUT/OUTPUT_*_NAMES, make_input_tensor,
+                               make_output_tensor, ChannelStats,
+                               fit_channel_stats, relative_l2,
+                               per_channel_relative_l2,
+                               thresholded_iou, build_fno_for_dataset,
+                               manual_seed_everything.
+
+  experiments/10_operator_learning_optional/
+    train_fno.py                  FNO2d (width 32, 4 blocks, 16 modes,
+                                  ~2.1 M params); 300 epochs of AdamW
+                                  cosine; ~8 s wall on the safe archive.
+    evaluate_operator_surrogate.py
+                                  Reload checkpoint; rel-L2 + threshold
+                                  IoU on the safe-test split and the
+                                  full stiff archive; worst-case figure.
+```
+
+Operator learned (FNO; DeepONet is intentionally not implemented —
+plan says ``DeepONet and / or FNO`` and FNO matches the regular-grid
+``128 x 128`` inputs more naturally):
+
+```text
+inputs (10 channels):
+  H0                                        (one 2D field)
+  DH, DQ_ratio, kq_ref, kdep_ref, kloss_ref,
+  Q0, T_c (centered on T_ref), Ea, t_end    (broadcast scalars)
+
+outputs (2 channels):
+  H_final, P_final                          (R recovered by thresholding)
+```
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase10_fno_evaluation.csv`
+(checkpoint trained for 300 epochs on the 52-sample safe-train split):
+
+| dataset | n | rel-L2 H_final | rel-L2 P_final | IoU(P>0.5) mean | wall |
+|---|---|---|---|---|---|
+| safe_test | 6 | 8.4e-01 | 2.4e-01 | 0.0000 | 149 ms first call / sub-ms after |
+| stiff_full | 8 | 2.3e+02 | 9.7e+01 | 0.0000 | 0.4 ms / sample |
+
+What the numbers say:
+
+1. ✅ The FNO trains end-to-end without instability — train MSE drops
+   from 9.6e-1 to 2.2e-4 over 300 epochs, the loss-history CSV is
+   monotone after the first 30 epochs.
+2. ⚠️  P-channel rel-L2 on the safe-test split is ~24 %. That is far
+   from production quality — same magnitude of error as a Phase-3 PINN.
+3. ❌ Threshold IoU is **zero** across both safe-test and stiff-full
+   splits. The FNO output is too smooth to cross ``P = 0.5`` even when
+   the FD truth does — the worst-case figure
+   (`peb_phase10_fno_worst_case_safe.png`) makes this visible.
+4. ❌ The stiff archive is catastrophically out-of-distribution: the
+   training distribution drew ``k_q`` from ``[0.5, 5]``, while stiff
+   samples have ``k_q`` from ``[100, 1000]``. The FNO cannot extrapolate
+   across two orders of magnitude in a reaction rate from a 52-sample
+   training set, and the rel-L2 explodes to 23 000 % / 9 700 %.
+5. ✅ Inference wall-clock at ~0.4 ms/sample (after warmup) is ~5–25×
+   faster than the Phase-8 FD evolver depending on regime. So the
+   surrogate could be useful **once** the data and architecture
+   problems are addressed; not before.
+
+This mirrors the main project's Phase-9 closed-loop finding — a small
+FNO trained on a small dataset gives the wrong answer fast. The point
+of Phase 10 in the PEB submodule is making that result legible *before*
+anyone tries to drop the surrogate into an inverse-design loop.
+
+What would move the needle (FUTURE_WORK candidates, not done here):
+
+- **More samples.** 52 → 1000+ is the obvious lever; even with the
+  current architecture the rel-L2 on P should drop sharply.
+- **Narrower kq range per surrogate.** Train one model per regime
+  (safe / stiff) and stop expecting cross-regime extrapolation.
+- **Explicit ``R`` head.** Pre-thresholding ``R`` as a separate output
+  channel with a soft-IoU loss would make the threshold-crossing
+  failure go away even at the same rel-L2.
+- **PINN regularization.** The PDE residual is fully analytic; adding
+  it as an auxiliary loss is a natural physics-informed extension.
+- **DeepONet branch.** The plan also lists DeepONet; it is a different
+  story for irregular sampling and is left as an open extension.
+
 ## Where to start when reopening
 
-Phase 10 (DeepONet / FNO operator surrogate, optional) is the natural
-next step. Inputs are everything in the ``.npz`` per-sample inputs
-(``I``, ``H0``, scalar parameters); the targets are ``P_final`` and
-``R``. The safe archive is large enough for an end-to-end training
-loop sanity check; the stiff archive is the harder out-of-distribution
-test. Both archives carry train / val / test splits in the metadata.
+Phase 11 (advanced stochastic / Petersen / z-axis effects) is the
+remaining major topic in the plan and is currently still planned.
+Within the existing Phase-1–10 framework, the most useful single
+lever for surrogate quality is regenerating Phase 9 with ~1000
+samples and rerunning Phase 10 — the existing scripts handle that
+without changes.
 
 ## See also
 
