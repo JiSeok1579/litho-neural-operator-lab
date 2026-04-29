@@ -1,0 +1,37 @@
+# Phase 8 — full reaction-diffusion reference parameters.
+# Combines Phase 5 (H, P) + Phase 6 Arrhenius + Phase 7 quencher.
+# Reference rates (kq_ref, kdep_ref, kloss_ref) are scaled by the
+# Arrhenius factor when temperature_c != temperature_ref_c.
+
+problem:
+  sigma_nm: 12.0
+  Hmax_mol_dm3: 0.2
+  eta: 1.0
+  dose: 1.0
+  DH_nm2_s: 0.8
+  DQ_ratio: 0.1                       # DQ = DQ_ratio * DH
+  Q0_mol_dm3: 0.1
+  t_end_s: 60.0
+
+reaction_ref:
+  kq_ref_s_inv: 1.0                   # safe-regime reference
+  kdep_ref_s_inv: 0.5
+  kloss_ref_s_inv: 0.005
+
+arrhenius:
+  enabled: true
+  activation_energy_kj_mol: 100.0
+  temperature_ref_c: 100.0
+
+grid:
+  grid_size: 128
+  grid_spacing_nm: 1.0
+
+threshold:
+  P_threshold: 0.5
+
+# Phase 8 demo sweeps the temperature on the integrated system; the
+# kq sweep is intentionally NOT repeated here — that lives in the
+# Phase 7 demos.
+sweep:
+  temperature_c: [80.0, 90.0, 100.0, 110.0, 120.0]
