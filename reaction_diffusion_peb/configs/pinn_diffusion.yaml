@@ -1,0 +1,36 @@
+# Reference parameters for PEB Phase 3 — PINN diffusion baseline.
+# Demos hard-code matching values; this file is documentation.
+
+problem:
+  sigma_nm: 12.0          # initial Gaussian-spot sigma in nm
+  Hmax_mol_dm3: 0.2
+  eta: 1.0
+  dose: 1.0
+  DH_nm2_s: 0.8
+  t_end_s: 60.0
+
+grid:
+  grid_size: 128
+  grid_spacing_nm: 1.0    # extent = 128 nm
+
+pinn:
+  hidden: 64
+  n_hidden_layers: 4
+  n_fourier: 16
+  fourier_scale: 1.0
+  activation: tanh
+  hard_ic: true
+  seed: 0
+
+training:
+  n_iters: 5000
+  lr: 1.0e-3
+  weight_decay: 0.0
+  n_collocation: 4096
+  n_ic: 512
+  n_ic_grid_side: 16
+  weight_pde: 1.0
+  weight_ic: 0.0          # hard_ic enforces IC architecturally
+  lr_decay_step: 2000
+  lr_decay_gamma: 0.5
+  log_every: 50
