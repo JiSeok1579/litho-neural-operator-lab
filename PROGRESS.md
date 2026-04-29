@@ -69,6 +69,108 @@
 
 ---
 
+### A.10 Phase 7 — Synthetic 3D mask correction dataset — ☑ done (2026-04-29)
+
+**What**
+- `src/neural_operator/synthetic_3d_correction_data.py`
+  - `CorrectionParams` dataclass (gamma / alpha / beta / delta / s / c)
+    with `to_array` / `from_array` / `identity` helpers.
+  - `correction_operator(grid, params)` builds the closed-form complex
+    correction `C(fx, fy)` on a Grid2D as
+    ``C = exp(-gamma * |f|^2) * exp(i * (alpha fx + beta fy +
+    delta * (fx^2 - fy^2))) * (1 + s * tanh(c * fx))``.
+  - `apply_3d_correction(T_thin, C)` — multiplicative pairing.
+  - `sample_correction_params(rng, ranges)` draws theta uniformly within
+    `DEFAULT_RANGES` (gamma 0..0.30, alpha / beta -0.40..0.40, delta
+    -0.30..0.30, s -0.40..0.40, c 0..4.0).
+  - `random_mask_sampler(grid, seed)` mixes 50 % block-random binary +
+    25 % line-space + 25 % contact-hole arrangements.
+  - `generate_dataset(grid, n_samples, output_path, seed)` produces a
+    compressed NPZ with `masks`, `T_thin_real / T_thin_imag`,
+    `T_3d_real / T_3d_imag`, `theta`, `theta_names`, `grid_n`,
+    `grid_extent`. Returns a summary dict for logging.
+  - `load_dataset(path)` mirror of the saver.
+- `src/common/visualization.py` gained `show_correction_samples` for
+  per-sample 5-panel rows (mask | |T_thin| | |C| | |T_3d| | |Delta T|)
+  with frequency zoom + percentile clipping.
+- `experiments/06_fno_correction/generate_synthetic_dataset.py` runs
+  on `n=128, extent=8 lambda` and writes the train (800 samples) and
+  test (200 samples) NPZs plus a 4-row preview figure and a summary
+  CSV.
+- `tests/test_synthetic_correction.py` — 11 tests covering identity
+  parameters, multiplicative pairing, amplitude / phase symmetry
+  contracts, asymmetric-shadow non-symmetry, gamma differentiability,
+  CorrectionParams roundtrip, sampling-range bounds, mask-sampler
+  binary contract, NPZ key set + shapes, and a recompute-from-saved-
+  theta consistency check (T_3d == T_thin * correction_operator(theta)
+  to better than 1e-5 relative).
+
+**How**
+- The correction operator is intentionally synthetic. Real 3D mask
+  effects (absorber height, sidewall angle, oblique incidence,
+  polarization, multi-layer interference) require RCWA / FDTD; we are
+  building a closed-form analogue so the Phase-8 FNO surrogate can be
+  benchmarked against an exact reference.
+- Data layout uses real / imaginary channels separately rather than
+  PyTorch's complex dtype because NPZ stores numpy arrays and numpy's
+  complex64 is awkward to consume from the FNO side. Phase 8 will
+  reassemble the complex form on load.
+- `theta` is stored as a length-6 vector per sample. Phase 8 / 9
+  broadcast each component to a spatial channel inside the dataloader
+  rather than burning storage on N x 6 x H x W maps.
+- Mask sampler uses three families with mixed weights so the dataset
+  covers periodic / random / structured patterns. `block_size = 2..8`
+  in random_binary deliberately keeps features above 1 lambda where the
+  spectrum has visible diffraction orders rather than degenerating to
+  white noise.
+
+**Why**
+- A single closed-form correction operator gives Phase 8 / 9 something
+  exact to compare against — both the surrogate and the closed-loop
+  experiment can run "true" vs "predicted" diff plots without any
+  RCWA dependency.
+- Storing `T_thin` and `T_3d` separately (rather than only one and the
+  recipe to compute the other) wastes a bit of disk but makes the
+  dataset self-contained for follow-up phases that may want to predict
+  `T_3d` directly, predict `Delta T`, or experiment with both
+  parameterizations.
+- The mask families are kept simple (no aerial-image processing here)
+  because the FNO is learning the correction operator, not the
+  imaging chain.
+
+**Verified results from `phase7_dataset_summary.csv`**
+
+```
+split  n     |T_thin|  |T_3d|   |Delta T|  gamma   alpha   beta    delta   s       c
+train  800   0.1622    0.0643   0.1260     +0.150  -0.010  -0.006  +0.003  +0.014  2.018
+test   200   0.1397    0.0547   0.1064     +0.148  +0.007  -0.026  +0.011  +0.009  1.955
+```
+
+Signal sanity:
+- The correction is substantial: ``|Delta T| / |T_thin|`` is roughly
+  78 % on train and 76 % on test, so there is real geometry for an
+  FNO to fit (a low ``|Delta T|`` would mean the dataset is mostly
+  identity and an ``output = input`` baseline already wins).
+- ``|T_3d| / |T_thin|`` is roughly 40 %, which matches the expected
+  bulk attenuation from a non-zero gamma sampled in [0, 0.3] (mean
+  0.15, attenuating high-frequency content by ``exp(-0.15 * |f|^2)``).
+- theta means are centered on the midpoints of their sampling ranges
+  with reasonable variance — no sampler is biased.
+- Data generation was IO-bound and finished in 3.6 s (train) + 0.8 s
+  (test) on a CUDA GPU.
+
+**Next**
+- Phase 8: train an FNO 2D and (optionally) a DeepONet on the saved
+  NPZs. Inputs ``(mask, Re(T_thin), Im(T_thin), theta-broadcast)``,
+  outputs ``(Re(Delta T), Im(Delta T))`` (or ``Re(T_3d), Im(T_3d))``).
+  Loss: spectrum MSE + a physics-aware aerial-image term so spectrum
+  errors that don't matter for imaging do not dominate. Save trained
+  checkpoints under `outputs/checkpoints/` and a metrics CSV with
+  spectrum MSE, complex relative error, and downstream aerial-image
+  MSE on the test split.
+
+---
+
 ### A.9 Phase 6 — PINN for the 2D heat equation — ☑ done (2026-04-29)
 
 **What**
@@ -670,7 +772,7 @@ Physics from the table:
 | 4 | Partial coherence / source integration | ☑ | annular / dipole / quadrupole |
 | 5 | Resist exposure + diffusion | ☑ | FD / FFT diffusion, threshold contour |
 | 6 | PINN for diffusion | ☑ | PINN vs FD comparison |
-| 7 | Synthetic 3D mask correction | ☐ | correction dataset NPZ |
+| 7 | Synthetic 3D mask correction | ☑ | correction dataset NPZ |
 | 8 | FNO / DeepONet surrogate | ☐ | surrogate `.pt` checkpoint |
 | 9 | Closed-loop surrogate-assisted inverse | ☐ | surrogate vs true comparison |
 | 10 | Active learning (optional) | ☐ | ensemble uncertainty |
@@ -743,10 +845,14 @@ Physics from the table:
 - [x] Metrics CSV: `outputs/logs/phase6_metrics.csv`
 
 ### Phase 7 — Synthetic 3D correction dataset
-- [ ] `src/neural_operator/synthetic_3d_correction_data.py`
-- [ ] `experiments/06_fno_correction/generate_synthetic_dataset.py`
-- [ ] `outputs/datasets/synthetic_3d_correction_train.npz`
-- [ ] `outputs/datasets/synthetic_3d_correction_test.npz`
+- [x] `src/neural_operator/synthetic_3d_correction_data.py` — `CorrectionParams`, `correction_operator`, `apply_3d_correction`, `sample_correction_params`, `random_mask_sampler`, `generate_dataset`, `load_dataset`
+- [x] `src/common/visualization.py` extended — `show_correction_samples` (rows of mask | |T_thin| | |C| | |T_3d| | |Delta T|)
+- [x] `experiments/06_fno_correction/generate_synthetic_dataset.py` — preview + train/test NPZ generation
+- [x] `outputs/datasets/synthetic_3d_correction_train.npz` (800 samples, n=128)
+- [x] `outputs/datasets/synthetic_3d_correction_test.npz` (200 samples, n=128)
+- [x] `outputs/figures/phase7_correction_samples.png`
+- [x] `outputs/logs/phase7_dataset_summary.csv`
+- [x] `tests/test_synthetic_correction.py` — 11 added (116 total green)
 
 ### Phase 8 — FNO / DeepONet surrogate
 - [ ] `src/neural_operator/fno2d.py`
@@ -939,3 +1045,10 @@ Physics from the table:
   escape a trivial soft-IC local minimum where the network predicts ~0
   for `t > 0`. Resume with Phase 7: synthetic 3D mask correction
   dataset (no training yet, just the data pipeline).
+- **2026-04-29** Phase 7 done (synthetic 3D-mask correction dataset).
+  116 tests green. 800 train + 200 test samples generated at n=128 in
+  4.4 s on GPU. The correction is substantial (|Delta T| / |T_thin| ~
+  77 %), so the dataset has real geometry for an FNO to fit. Resume
+  with Phase 8: train FNO 2D (and optional DeepONet) on the saved
+  NPZs; report spectrum MSE, complex relative error, and downstream
+  aerial-image MSE.

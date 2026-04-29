@@ -619,6 +619,75 @@ def show_pinn_training(history: list[dict], suptitle: str = ""):
     return fig
 
 
+def show_correction_samples(
+    samples: list[dict],
+    extent: float | None = None,
+    df: float | None = None,
+    freq_zoom: int | None = 16,
+    suptitle: str = "",
+):
+    """One row per sample: mask | |T_thin| | |C| | |T_3d| | |Delta T|.
+
+    ``samples`` is a list of dicts with keys ``mask``, ``T_thin``, ``C``,
+    ``T_3d`` (all 2D torch tensors). Spectra are zoomed to the central
+    ``2 * freq_zoom`` bins and clipped at the 99th percentile so weak
+    side-lobes are visible.
+    """
+    n_rows = len(samples)
+    fig, axes = plt.subplots(n_rows, 5, figsize=(20, 4 * n_rows))
+    if n_rows == 1:
+        axes = axes.reshape(1, 5)
+    real_ext = None if extent is None else (-extent / 2, extent / 2, -extent / 2, extent / 2)
+
+    for r, s in enumerate(samples):
+        mask = s["mask"]; T_thin = s["T_thin"]; C = s["C"]; T_3d = s["T_3d"]
+        delta = T_3d - T_thin
+        n = T_thin.shape[-1]
+
+        amp_T_thin = _to_numpy(T_thin.abs())
+        amp_C = _to_numpy(C.abs())
+        amp_T_3d = _to_numpy(T_3d.abs())
+        amp_delta = _to_numpy(delta.abs())
+        if freq_zoom is not None:
+            amp_T_thin = _crop_center(amp_T_thin, freq_zoom)
+            amp_C = _crop_center(amp_C, freq_zoom)
+            amp_T_3d = _crop_center(amp_T_3d, freq_zoom)
+            amp_delta = _crop_center(amp_delta, freq_zoom)
+            if df is not None:
+                fmax = freq_zoom * df
+                freq_ext = (-fmax, fmax, -fmax, fmax)
+            else:
+                freq_ext = None
+        else:
+            if df is None:
+                freq_ext = None
+            else:
+                fmax = (n / 2) * df
+                freq_ext = (-fmax, fmax, -fmax, fmax)
+
+        mask_img = _to_numpy(mask.real if torch.is_complex(mask) else mask)
+        axes[r, 0].imshow(mask_img, cmap="gray", extent=real_ext, origin="lower",
+                          vmin=0.0, vmax=1.0)
+        axes[r, 0].set_title("mask"); axes[r, 0].set_xlabel("x"); axes[r, 0].set_ylabel("y")
+
+        for ax, name, img in (
+            (axes[r, 1], "|T_thin|", amp_T_thin),
+            (axes[r, 2], "|C|",      amp_C),
+            (axes[r, 3], "|T_3d|",   amp_T_3d),
+            (axes[r, 4], "|Delta T|", amp_delta),
+        ):
+            vmax = float(np.percentile(img, 99.0))
+            im = ax.imshow(img, cmap="viridis", extent=freq_ext, origin="lower",
+                           vmin=0.0, vmax=max(vmax, 1e-12))
+            ax.set_title(name); ax.set_xlabel("fx"); ax.set_ylabel("fy")
+            fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
