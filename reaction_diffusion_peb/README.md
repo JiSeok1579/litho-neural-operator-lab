@@ -35,6 +35,7 @@ file-based hand-off (`outputs/aerial_image.npy` →
 | 4 — acid loss | ✅ done |
 | 5 — deprotection | ✅ done |
 | 6 — Arrhenius temperature | ✅ done (FD-only; PINN deferred — see [FUTURE_WORK.md](./FUTURE_WORK.md)) |
+| pre-Phase-7 diagnostics | ✅ done — mass-budget + PINN bound-penalty soft term (`weight_bound = 0.01` default), see [FUTURE_WORK.md](./FUTURE_WORK.md) items 1 & 4 |
 | 7 — acid–quencher reaction | planned |
 | 8 — full reaction-diffusion | planned |
 | 9 — dataset generation | planned |
@@ -68,6 +69,10 @@ python reaction_diffusion_peb/experiments/04_acid_loss/compare_fd_pinn.py
 # Phase 6: Arrhenius temperature dependence (FD only)
 python reaction_diffusion_peb/experiments/06_temperature_peb/run_temperature_sweep.py
 python reaction_diffusion_peb/experiments/06_temperature_peb/run_time_sweep.py
+
+# pre-Phase-7 diagnostics: mass-budget identity + PINN bound penalty
+python reaction_diffusion_peb/experiments/pre_phase7_diagnostics/run_mass_budget_check.py
+python reaction_diffusion_peb/experiments/pre_phase7_diagnostics/run_pinn_bound_penalty.py
 
 # Phase 5: deprotection (kdep sweep FD, PINN train, FD-vs-PINN compare)
 python reaction_diffusion_peb/experiments/05_deprotection/run_deprotection_fd.py
