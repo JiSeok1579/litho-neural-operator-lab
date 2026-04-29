@@ -44,6 +44,25 @@ def circular_pupil(grid: Grid2D, NA: float, wavelength: float = 1.0) -> torch.Te
     return (fr <= cutoff).to(grid.dtype)
 
 
+def circular_pupil_at(
+    grid: Grid2D,
+    NA: float,
+    center_freq: tuple[float, float],
+    wavelength: float = 1.0,
+) -> torch.Tensor:
+    """Hard circular pupil centered at ``(cx, cy)`` in cycles per length unit.
+
+    Used by :mod:`src.optics.partial_coherence` to build off-axis pupils for
+    each source point in the Hopkins integral.
+    """
+    _validate(NA, wavelength)
+    cx, cy = center_freq
+    fx, fy = grid.freq_meshgrid()
+    cutoff = NA / wavelength
+    fr = torch.sqrt((fx - cx) ** 2 + (fy - cy) ** 2)
+    return (fr <= cutoff).to(grid.dtype)
+
+
 def apodized_circular_pupil(
     grid: Grid2D,
     NA: float,

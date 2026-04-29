@@ -1,0 +1,23 @@
+# Reference parameters for Phase 4 partial-coherent imaging.
+# Demos hard-code matching values; this file documents the standard run.
+
+grid:
+  n: 256
+  extent: 20.0   # in wavelengths
+
+optics:
+  NA: 0.4
+  wavelength: 1.0
+
+source:
+  n_sigma: 31
+  shapes:
+    coherent:    {}
+    annular:    {sigma_inner: 0.40, sigma_outer: 0.80}
+    dipole_x:   {sigma_center: 0.70, sigma_radius: 0.20, axis: x}
+    dipole_y:   {sigma_center: 0.70, sigma_radius: 0.20, axis: y}
+    quadrupole: {sigma_center: 0.60, sigma_radius: 0.20}
+
+masks:
+  line_space:    {pitch: 1.5, duty: 0.5, orientation: vertical}
+  contact_hole:  {radius: 0.5, center: [0.0, 0.0]}
