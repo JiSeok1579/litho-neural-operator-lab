@@ -1,8 +1,8 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 2 done (synthetic aerial + exposure +
-diffusion-only FD / FFT baselines). Phases 3 – 11 planned. 40 PEB
-tests green; total repo tests at 172 / 172.
+**Status:** Phases 1 – 3 done (synthetic aerial + exposure, FD / FFT
+diffusion baselines, PINN diffusion vs FD / FFT). Phases 4 – 11
+planned. 52 PEB tests green; total repo tests at 184 / 184.
 
 ## Goal
 
@@ -27,7 +27,7 @@ the submodule:
 |---|---|---|
 | 1 | Synthetic aerial + exposure → initial acid `H0` | ✅ done |
 | 2 | Diffusion-only FD / FFT baselines | ✅ done |
-| 3 | PINN diffusion vs FD / FFT | planned |
+| 3 | PINN diffusion vs FD / FFT | ✅ done |
 | 4 | Acid loss `kloss` | planned |
 | 5 | Deprotection `kdep` (`P` field) | planned |
 | 6 | Arrhenius temperature dependence | planned |
@@ -120,18 +120,51 @@ Verified results from
   the signature of the 5-point stencil's 2nd-order truncation
   hitting where the 4th-derivative of the Gaussian peaks.
 
-## Where to start when reopening
-
-The first concrete milestone (PLAN.md §17):
+## Phase 3 — what's already there
 
 ```text
-Gaussian synthetic aerial image
-  → initial acid H0
-  → 60 s PEB diffusion via FD and FFT
-  → PINN diffusion training
-  → FD / FFT / PINN before / after comparison
-  → figures, metrics, and loss curves saved to outputs/
+reaction_diffusion_peb/
+  src/pinn_base.py            FourierFeatures, MLP, PINNBase with
+                              [-1, 1]^3 input normalization built in.
+  src/pinn_diffusion.py        PINNDiffusion (hard_ic=True default,
+                              H_pinn = H0(x, y) + t_norm * MLP),
+                              gaussian_spot_acid_callable,
+                              train_pinn_diffusion, pinn_to_grid.
+
+  experiments/03_pinn_diffusion/
+    run_pinn_diffusion.py     Trains the PINN and saves
+                              outputs/checkpoints/peb_phase3_pinn_diffusion.pt.
+    compare_fd_fft_pinn.py    Loads the checkpoint, runs all three
+                              solvers; FFT is the truth reference.
 ```
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase3_compare_fd_fft_pinn_metrics.csv`:
+
+| solver | max\|err vs FFT\| | mean\|err\| | L2 rel err | wall-clock per call |
+|---|---|---|---|---|
+| FFT | 0 | 0 | 0 | 0.09 ms |
+| FD | 2.58e-06 | 6.01e-07 | 4.68e-05 | 13.82 ms |
+| PINN | 1.85e-02 | 2.31e-03 | 0.198 | 0.30 ms (+ 42 s training) |
+
+- **FD is ~7000× more accurate than PINN** on this benchmark, mirroring
+  the main project's Phase-6 finding.
+- PINN inference is ~50× faster than FD per call but pays a 42 s
+  one-shot training cost. Worth it only when many evaluations are
+  needed at the same `(DH, t_end)`.
+- Hard-IC parameterization (`H_pinn = H0(x, y) + t_norm * MLP`) drove
+  `loss_pde` to ~1e-8; the soft-IC trivial minimum that broke main
+  Phase 6 is avoided by construction.
+- The y=0 row cut shows PINN slightly under-diffusing the peak
+  (PINN 0.105 vs truth 0.086) — error concentrated at the center.
+
+## Where to start when reopening
+
+The next concrete milestone is Phase 4: add the acid-loss term
+``-k_loss * H`` and re-train both solvers + PINN to verify mass loss
+behaviour. The PEB submodule's PINN now has all the machinery
+needed (hard IC, normalized inputs, residual-loss trainer) — Phase 4
+just adds one more PDE term and a fresh comparison.
 
 ## See also
 

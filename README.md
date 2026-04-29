@@ -10,12 +10,12 @@
 
 Phases **1 – 9 are complete**. Phase 10 (active learning) is deliberately
 left as future work. A separate **PEB submodule** under
-[`reaction_diffusion_peb/`](./reaction_diffusion_peb) has its own plan
-and is in `plan-only` state.
+[`reaction_diffusion_peb/`](./reaction_diffusion_peb) covers
+post-exposure-bake resist physics in parallel; its Phases 1-3 are done.
 
 - [PROGRESS.md](./PROGRESS.md) — running implementation log
   (What / How / Why / Next per change, plus §H wrap-up + reopen plan).
-- 172 / 172 tests green (132 main + 40 PEB Phases 1-2).
+- 184 / 184 tests green (132 main + 52 PEB Phases 1-3).
 
 **Headline result (Phase 9):** an FNO surrogate that scores 15.5 % test
 complex-relative error in Phase 8 produces an optimized mask whose
@@ -75,7 +75,7 @@ numbers · how to run · takeaway).
 | 8 | FNO 2D correction surrogate | ✅ | [docs/phase8](./docs/phase8_fno_surrogate.md) |
 | 9 | Closed-loop surrogate-assisted inverse design | ✅ | [docs/phase9](./docs/phase9_closed_loop_surrogate.md) |
 | 10 | Active learning | 💤 deferred | [PROGRESS.md §H](./PROGRESS.md) |
-| — | PEB submodule (`reaction_diffusion_peb/`) — Phases 1-2 done, 3-11 planned | in progress | [docs/peb_submodule](./docs/peb_submodule.md) |
+| — | PEB submodule (`reaction_diffusion_peb/`) — Phases 1-3 done, 4-11 planned | in progress | [docs/peb_submodule](./docs/peb_submodule.md) |
 
 ---
 
