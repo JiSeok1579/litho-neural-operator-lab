@@ -1,0 +1,17 @@
+# Reference config for the diffusion-only baseline (PEB Phase 2).
+# Listed early so Phase 1 demos can already point at it.
+
+grid:
+  grid_size: 128
+  grid_spacing_nm: 1.0
+
+peb:
+  time_s: 60.0
+
+exposure:
+  dose: 1.0
+  eta: 1.0
+  Hmax_mol_dm3: 0.2
+
+diffusion:
+  DH0_nm2_s: 0.8

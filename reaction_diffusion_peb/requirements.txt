@@ -1,0 +1,19 @@
+# PEB submodule shares the parent repo's environment. Listed here for
+# convenience: the same .venv used by the main project covers every
+# Phase-1 .. Phase-11 dependency.
+
+# Phase 1 (synthetic aerial + exposure):
+numpy>=1.26
+torch>=2.7
+matplotlib>=3.8
+pyyaml>=6.0
+
+# Phase 2-9 add no new dependencies (FD/FFT use torch + numpy; PINN
+# uses torch only).
+
+# Phase 10 (optional DeepONet / FNO surrogate) — same as the main
+# project's neuraloperator-style stack; no extra packages required
+# beyond torch.
+
+# Phase 11 advanced stochastic uses scipy for occasional helpers:
+scipy>=1.13

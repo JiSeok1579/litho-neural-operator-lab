@@ -1,0 +1,23 @@
+# Reference parameters for PEB Phase 1 — synthetic aerial + exposure.
+# Demos hard-code matching values; this file is documentation.
+
+grid:
+  grid_size: 128
+  grid_spacing_nm: 1.0     # Phase 1 does not use this directly, but
+                           # later phases do (Phase 2 onward).
+
+exposure:
+  dose: 1.0
+  eta: 1.0
+  Hmax_mol_dm3: 0.2
+
+# Phase-1 sweeps for the demos
+sweep:
+  dose: [0.5, 1.0, 1.5, 2.0]
+
+# Synthetic aerial defaults
+synthetic:
+  gaussian_sigma_px: 12.0
+  line_space_pitch_px: 32.0
+  line_space_duty: 0.5
+  line_space_contrast: 1.0
