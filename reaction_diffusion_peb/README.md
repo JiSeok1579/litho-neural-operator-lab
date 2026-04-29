@@ -30,7 +30,7 @@ file-based hand-off (`outputs/aerial_image.npy` →
 | Phase | Status |
 |---|---|
 | 1 — synthetic aerial + exposure | ✅ done |
-| 2 — diffusion-only FD / FFT baselines | planned |
+| 2 — diffusion-only FD / FFT baselines | ✅ done |
 | 3 — PINN diffusion vs FD / FFT | planned |
 | 4 — acid loss | planned |
 | 5 — deprotection | planned |
@@ -46,8 +46,15 @@ file-based hand-off (`outputs/aerial_image.npy` →
 ```bash
 # from repo root
 pytest reaction_diffusion_peb/tests/ -q
+
+# Phase 1: synthetic aerial -> initial acid
 python reaction_diffusion_peb/experiments/01_synthetic_aerial/run_gaussian_spot.py
 python reaction_diffusion_peb/experiments/01_synthetic_aerial/run_line_space.py
+
+# Phase 2: FD / FFT diffusion baseline
+python reaction_diffusion_peb/experiments/02_diffusion_baseline/run_diffusion_fd.py
+python reaction_diffusion_peb/experiments/02_diffusion_baseline/run_diffusion_fft.py
+python reaction_diffusion_peb/experiments/02_diffusion_baseline/compare_fd_fft.py
 ```
 
 Outputs land under `reaction_diffusion_peb/outputs/{figures, logs,

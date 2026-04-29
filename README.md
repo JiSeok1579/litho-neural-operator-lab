@@ -15,7 +15,7 @@ and is in `plan-only` state.
 
 - [PROGRESS.md](./PROGRESS.md) — running implementation log
   (What / How / Why / Next per change, plus §H wrap-up + reopen plan).
-- 152 / 152 tests green (132 main + 20 PEB Phase 1).
+- 172 / 172 tests green (132 main + 40 PEB Phases 1-2).
 
 **Headline result (Phase 9):** an FNO surrogate that scores 15.5 % test
 complex-relative error in Phase 8 produces an optimized mask whose
@@ -75,7 +75,7 @@ numbers · how to run · takeaway).
 | 8 | FNO 2D correction surrogate | ✅ | [docs/phase8](./docs/phase8_fno_surrogate.md) |
 | 9 | Closed-loop surrogate-assisted inverse design | ✅ | [docs/phase9](./docs/phase9_closed_loop_surrogate.md) |
 | 10 | Active learning | 💤 deferred | [PROGRESS.md §H](./PROGRESS.md) |
-| — | PEB submodule (`reaction_diffusion_peb/`) — Phase 1 done, 2-11 planned | in progress | [docs/peb_submodule](./docs/peb_submodule.md) |
+| — | PEB submodule (`reaction_diffusion_peb/`) — Phases 1-2 done, 3-11 planned | in progress | [docs/peb_submodule](./docs/peb_submodule.md) |
 
 ---
 

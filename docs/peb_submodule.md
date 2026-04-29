@@ -1,7 +1,8 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phase 1 done (synthetic aerial + exposure). Phases 2 – 11
-planned. 20 PEB tests green; total repo tests at 152 / 152.
+**Status:** Phases 1 – 2 done (synthetic aerial + exposure +
+diffusion-only FD / FFT baselines). Phases 3 – 11 planned. 40 PEB
+tests green; total repo tests at 172 / 172.
 
 ## Goal
 
@@ -25,7 +26,7 @@ the submodule:
 | # | Topic | Status |
 |---|---|---|
 | 1 | Synthetic aerial + exposure → initial acid `H0` | ✅ done |
-| 2 | Diffusion-only FD / FFT baselines | planned |
+| 2 | Diffusion-only FD / FFT baselines | ✅ done |
 | 3 | PINN diffusion vs FD / FFT | planned |
 | 4 | Acid loss `kloss` | planned |
 | 5 | Deprotection `kdep` (`P` field) | planned |
@@ -81,6 +82,43 @@ Verified results from
 | 1.0 | 0.998 | 0.1263 | yes |
 | 1.5 | 0.998 | 0.1553 | yes |
 | 2.0 | 0.998 | 0.1728 | yes (saturating toward Hmax = 0.2) |
+
+## Phase 2 — what's already there
+
+```text
+reaction_diffusion_peb/
+  src/fft_utils.py          fft2c / ifft2c centered FFT, freq_grid_nm
+                             helper (cycles/nm).
+  src/diffusion_fd.py        laplacian_5pt, step_diffusion_fd,
+                             diffuse_fd (CFL-guarded explicit Euler).
+  src/diffusion_fft.py       diffuse_fft (D, t) and
+                             diffuse_fft_by_length (single L knob).
+
+  experiments/02_diffusion_baseline/
+    run_diffusion_fd.py      DH sweep {0.3, 0.8, 1.5} nm^2/s at t=60s
+    run_diffusion_fft.py     same sweep using exact heat kernel
+    compare_fd_fft.py        per-DH side-by-side, abs and L2 rel error,
+                             y=0 row cut, wall-clock timing
+```
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase2_compare_fd_fft_metrics.csv`:
+
+| DH (nm²/s) | t (s) | L (nm) | FD peak | FFT peak | max\|FD-FFT\| | L2 rel err |
+|---|---|---|---|---|---|---|
+| 0.30 | 60 | 6.00 | 0.1087 | 0.1087 | 2.1e-06 | 2.8e-05 |
+| 0.80 | 60 | 9.80 | 0.0862 | 0.0862 | 2.6e-06 | 4.7e-05 |
+| 1.50 | 60 | 13.42 | 0.0661 | 0.0661 | 2.2e-06 | 5.3e-05 |
+
+- FD and FFT agree to 5–6 decimal places (max abs err ≈ 2e-6).
+- Both solvers preserve total mass exactly (no loss term).
+- FFT is ~10–50× faster (sub-millisecond) than the CFL-bounded FD
+  loop.
+- Larger `DH` produces more blur and lower peak — exactly the heat-
+  equation expectation.
+- The `|FD − FFT|` panel shows an 8-petal pattern at the 1e-6 level,
+  the signature of the 5-point stencil's 2nd-order truncation
+  hitting where the 4th-derivative of the Gaussian peaks.
 
 ## Where to start when reopening
 
