@@ -215,6 +215,115 @@ def show_diffusion_dh_sweep(
     return fig
 
 
+def show_pinn_training(history, suptitle: str = ""):
+    """Loss-history figure for ``train_pinn_diffusion``.
+
+    ``history`` may be a TrainingHistory dataclass or a list of dicts
+    with keys ``iter``, ``loss_total``, ``loss_pde``, ``loss_ic``.
+    """
+    if hasattr(history, "iters"):
+        its = history.iters
+        loss_total = history.loss_total
+        loss_pde = history.loss_pde
+        loss_ic = history.loss_ic
+    else:
+        its = [h["iter"] for h in history]
+        loss_total = [h["loss_total"] for h in history]
+        loss_pde = [h["loss_pde"] for h in history]
+        loss_ic = [h["loss_ic"] for h in history]
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(its, [max(v, 1e-20) for v in loss_total], label="total", color="black")
+    ax.plot(its, [max(v, 1e-20) for v in loss_pde], label="PDE residual", color="C0")
+    ax.plot(its, [max(v, 1e-20) for v in loss_ic], label="IC", color="C3", linestyle="--")
+    ax.set_yscale("log")
+    ax.set_title("PINN training")
+    ax.set_xlabel("iteration"); ax.set_ylabel("loss (log)")
+    ax.legend(); ax.grid(alpha=0.3)
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
+def show_fd_fft_pinn(
+    H0: torch.Tensor,
+    H_fd: torch.Tensor,
+    H_fft: torch.Tensor,
+    H_pinn: torch.Tensor,
+    dx_nm: float,
+    t_end_s: float,
+    Hmax: float | None = None,
+    suptitle: str = "",
+):
+    """3-row figure: solutions, errors vs FFT, y=0 row cut.
+
+    Row 0 panels : H_0 | FD | FFT | PINN
+    Row 1 panels : (reference) | |FD - FFT| | (reference) | |PINN - FFT|
+    Row 2 (full) : y=0 row cut comparing all four traces.
+    """
+    fig = plt.figure(figsize=(16, 10))
+    gs = fig.add_gridspec(3, 4, height_ratios=[2, 2, 1])
+    n = H0.shape[-1]
+    extent_nm = n * dx_nm
+    real_ext = (-extent_nm / 2, extent_nm / 2, -extent_nm / 2, extent_nm / 2)
+
+    sol_max = max(
+        float(H0.max().item()), float(H_fd.max().item()),
+        float(H_fft.max().item()), float(H_pinn.max().item()), 1e-12,
+    )
+    if Hmax is not None:
+        sol_max = max(sol_max, Hmax)
+
+    err_fd = (H_fd - H_fft).abs()
+    err_pinn = (H_pinn - H_fft).abs()
+    err_max = max(float(err_fd.max().item()), float(err_pinn.max().item()), 1e-12)
+
+    sols = [
+        ("H_0", H0, "magma"),
+        (f"FD  t={t_end_s:g} s", H_fd, "magma"),
+        (f"FFT t={t_end_s:g} s", H_fft, "magma"),
+        (f"PINN t={t_end_s:g} s", H_pinn, "magma"),
+    ]
+    for k, (name, img, cmap) in enumerate(sols):
+        ax = fig.add_subplot(gs[0, k])
+        im = ax.imshow(_to_numpy(img), cmap=cmap, extent=real_ext,
+                       origin="lower", vmin=0.0, vmax=sol_max)
+        ax.set_title(f"{name}   peak={float(img.max().item()):.4f}")
+        ax.set_xlabel("x [nm]"); ax.set_ylabel("y [nm]")
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+    err_panels = [
+        ("(reference)", torch.zeros_like(H0), "Greys"),
+        (f"|FD - FFT|  max={float(err_fd.max().item()):.3e}", err_fd, "inferno"),
+        ("(reference)", torch.zeros_like(H0), "Greys"),
+        (f"|PINN - FFT|  max={float(err_pinn.max().item()):.3e}", err_pinn, "inferno"),
+    ]
+    for k, (name, img, cmap) in enumerate(err_panels):
+        ax = fig.add_subplot(gs[1, k])
+        im = ax.imshow(_to_numpy(img), cmap=cmap, extent=real_ext,
+                       origin="lower", vmin=0.0, vmax=err_max)
+        ax.set_title(name)
+        ax.set_xlabel("x [nm]"); ax.set_ylabel("y [nm]")
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+    ax = fig.add_subplot(gs[2, :])
+    x_axis = (np.arange(n) - n / 2) * dx_nm
+    row = n // 2
+    ax.plot(x_axis, _to_numpy(H0[row]),    label="H_0",  color="black")
+    ax.plot(x_axis, _to_numpy(H_fd[row]),  label="FD",   color="C3", linestyle="--")
+    ax.plot(x_axis, _to_numpy(H_fft[row]), label="FFT",  color="C0", linestyle="-.")
+    ax.plot(x_axis, _to_numpy(H_pinn[row]), label="PINN", color="C2")
+    ax.set_title("y=0 row cut")
+    ax.set_xlabel("x [nm]"); ax.set_ylabel("H [mol/dm^3]")
+    ax.legend(); ax.grid(alpha=0.3)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

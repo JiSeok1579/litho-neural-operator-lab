@@ -25,9 +25,13 @@ outputs/datasets/*
 reaction_diffusion_peb/outputs/figures/*
 reaction_diffusion_peb/outputs/logs/*
 reaction_diffusion_peb/outputs/arrays/*
+reaction_diffusion_peb/outputs/checkpoints/*
+reaction_diffusion_peb/outputs/datasets/*
 !reaction_diffusion_peb/outputs/figures/.gitkeep
 !reaction_diffusion_peb/outputs/logs/.gitkeep
 !reaction_diffusion_peb/outputs/arrays/.gitkeep
+!reaction_diffusion_peb/outputs/checkpoints/.gitkeep
+!reaction_diffusion_peb/outputs/datasets/.gitkeep
 
 # --- editor / OS ---------------------------------------------------------
 .vscode/
