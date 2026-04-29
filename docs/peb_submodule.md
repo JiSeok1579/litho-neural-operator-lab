@@ -1,16 +1,16 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 10 done. Phase 10 has two layers — the original
-small-data demo (PR #25, kept for reproducibility) and a follow-up
-ablation that scaled the safe dataset to 1024 samples and added an
-optional R-logit head. The ablation cleanly separates the three
-candidate failure causes: data size dominates (P rel-L2 0.98 → 0.09,
-IoU 0.000 → 0.276 on safe-test), R-head helps mainly at small scale,
-and stiff regime remains catastrophic OOD by ~2 orders of magnitude
-in ``k_q``. Phase 11 planned. Open follow-ups in
+**Status:** Phases 1 – 11 done. Phase 11 layers in the advanced
+parameters from the plan that sit on top of the integrated Phase-8
+evolver: Petersen nonlinear diffusion ``D_H(P) = D_H0 · exp(α · P)``
+(variable-coefficient FD), the temperature-uniformity stochastic
+ensemble, and molecular-blur post-processing. ``α = 0`` reproduces
+Phase 8 to float precision; mass budgets close at every ``α``. z-axis
+/ 3D film thickness is intentionally deferred to FUTURE_WORK item 5.
+Open follow-ups in
 [`reaction_diffusion_peb/FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md)
-(items 1 and 4 closed; items 2 and 3 still open).
-185 PEB tests green; total repo tests at 317 / 317.
+(items 1 and 4 closed; items 2, 3, 5, 6 open).
+215 PEB tests green; total repo tests at 347 / 347.
 
 ## Goal
 
@@ -43,7 +43,7 @@ the submodule:
 | 8 | Full reaction-diffusion (everything combined) | ✅ done (FD-only) |
 | 9 | Save FD / PINN runs as a dataset | ✅ done (FD-only) |
 | 10 | DeepONet / FNO operator surrogate (optional) | ✅ done (FNO-only) |
-| 11 | Petersen / temperature uniformity / z-axis | planned |
+| 11 | Petersen / temperature uniformity / z-axis | ✅ done (Petersen + T-unif + blur; z-axis deferred) |
 
 ## Key constraints (from the plan)
 
@@ -802,19 +802,156 @@ acceptance bar is cleared. The R-head is still a small win at a fixed
 data budget. The stiff archive remains a hard OOD problem and would
 need a per-regime surrogate or a much wider sweep at training time.
 
+## Phase 11 — what's already there
+
+```text
+reaction_diffusion_peb/
+  src/petersen_diffusion.py       divergence_diffusion_5pt (variable-
+                                  coefficient 5-point operator with
+                                  arithmetic half-cell averages),
+                                  petersen_DH_field, step_petersen_full_fd,
+                                  evolve_petersen_full_fd_at_T,
+                                  evolve_petersen_full_fd_at_T_with_budget,
+                                  stability_report_petersen.
+
+  src/stochastic_layers.py        temperature_uniformity_ensemble,
+                                  EnsembleResult dataclass,
+                                  molecular_blur_2d (separable
+                                  periodic Gaussian),
+                                  molecular_blur_P (clamp to [0, 1]).
+
+  configs/advanced_phase11.yaml   reference parameters for all three
+                                  Phase-11 sweeps.
+
+  experiments/11_advanced/
+    run_petersen_sweep.py             alpha in {0, 0.5, 1, 2, 3}
+    run_temperature_uniformity.py     sigma_T in {0, 0.5, 1, 2} °C
+    run_molecular_blur.py             sigma_blur in {0, 0.5, 1, 2} nm
+```
+
+**z-axis / 3D film thickness is intentionally not in Phase 11.** That
+extension needs a 7-point Laplacian, no-flux Neumann BCs at the air
+and substrate faces, and an Nz × memory cost increase, which would
+dominate the PR. Tracked as
+[`FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md) item 5.
+
+PINN coverage of Petersen / T-uniformity is also not implemented —
+same rationale as Phase 6 / 7 / 8 / 10 (the integrated PINN with
+parameter conditioning is its own research question). Tracked as
+follow-up of `FUTURE_WORK.md` item 2.
+
+### Petersen nonlinear diffusion
+
+PDE change:
+
+```text
+dH/dt = ∇·(D_H(P) ∇H) - k_q H Q - k_loss H
+        with D_H(P) = D_H0 * exp(alpha * P)
+
+dQ/dt and dP/dt unchanged (Q diffusion stays constant-coefficient).
+```
+
+Discretized in flux form so total ``H`` is conserved exactly under
+periodic BCs even when ``D`` is spatially varying:
+
+```text
+[∇·(D ∇H)]_{i,j} ≈ (1/dx²) * [
+    D_{i+1/2, j} (H_{i+1, j} - H_{i,   j})
+  - D_{i-1/2, j} (H_{i,   j} - H_{i-1, j})
+  + D_{i, j+1/2} (H_{i, j+1} - H_{i, j  })
+  - D_{i, j-1/2} (H_{i, j  } - H_{i, j-1})
+]
+```
+
+with face diffusivities given by the arithmetic mean of the cell
+centers. When ``D`` is constant the operator collapses to ``D *
+laplacian_5pt``, so the **α = 0 case is bit-identical to Phase 8**
+(asserted by the test suite). Stability uses the conservative bound
+``D_H_max = D_H0 * exp(α)`` so the step does not need to shrink as
+``P`` evolves.
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase11_petersen_sweep_metrics.csv`
+(default config, ``T = T_ref``, ``t = 60 s``):
+
+| α | D_H_max | dt_max | binding | H_peak | P_max | area(P>0.5) px | H rel-err | Q rel-err | wall (s) |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | 0.80 | 0.31 | dt_diff | 0.0082 | 0.6407 | 392 | 4.5e-08 | 1.0e-06 | 0.07 |
+| 0.5 | 1.32 | 0.19 | dt_diff | 0.0070 | 0.6291 | 376 | 6.4e-08 | 2.5e-06 | 0.12 |
+| 1 | 2.18 | 0.115 | dt_diff | 0.0059 | 0.6171 | 368 | 3.3e-08 | 5.0e-06 | 0.18 |
+| 2 | 5.91 | 0.042 | dt_diff | 0.0043 | 0.5930 | 332 | 9.4e-08 | 1.5e-05 | 1.40 |
+| 3 | 16.07 | 0.016 | dt_diff | 0.0031 | 0.5697 | 276 | 3.7e-07 | 4.2e-05 | 5.44 |
+
+What the numbers say:
+
+1. ✅ ``α = 0`` row matches the Phase-7 / Phase-8 baseline exactly
+   (P_max = 0.6407, area = 392 px) — the disable-α-term identity is
+   visible in production data, not just tests.
+2. ✅ Increasing α grows the worst-case ``D_H`` exponentially
+   (0.80 → 16.07 across the sweep), so ``dt_max`` shrinks by ~20×
+   and the wall-clock scales with the step count (0.07 s → 5.4 s).
+3. ✅ More acid mobility → lower ``H_peak`` and smaller threshold
+   area (392 → 276 px). Qualitatively this is the documented Petersen
+   effect: deprotection feeds back into stronger acid spread.
+4. ✅ Mass budgets close to ~1e-7 (H) / ~1e-5 (Q) across all ``α``
+   — the flux-form discretization preserves the conservation property
+   even at α = 3 with ~3 800 explicit steps.
+
+### Temperature-uniformity ensemble
+
+Wraps any evolver that takes ``temperature_c`` as a kwarg, perturbs
+it by ``Normal(0, σ_T)`` per run, and aggregates the results into
+``EnsembleResult`` (per-pixel mean / std for H, Q, P plus the
+realized temperatures). ``σ_T = 0`` collapses every member to the
+nominal temperature (asserted by the test suite). Verified results
+(N_runs = 12 around T_nominal = 100 °C):
+
+| σ_T (°C) | mean P_max | max P_std | mean P_std | mean area | std area |
+|---|---|---|---|---|---|
+| 0.0 | 0.6407 | 0.0000 | 0.0000 | 392.0 | 0.0 |
+| 0.5 | 0.6427 | 0.0053 | 0.0003 | 389.3 | 7.5 |
+| 1.0 | 0.6446 | 0.0105 | 0.0005 | 392.7 | 17.1 |
+| 2.0 | 0.6481 | 0.0204 | 0.0010 | 398.7 | 35.3 |
+
+The ensemble-mean ``area`` is roughly stable around 390 px while the
+spread grows linearly in ``σ_T``: a 2 °C uniformity gives a ±35 px
+RMS variation across runs, ~9 % of the area. That is the right shape
+for downstream LER / CDU studies.
+
+### Molecular blur
+
+Separable periodic Gaussian blur on the final ``P`` field; clamped
+back to ``[0, 1]`` to keep the threshold operation well-defined.
+Verified results (Phase-8 baseline P, σ_blur in nm):
+
+| σ_blur (nm) | P_max | area(P>0.5) px | shift |
+|---|---|---|---|
+| 0.0 | 0.6407 | 392 | 0 |
+| 0.5 | 0.6402 | 384 | -8 |
+| 1.0 | 0.6384 | 384 | -8 |
+| 2.0 | 0.6317 | 368 | -24 |
+
+Threshold area shrinks roughly linearly with σ_blur (the blur softens
+edges that were just above threshold). Total ``∫ P dx²`` is preserved
+by the normalized Gaussian + periodic BCs (asserted by the test).
+
 ## Where to start when reopening
 
-Phase 11 (advanced stochastic / Petersen / z-axis effects) is the
-remaining major topic in the plan. Acceptance criterion 1 from the
-Phase-10 improvement plan is now met (safe-regime FNO has IoU > 0),
-so Phase 11 is unblocked. **Phase 11 must not be mixed with further
-Phase-10 surrogate tuning** — keep them as separate PRs so the
-physical-extension story stays legible.
+The PEB submodule is feature-complete relative to the original PLAN.md
+through Phase 11, with the explicit deferrals tracked in
+[`FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md). The
+highest-impact remaining items, in rough priority order:
 
-If you want to push surrogate quality further before Phase 11, the
-remaining levers are: (a) more data still, (b) per-regime training,
-(c) wider ``k_q`` distribution at training time, (d) an explicit
-PINN auxiliary loss using the now-validated Phase-8 PDE residuals.
+1. **z-axis / 3D extension** (FUTURE_WORK item 5) — the only
+   physical extension that the PLAN calls for and that Phase 11 did
+   not deliver.
+2. **PINN with temperature-as-input** (item 2) — would close the
+   "PINN deferred" caveats noted in Phases 6 / 7 / 8 / 10 / 11.
+3. **Per-rate Arrhenius energies** (item 6) — small physics nuance,
+   biggest implication for downstream surrogates.
+4. **Better Phase-10 surrogate** — the Phase-10 ablation already
+   showed data size is the dominant lever; another order of magnitude
+   in samples plus a per-regime FNO is the obvious next step.
 
 ## See also
 

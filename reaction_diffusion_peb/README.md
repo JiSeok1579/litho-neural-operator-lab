@@ -40,7 +40,7 @@ file-based hand-off (`outputs/aerial_image.npy` →
 | 8 — full reaction-diffusion | ✅ done (FD only — Arrhenius-scaled (H, Q, P); term-disable check vs Phases 2/4/6/7 closes to machine precision; PINN deferred) |
 | 9 — dataset generation | ✅ done (FD only — safe-`kq` and stiff-`kq` `.npz` archives + metadata + train/val/test splits; PINN dataset deferred) |
 | 10 — DeepONet / FNO surrogate (optional) | ✅ done (FNO only — original 64-sample demo + improvement ablation at N=1024 with optional R-logit head; safe-test rel-L2 P drops 0.98 → 0.09 and IoU goes 0 → 0.28; stiff regime stays catastrophic OOD) |
-| 11 — advanced stochastic / Petersen / z-axis | planned |
+| 11 — advanced stochastic / Petersen / z-axis | ✅ done (FD only — Petersen `D_H(P) = D_H0·exp(α·P)` variable-coef diffusion, T-uniformity ensemble, molecular blur; alpha=0 reduces to Phase 8 to float-precision; z-axis 3D deferred to FUTURE_WORK item 5) |
 
 ## Quick start
 
@@ -98,6 +98,11 @@ python reaction_diffusion_peb/experiments/10_operator_learning_optional/evaluate
 # Phase 10 improvement ablation (data-size x R-head; needs the larger archive)
 python reaction_diffusion_peb/experiments/09_dataset_generation/generate_safe_large_dataset.py
 python reaction_diffusion_peb/experiments/10_operator_learning_optional/run_phase10_ablation.py
+
+# Phase 11: Petersen + stochastic layers (FD only)
+python reaction_diffusion_peb/experiments/11_advanced/run_petersen_sweep.py
+python reaction_diffusion_peb/experiments/11_advanced/run_temperature_uniformity.py
+python reaction_diffusion_peb/experiments/11_advanced/run_molecular_blur.py
 ```
 
 Outputs land under `reaction_diffusion_peb/outputs/{figures, logs,

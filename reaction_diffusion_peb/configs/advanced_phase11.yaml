@@ -1,0 +1,46 @@
+# Phase 11 reference parameters — Petersen nonlinear diffusion +
+# stochastic layers (temperature uniformity ensemble, molecular blur).
+# z-axis / 3D film thickness is NOT covered here; tracked as
+# FUTURE_WORK item 5.
+
+problem:
+  sigma_nm: 12.0
+  Hmax_mol_dm3: 0.2
+  eta: 1.0
+  dose: 1.0
+  DH0_nm2_s: 0.8
+  DQ_ratio: 0.1
+  Q0_mol_dm3: 0.1
+  t_end_s: 60.0
+
+reaction_ref:
+  kq_ref_s_inv: 1.0
+  kdep_ref_s_inv: 0.5
+  kloss_ref_s_inv: 0.005
+
+arrhenius:
+  enabled: true
+  activation_energy_kj_mol: 100.0
+  temperature_ref_c: 100.0
+  temperature_c: 100.0
+
+grid:
+  grid_size: 128
+  grid_spacing_nm: 1.0
+
+threshold:
+  P_threshold: 0.5
+
+# Petersen nonlinear diffusion: D_H(P) = D_H0 * exp(alpha * P).
+# alpha = 0 reproduces Phase 8.
+sweep_petersen:
+  alpha: [0.0, 0.5, 1.0, 2.0, 3.0]
+
+# Stochastic temperature uniformity ensemble.
+sweep_temperature_uniformity:
+  temperature_uniformity_c: [0.0, 0.5, 1.0, 2.0]
+  n_runs: 12
+
+# Molecular blur on the final P field.
+sweep_molecular_blur:
+  sigma_nm: [0.0, 0.5, 1.0, 2.0]
