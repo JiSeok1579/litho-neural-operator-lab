@@ -324,6 +324,153 @@ def show_fd_fft_pinn(
     return fig
 
 
+def show_deprotection_chain(
+    H0: torch.Tensor,
+    H_t: torch.Tensor,
+    P_t: torch.Tensor,
+    dx_nm: float,
+    t_end_s: float,
+    P_threshold: float = 0.5,
+    Hmax: float | None = None,
+    suptitle: str = "",
+):
+    """4-panel figure: H_0 | H(t) | P(t) | thresholded P > P_threshold."""
+    fig, axes = plt.subplots(1, 4, figsize=(18, 4))
+    n = H0.shape[-1]
+    extent_nm = n * dx_nm
+    real_ext = (-extent_nm / 2, extent_nm / 2, -extent_nm / 2, extent_nm / 2)
+    H_max_val = float(Hmax) if Hmax is not None else max(
+        float(H0.max().item()), float(H_t.max().item()), 1e-12)
+
+    panels = [
+        ("H_0", H0, "magma", 0.0, H_max_val),
+        (f"H(t={t_end_s:g} s)", H_t, "magma", 0.0, H_max_val),
+        (f"P(t={t_end_s:g} s)", P_t, "Greens", 0.0, 1.0),
+    ]
+    for k, (name, img, cmap, lo, hi) in enumerate(panels):
+        im = axes[k].imshow(_to_numpy(img), cmap=cmap, extent=real_ext,
+                            origin="lower", vmin=lo, vmax=hi)
+        axes[k].set_title(f"{name}   peak={float(img.max().item()):.4f}")
+        axes[k].set_xlabel("x [nm]"); axes[k].set_ylabel("y [nm]")
+        fig.colorbar(im, ax=axes[k], fraction=0.046, pad=0.04)
+
+    R = (P_t > P_threshold).to(P_t.dtype)
+    n_pixels = int(R.sum().item())
+    im = axes[3].imshow(_to_numpy(R), cmap="Greens", extent=real_ext,
+                        origin="lower", vmin=0.0, vmax=1.0)
+    axes[3].set_title(f"P > {P_threshold} (area = {n_pixels} px)")
+    axes[3].set_xlabel("x [nm]"); axes[3].set_ylabel("y [nm]")
+    fig.colorbar(im, ax=axes[3], fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
+def show_deprotection_kdep_sweep(
+    H0: torch.Tensor,
+    P_results: list[torch.Tensor],
+    kdep_values: list[float],
+    dx_nm: float,
+    t_end_s: float,
+    P_threshold: float = 0.5,
+    suptitle: str = "",
+):
+    """One row: H_0 followed by ``P(t_end)`` for each kdep value.
+
+    Threshold contour is overlaid on each P panel.
+    """
+    n_cols = 1 + len(P_results)
+    fig, axes = plt.subplots(1, n_cols, figsize=(4 * n_cols, 4))
+    n = H0.shape[-1]
+    extent_nm = n * dx_nm
+    real_ext = (-extent_nm / 2, extent_nm / 2, -extent_nm / 2, extent_nm / 2)
+    Hmax_val = max(float(H0.max().item()), 1e-12)
+
+    im = axes[0].imshow(_to_numpy(H0), cmap="magma", extent=real_ext,
+                       origin="lower", vmin=0.0, vmax=Hmax_val)
+    axes[0].set_title(f"H_0   peak={Hmax_val:.4f}")
+    axes[0].set_xlabel("x [nm]"); axes[0].set_ylabel("y [nm]")
+    fig.colorbar(im, ax=axes[0], fraction=0.046, pad=0.04)
+
+    xs = np.linspace(-extent_nm / 2, extent_nm / 2, n)
+    for ax, P, kdep in zip(axes[1:], P_results, kdep_values):
+        im = ax.imshow(_to_numpy(P), cmap="Greens", extent=real_ext,
+                       origin="lower", vmin=0.0, vmax=1.0)
+        n_pix = int((P > P_threshold).sum().item())
+        ax.set_title(f"P  kdep={kdep:g} 1/s  area={n_pix} px")
+        ax.contour(xs, xs, _to_numpy(P), levels=[P_threshold],
+                   colors="black", linewidths=1.0)
+        ax.set_xlabel("x [nm]"); ax.set_ylabel("y [nm]")
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
+def show_deprotection_fd_vs_pinn(
+    H0: torch.Tensor,
+    H_fd: torch.Tensor, P_fd: torch.Tensor,
+    H_pinn: torch.Tensor, P_pinn: torch.Tensor,
+    dx_nm: float,
+    t_end_s: float,
+    P_threshold: float = 0.5,
+    suptitle: str = "",
+):
+    """2x4 figure comparing FD (truth) and PINN (H, P) outputs.
+
+    Row 0 : H_0 | H_FD | H_PINN | |H_PINN - H_FD|
+    Row 1 : (P=0)|  P_FD | P_PINN | |P_PINN - P_FD|
+    """
+    fig, axes = plt.subplots(2, 4, figsize=(18, 9))
+    n = H0.shape[-1]
+    extent_nm = n * dx_nm
+    real_ext = (-extent_nm / 2, extent_nm / 2, -extent_nm / 2, extent_nm / 2)
+    H_max_val = max(float(H0.max().item()),
+                    float(H_fd.max().item()),
+                    float(H_pinn.max().item()), 1e-12)
+    err_H = (H_pinn - H_fd).abs()
+    err_P = (P_pinn - P_fd).abs()
+    H_err_max = max(float(err_H.max().item()), 1e-12)
+    P_err_max = max(float(err_P.max().item()), 1e-12)
+
+    # Row 0: H field
+    h_panels = [
+        ("H_0", H0, "magma", 0.0, H_max_val),
+        (f"H FD t={t_end_s:g} s", H_fd, "magma", 0.0, H_max_val),
+        (f"H PINN t={t_end_s:g} s", H_pinn, "magma", 0.0, H_max_val),
+        (f"|H PINN - H FD|  max={H_err_max:.3e}", err_H, "inferno", 0.0, H_err_max),
+    ]
+    for k, (name, img, cmap, lo, hi) in enumerate(h_panels):
+        im = axes[0, k].imshow(_to_numpy(img), cmap=cmap, extent=real_ext,
+                               origin="lower", vmin=lo, vmax=hi)
+        axes[0, k].set_title(name)
+        axes[0, k].set_xlabel("x [nm]"); axes[0, k].set_ylabel("y [nm]")
+        fig.colorbar(im, ax=axes[0, k], fraction=0.046, pad=0.04)
+
+    # Row 1: P field
+    p_panels = [
+        ("P_0 = 0", torch.zeros_like(H0), "Greens", 0.0, 1.0),
+        (f"P FD t={t_end_s:g} s", P_fd, "Greens", 0.0, 1.0),
+        (f"P PINN t={t_end_s:g} s", P_pinn, "Greens", 0.0, 1.0),
+        (f"|P PINN - P FD|  max={P_err_max:.3e}", err_P, "inferno", 0.0, P_err_max),
+    ]
+    for k, (name, img, cmap, lo, hi) in enumerate(p_panels):
+        im = axes[1, k].imshow(_to_numpy(img), cmap=cmap, extent=real_ext,
+                               origin="lower", vmin=lo, vmax=hi)
+        axes[1, k].set_title(name)
+        axes[1, k].set_xlabel("x [nm]"); axes[1, k].set_ylabel("y [nm]")
+        fig.colorbar(im, ax=axes[1, k], fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

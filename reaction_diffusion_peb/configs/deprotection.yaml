@@ -1,0 +1,44 @@
+# Reference parameters for PEB Phase 5 — deprotection.
+# H equation is the Phase-4 one; only kdep is new.
+
+problem:
+  sigma_nm: 12.0
+  Hmax_mol_dm3: 0.2
+  eta: 1.0
+  dose: 1.0
+  DH_nm2_s: 0.8
+  kloss_s_inv: 0.005
+  kdep_s_inv: 0.5
+  t_end_s: 60.0
+
+grid:
+  grid_size: 128
+  grid_spacing_nm: 1.0
+
+threshold:
+  P_threshold: 0.5
+
+# kdep sweep — covers "barely visible deprotection" to "well above threshold"
+sweep:
+  kdep_s_inv: [0.01, 0.05, 0.1, 0.5, 1.0]
+
+pinn:
+  hidden: 64
+  n_hidden_layers: 4
+  n_fourier: 16
+  fourier_scale: 1.0
+  activation: tanh
+  hard_ic: true
+  seed: 0
+
+training:
+  n_iters: 5000
+  lr: 1.0e-3
+  n_collocation: 4096
+  n_ic: 512
+  n_ic_grid_side: 16
+  weight_pde: 1.0
+  weight_ic: 0.0
+  lr_decay_step: 2000
+  lr_decay_gamma: 0.5
+  log_every: 50
