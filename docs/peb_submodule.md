@@ -1,10 +1,12 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 6 done (synthetic aerial + exposure, FD / FFT
-diffusion baselines, PINN diffusion, acid loss, deprotection P-field,
-Arrhenius temperature). Phases 7 – 11 planned. Open follow-ups in
-[`reaction_diffusion_peb/FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md).
-95 PEB tests green; total repo tests at 227 / 227.
+**Status:** Phases 1 – 6 done plus a pre-Phase-7 diagnostics PR
+(mass-budget identity verified across all Phase 5/6 FD setups,
+PINN bound penalty added with ``weight_bound = 0.01`` default).
+Phases 7 – 11 planned. Open follow-ups in
+[`reaction_diffusion_peb/FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md)
+(items 1 and 4 closed; items 2 and 3 still open).
+115 PEB tests green; total repo tests at 247 / 247.
 
 ## Goal
 
