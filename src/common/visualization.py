@@ -391,6 +391,75 @@ def show_loss_history(history: list[dict], suptitle: str = ""):
     return fig
 
 
+def show_source(
+    source: torch.Tensor,
+    title: str = "source",
+    sigma_max: float = 1.0,
+):
+    fig, ax = plt.subplots(figsize=(4, 4))
+    img = _to_numpy(source)
+    ext = (-sigma_max, sigma_max, -sigma_max, sigma_max)
+    ax.imshow(img, cmap="gray", extent=ext, origin="lower",
+              vmin=0.0, vmax=max(float(img.max()), 1e-6))
+    ax.set_title(title)
+    ax.set_xlabel("sigma_x"); ax.set_ylabel("sigma_y")
+    ax.set_aspect("equal")
+    fig.tight_layout()
+    return fig
+
+
+def show_partial_coherence_sweep(
+    mask: torch.Tensor,
+    sources: list[torch.Tensor],
+    aerials: list[torch.Tensor],
+    source_names: list[str],
+    extent: float | None = None,
+    sigma_max: float = 1.0,
+    suptitle: str = "",
+):
+    """3 rows x N columns: (mask repeated) | source | aerial intensity.
+
+    Aerial colormap is fixed to vmin=0, vmax=1 because Phase 4 demos
+    feed in normalized aerials so brightness is comparable across sources.
+    """
+    n = len(sources)
+    fig, axes = plt.subplots(3, n, figsize=(4 * n, 12))
+    if n == 1:
+        axes = axes.reshape(3, 1)
+    real_ext = None if extent is None else (-extent / 2, extent / 2, -extent / 2, extent / 2)
+    sigma_ext = (-sigma_max, sigma_max, -sigma_max, sigma_max)
+    mask_img = _to_numpy(mask.real if torch.is_complex(mask) else mask)
+
+    for k, (src, aerial, name) in enumerate(zip(sources, aerials, source_names)):
+        # Row 0: mask (same in every column for visual context)
+        axes[0, k].imshow(mask_img, cmap="gray", extent=real_ext, origin="lower",
+                          vmin=0.0, vmax=1.0)
+        axes[0, k].set_title(f"mask\nsource: {name}")
+        axes[0, k].set_xlabel("x"); axes[0, k].set_ylabel("y")
+
+        # Row 1: source in sigma-space
+        s_img = _to_numpy(src)
+        axes[1, k].imshow(s_img, cmap="gray", extent=sigma_ext, origin="lower",
+                          vmin=0.0, vmax=max(float(s_img.max()), 1e-6))
+        axes[1, k].set_title(f"source: {name}")
+        axes[1, k].set_xlabel("sigma_x"); axes[1, k].set_ylabel("sigma_y")
+        axes[1, k].set_aspect("equal")
+
+        # Row 2: aerial intensity (peak shown in title)
+        a = _to_numpy(aerial)
+        a_max = float(a.max())
+        im = axes[2, k].imshow(a, cmap="inferno", extent=real_ext, origin="lower",
+                               vmin=0.0, vmax=max(a_max, 1e-6))
+        axes[2, k].set_title(f"aerial  peak={a_max:.3f}")
+        axes[2, k].set_xlabel("x"); axes[2, k].set_ylabel("y")
+        fig.colorbar(im, ax=axes[2, k], fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
