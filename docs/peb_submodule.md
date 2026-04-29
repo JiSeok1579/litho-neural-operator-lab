@@ -1,8 +1,8 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 4 done (synthetic aerial + exposure, FD / FFT
-diffusion baselines, PINN diffusion, acid-loss reaction-diffusion).
-Phases 5 – 11 planned. 66 PEB tests green; total repo tests at 198 / 198.
+**Status:** Phases 1 – 5 done (synthetic aerial + exposure, FD / FFT
+diffusion baselines, PINN diffusion, acid loss, deprotection P-field).
+Phases 6 – 11 planned. 83 PEB tests green; total repo tests at 215 / 215.
 
 ## Goal
 
@@ -29,7 +29,7 @@ the submodule:
 | 2 | Diffusion-only FD / FFT baselines | ✅ done |
 | 3 | PINN diffusion vs FD / FFT | ✅ done |
 | 4 | Acid loss `kloss` | ✅ done |
-| 5 | Deprotection `kdep` (`P` field) | planned |
+| 5 | Deprotection `kdep` (`P` field) | ✅ done |
 | 6 | Arrhenius temperature dependence | planned |
 | 7 | Quencher reaction (`kq` safe vs stiff target) | planned |
 | 8 | Full reaction-diffusion (everything combined) | planned |
@@ -213,14 +213,102 @@ Verified results from
   (under-decays) — a consistent ~1.7 % under-shoot in the decay
   factor. Same magnitude of error as Phase 3.
 
+## Phase 5 — what's already there
+
+```text
+reaction_diffusion_peb/
+  src/deprotection.py                  step_acid_loss_deprotection_fd,
+                                       evolve_acid_loss_deprotection_fd
+                                       (CFL + loss + deprotection
+                                       stability guarded; clamps P to
+                                       [0, 1]),
+                                       deprotected_fraction_from_H_integral
+                                       (analytic per-pixel form),
+                                       thresholded_area.
+  src/pinn_reaction_diffusion.py        + PINNDeprotection — 2-output
+                                       PINN (H, P) with hard IC
+                                       enforcing H(0)=H_0 and P(0)=0.
+                                       pde_residuals returns
+                                       (r_H, r_P).
+  src/train_pinn_deprotection.py        train_pinn_deprotection (sums
+                                       H + P PDE residual MSEs);
+                                       pinn_deprotection_to_grid.
+
+  experiments/05_deprotection/
+    run_deprotection_fd.py    kdep sweep {0, 0.01, 0.05, 0.1, 0.5, 1.0}
+                              + time sweep at fixed kdep.
+    run_deprotection_pinn.py  Trains PINNDeprotection at kdep=0.5,
+                              saves checkpoint.
+    compare_fd_pinn.py         Loads PINN, runs FD; FD is truth.
+```
+
+The Phase-5 scope is intentionally narrow — only the H equation from
+Phase 4 plus the deprotection equation:
+
+```text
+dH/dt = D_H * laplacian(H) - k_loss * H            (Phase 4 unchanged)
+dP/dt = k_dep * H * (1 - P)                        (Phase 5 only)
+
+H(x, y, 0) = H_0(x, y)
+P(x, y, 0) = 0
+```
+
+No quencher, Arrhenius, Petersen, stochastic, or DeepONet/FNO machinery
+in this phase.
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase5_fd_kdep_metrics.csv`
+and the time-sweep CSV. All six study-plan §5 criteria are met:
+
+| kdep (1/s) | P_max | P_mean | P_center | P_corner | P ∈ [0, 1] | area(P>0.5) px |
+|---|---|---|---|---|---|---|
+| 0.00 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | yes | 0 |
+| 0.01 | 0.0533 | 0.0045 | 0.0533 | 0.0000 | yes | 0 |
+| 0.05 | 0.2394 | 0.0213 | 0.2394 | 0.0000 | yes | 0 |
+| 0.10 | 0.4217 | 0.0399 | 0.4217 | 0.0000 | yes | 0 |
+| 0.50 | 0.9358 | 0.1310 | 0.9358 | 0.0000 | yes | 1876 |
+| 1.00 | 0.9960 | 0.1843 | 0.9960 | 0.0000 | yes | 2756 |
+
+| t_end (s) | area(P>0.5) px | P_max | P_mean |
+|---|---|---|---|
+| 15  | 332 | 0.5828 | 0.0514 |
+| 30  | 1116 | 0.7996 | 0.0852 |
+| 60  | 1876 | 0.9358 | 0.1310 |
+| 120 | 2756 | 0.9847 | 0.1903 |
+
+1. ✅ ``kdep = 0`` -> ``P`` is exactly zero everywhere.
+2. ✅ The dark periphery (``H_0 ≈ 0``) keeps ``P_corner = 0``.
+3. ✅ The peak pixel (``H_max``) ramps ``P`` up first.
+4. ✅ ``P`` stays in ``[0, 1]`` for every kdep.
+5. ✅ Larger ``kdep`` strictly increases ``P_max`` and ``P_mean``.
+6. ✅ The ``P > 0.5`` contour widens monotonically with both ``kdep``
+   and PEB time.
+
+PINN comparison at ``kdep = 0.5, t = 60 s``:
+
+| solver | max\|H err\| | max\|P err\| | P_min | P_max | area(P>0.5) | wall-clock |
+|---|---|---|---|---|---|---|
+| FD (truth) | 0 | 0 | 0.0000 | 0.9358 | 1876 | 24.94 ms |
+| PINN | 2.30e-02 | 2.89e-01 | -0.191 | 0.9246 | 1468 | 0.30 ms (+ 58 s training) |
+
+- The PINN learned the H equation (residual ~1e-7) and the qualitative
+  P shape, but the hard-IC parameterization
+  ``P_pinn = t_norm * MLP[..., 1]`` does **not enforce ``P >= 0``**
+  during dynamics — the network drifted to ``P_min = -0.19`` in
+  fringe regions where the PDE residual is small either way. The FD
+  solver clamps to ``[0, 1]`` and stays physically consistent.
+- This is a clean teaching artefact: hard-IC enforces the initial
+  state exactly but does not impose dynamic constraints; later
+  phases that need bounded outputs should add a soft penalty on
+  ``relu(-P) + relu(P - 1)`` to the PINN loss.
+
 ## Where to start when reopening
 
-Next milestone is Phase 5: deprotection. Add the `P` field with
-``dP/dt = k_dep * H * (1 - P)`` while keeping diffusion + acid-loss
-on `H`. From this phase onward the equation set is **nonlinear**
-(through the `H * (1 - P)` term), so FFT closed form will no longer
-be available; FD becomes the truth reference and PINN gets one more
-output channel (`P` alongside `H`).
+Next milestone is Phase 6: Arrhenius temperature dependence. The H
+and P equations from Phase 5 stay the same, but ``k_loss``,
+``k_dep`` (and later ``k_q``) become temperature-dependent through
+``k(T) = k_ref * exp(-Ea / R * (1/T - 1/T_ref))``. The PINN will see
+``T`` as either a fixed scalar or an additional input feature.
 
 ## See also
 
