@@ -1,0 +1,5 @@
+solver,mse_vs_analytic,max_abs_err_vs_analytic,wallclock_per_call_ms,extra_info
+analytic,0.0000e+00,0.0000e+00,0.000,
+FD,1.3301e-10,4.8593e-05,7.267,"dx=0.0625, periodic BC"
+FFT,3.1404e-16,1.7881e-07,0.102,exact heat kernel
+PINN,4.2351e-04,1.7115e-01,0.373,train=77.6s

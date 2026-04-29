@@ -1,0 +1,130 @@
+[
+  {
+    "label": "small_2out",
+    "data_path": "reaction_diffusion_peb/outputs/datasets/peb_phase9_safe_dataset.npz",
+    "with_R": false,
+    "n_train": 52,
+    "n_params": 2102850,
+    "train_wall_s": 6.35944264405407,
+    "safe_test": {
+      "n_samples": 6,
+      "rel_L2_H": 1.3102099895477295,
+      "rel_L2_P": 0.9779435992240906,
+      "iou_from_P": 0.0,
+      "iou_from_R_logit": null,
+      "area_err_mean": 28.33333396911621,
+      "area_err_max": 126.0,
+      "p_max_err_mean": 0.04954911768436432,
+      "p_max_err_max": 0.07388564944267273,
+      "wall_s": 0.0009181509958580136
+    },
+    "stiff_full": {
+      "n_samples": 8,
+      "rel_L2_H": 136.90878295898438,
+      "rel_L2_P": 90.30230712890625,
+      "iou_from_P": 0.0,
+      "iou_from_R_logit": null,
+      "area_err_mean": 0.0,
+      "area_err_max": 0.0,
+      "p_max_err_mean": 2.1519010066986084,
+      "p_max_err_max": 3.417233943939209,
+      "wall_s": 0.0029508760198950768
+    }
+  },
+  {
+    "label": "small_3out",
+    "data_path": "reaction_diffusion_peb/outputs/datasets/peb_phase9_safe_dataset.npz",
+    "with_R": true,
+    "n_train": 52,
+    "n_params": 2102883,
+    "train_wall_s": 6.298585977987386,
+    "safe_test": {
+      "n_samples": 6,
+      "rel_L2_H": 0.9280743598937988,
+      "rel_L2_P": 0.601874828338623,
+      "iou_from_P": 0.1358024775981903,
+      "iou_from_R_logit": 0.0,
+      "area_err_mean": 35.66666793823242,
+      "area_err_max": 204.0,
+      "p_max_err_mean": 0.04412148520350456,
+      "p_max_err_max": 0.0954098105430603,
+      "wall_s": 0.000914030009880662
+    },
+    "stiff_full": {
+      "n_samples": 8,
+      "rel_L2_H": 320.385009765625,
+      "rel_L2_P": 94.192626953125,
+      "iou_from_P": 0.0,
+      "iou_from_R_logit": 0.0,
+      "area_err_mean": 0.0,
+      "area_err_max": 0.0,
+      "p_max_err_mean": 2.275634765625,
+      "p_max_err_max": 3.580827474594116,
+      "wall_s": 0.0014394000172615051
+    }
+  },
+  {
+    "label": "large_2out",
+    "data_path": "reaction_diffusion_peb/outputs/datasets/peb_phase9_safe_large_dataset.npz",
+    "with_R": false,
+    "n_train": 820,
+    "n_params": 2102850,
+    "train_wall_s": 90.02210399799515,
+    "safe_test": {
+      "n_samples": 102,
+      "rel_L2_H": 0.10479288548231125,
+      "rel_L2_P": 0.09150848537683487,
+      "iou_from_P": 0.2758775055408478,
+      "iou_from_R_logit": null,
+      "area_err_mean": 106.36274719238281,
+      "area_err_max": 3328.0,
+      "p_max_err_mean": 0.023351067677140236,
+      "p_max_err_max": 0.11197388172149658,
+      "wall_s": 0.028781488887034357
+    },
+    "stiff_full": {
+      "n_samples": 8,
+      "rel_L2_H": 3054.936767578125,
+      "rel_L2_P": 237.85585021972656,
+      "iou_from_P": 0.0,
+      "iou_from_R_logit": null,
+      "area_err_mean": 16384.0,
+      "area_err_max": 16384.0,
+      "p_max_err_mean": 5.787400245666504,
+      "p_max_err_max": 9.454182624816895,
+      "wall_s": 0.001214484916999936
+    }
+  },
+  {
+    "label": "large_3out",
+    "data_path": "reaction_diffusion_peb/outputs/datasets/peb_phase9_safe_large_dataset.npz",
+    "with_R": true,
+    "n_train": 820,
+    "n_params": 2102883,
+    "train_wall_s": 96.2278806619579,
+    "safe_test": {
+      "n_samples": 102,
+      "rel_L2_H": 0.15536338090896606,
+      "rel_L2_P": 0.12924662232398987,
+      "iou_from_P": 0.2669411301612854,
+      "iou_from_R_logit": 0.27167943120002747,
+      "area_err_mean": 135.57843017578125,
+      "area_err_max": 3328.0,
+      "p_max_err_mean": 0.028540974482893944,
+      "p_max_err_max": 0.14699816703796387,
+      "wall_s": 0.0287970460485667
+    },
+    "stiff_full": {
+      "n_samples": 8,
+      "rel_L2_H": 4518.01708984375,
+      "rel_L2_P": 459.4083251953125,
+      "iou_from_P": 0.0,
+      "iou_from_R_logit": 0.0,
+      "area_err_mean": 16384.0,
+      "area_err_max": 16384.0,
+      "p_max_err_mean": 11.095338821411133,
+      "p_max_err_max": 17.974584579467773,
+      "wall_s": 0.001237091957591474
+    }
+  }
+]

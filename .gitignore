@@ -11,27 +11,17 @@ __pycache__/
 venv/
 env/
 
-# --- experiment outputs (regenerable) ------------------------------------
-outputs/figures/*
-outputs/checkpoints/*
-outputs/logs/*
+# --- experiment outputs --------------------------------------------------
+# Study repo: figures / logs / checkpoints are committed so results are
+# browsable on GitHub. Only the regenerable bulk-binary artifacts
+# (datasets, raw arrays) stay ignored.
 outputs/datasets/*
-!outputs/figures/.gitkeep
-!outputs/checkpoints/.gitkeep
-!outputs/logs/.gitkeep
 !outputs/datasets/.gitkeep
 
-# Same convention for the PEB submodule
-reaction_diffusion_peb/outputs/figures/*
-reaction_diffusion_peb/outputs/logs/*
-reaction_diffusion_peb/outputs/arrays/*
-reaction_diffusion_peb/outputs/checkpoints/*
 reaction_diffusion_peb/outputs/datasets/*
-!reaction_diffusion_peb/outputs/figures/.gitkeep
-!reaction_diffusion_peb/outputs/logs/.gitkeep
-!reaction_diffusion_peb/outputs/arrays/.gitkeep
-!reaction_diffusion_peb/outputs/checkpoints/.gitkeep
 !reaction_diffusion_peb/outputs/datasets/.gitkeep
+reaction_diffusion_peb/outputs/arrays/*
+!reaction_diffusion_peb/outputs/arrays/.gitkeep
 
 # --- editor / OS ---------------------------------------------------------
 .vscode/
