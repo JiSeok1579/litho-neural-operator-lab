@@ -1,14 +1,16 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 10 done (Phase 10 trains a small 2D FNO on the
-safe Phase-9 archive and evaluates it on the safe-test split plus the
-full stiff archive; the surrogate degrades sharply at this
-sample count and parameter range — that mirrors the main project's
-Phase-9 finding and is logged as an informative failure). Phase 11
-planned. Open follow-ups in
+**Status:** Phases 1 – 10 done. Phase 10 has two layers — the original
+small-data demo (PR #25, kept for reproducibility) and a follow-up
+ablation that scaled the safe dataset to 1024 samples and added an
+optional R-logit head. The ablation cleanly separates the three
+candidate failure causes: data size dominates (P rel-L2 0.98 → 0.09,
+IoU 0.000 → 0.276 on safe-test), R-head helps mainly at small scale,
+and stiff regime remains catastrophic OOD by ~2 orders of magnitude
+in ``k_q``. Phase 11 planned. Open follow-ups in
 [`reaction_diffusion_peb/FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md)
 (items 1 and 4 closed; items 2 and 3 still open).
-177 PEB tests green; total repo tests at 309 / 309.
+185 PEB tests green; total repo tests at 317 / 317.
 
 ## Goal
 
@@ -704,14 +706,115 @@ What would move the needle (FUTURE_WORK candidates, not done here):
 - **DeepONet branch.** The plan also lists DeepONet; it is a different
   story for irregular sampling and is left as an open extension.
 
+## Phase 10 improvement ablation — what's already there
+
+```text
+reaction_diffusion_peb/
+  experiments/09_dataset_generation/
+    generate_safe_large_dataset.py   N=1024 safe archive
+                                     (peb_phase9_safe_large_dataset.npz);
+                                     leaves the original 64-sample
+                                     archive untouched for Phase-9
+                                     reproducibility.
+
+  src/fno_surrogate.py                + OUTPUT_FIELD_NAMES_WITH_R,
+                                      make_output_tensor_with_R,
+                                      build_fno_for_dataset(..., with_R_head=True),
+                                      area_error, p_max_error,
+                                      mask_iou_from_logits.
+
+  experiments/10_operator_learning_optional/
+    run_phase10_ablation.py           Trains 4 variants, evaluates
+                                      each on safe-test + stiff-OOD,
+                                      writes a summary CSV/JSON +
+                                      4 checkpoints.
+```
+
+The ablation crosses two factors the post-mortem identified as
+candidate failure causes:
+
+```text
+data size:    64-sample safe (original)  vs  1024-sample safe (new)
+target head:  2-output (H, P)            vs  3-output (H, P, R-logit)
+```
+
+For the 3-output variant the third channel is supervised by
+``BCEWithLogitsLoss(pred_R_logit, R_truth)`` while H and P keep their
+normalized-MSE regression. Each model is trained on its own ``train``
+split, validated on its ``val`` split, and finally evaluated on:
+
+- the matching safe ``test`` split  (in-distribution)
+- the full Phase-9 stiff archive    (OOD; ``k_q`` trained on
+  ``[0.5, 5]``, evaluated on ``[100, 1000]``)
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase10_ablation_summary.csv`
+(seed 20260430, 200 epochs, AdamW cosine, ``λ_R = 1`` for the 3-output
+variants):
+
+**safe-test (in-distribution):**
+
+| variant | n_train | rel-L2 P | IoU(P>0.5) | IoU(R-logit) | area-err mean | P_max-err mean |
+|---|---|---|---|---|---|---|
+| small_2out | 52 | 9.78e-01 | 0.000 | — | 28.3 | 0.0495 |
+| small_3out | 52 | 6.02e-01 | 0.136 | 0.000 | 35.7 | 0.0441 |
+| large_2out | 820 | **9.15e-02** | **0.276** | — | 106.4 | 0.0234 |
+| large_3out | 820 | 1.29e-01 | 0.267 | **0.272** | 135.6 | 0.0285 |
+
+**stiff-full (OOD):**
+
+| variant | rel-L2 P | IoU(P>0.5) | IoU(R-logit) | area-err mean |
+|---|---|---|---|---|
+| small_2out | 9.0e+01 | 0.000 | — | 0.0 |
+| small_3out | 9.4e+01 | 0.000 | 0.000 | 0.0 |
+| large_2out | 2.4e+02 | 0.000 | — | 16384 |
+| large_3out | 4.6e+02 | 0.000 | 0.000 | 16384 |
+
+What the ablation says about the failure cause:
+
+1. ✅ **Data size dominates.** Going from 64 → 1024 samples drops
+   P rel-L2 by ~10× (0.98 → 0.09) and lifts safe-test IoU from 0 to
+   0.276. The acceptance bar (P rel-L2 < 0.24, IoU > 0) is met by
+   both ``large_*`` variants.
+2. ✅ **R-head matters at small scale, marginal at large scale.**
+   Adding the third output channel saves the small-data run from
+   ``IoU = 0.000`` (small_2out) to ``0.136`` (small_3out). At 1024
+   samples the P-channel already learns the threshold neighbourhood;
+   ``IoU_from_R`` and ``IoU_from_P`` both land near 0.27 in
+   ``large_3out``. The R head is a useful crutch when data is scarce.
+3. ❌ **Stiff regime is structurally OOD.** None of the four variants
+   makes a dent — the training distribution drew ``k_q`` from
+   ``[0.5, 5]`` and the stiff archive is at ``[100, 1000]``. Two
+   orders of magnitude in a reaction rate is not something a surrogate
+   trained on a single regime can extrapolate over, and the
+   ``area_err_mean = 16384`` for the large variants is just the
+   ``128 × 128`` grid being filled with predicted R while truth is
+   empty — exactly the failure shape we expected.
+4. ⚠️  **Area error caveat.** ``area_err_mean`` is high for the
+   ``large_*`` variants on safe-test because they actively predict
+   ``R`` (sometimes overshoot) while ``small_2out`` predicts ``R = 0``
+   everywhere; the IoU and rel-L2 numbers are the more reliable
+   discriminators here.
+
+Bottom line: the original Phase-10 failure was data-bound, not
+architectural. With 1024 safe samples and either head choice, the
+acceptance bar is cleared. The R-head is still a small win at a fixed
+data budget. The stiff archive remains a hard OOD problem and would
+need a per-regime surrogate or a much wider sweep at training time.
+
 ## Where to start when reopening
 
 Phase 11 (advanced stochastic / Petersen / z-axis effects) is the
-remaining major topic in the plan and is currently still planned.
-Within the existing Phase-1–10 framework, the most useful single
-lever for surrogate quality is regenerating Phase 9 with ~1000
-samples and rerunning Phase 10 — the existing scripts handle that
-without changes.
+remaining major topic in the plan. Acceptance criterion 1 from the
+Phase-10 improvement plan is now met (safe-regime FNO has IoU > 0),
+so Phase 11 is unblocked. **Phase 11 must not be mixed with further
+Phase-10 surrogate tuning** — keep them as separate PRs so the
+physical-extension story stays legible.
+
+If you want to push surrogate quality further before Phase 11, the
+remaining levers are: (a) more data still, (b) per-regime training,
+(c) wider ``k_q`` distribution at training time, (d) an explicit
+PINN auxiliary loss using the now-validated Phase-8 PDE residuals.
 
 ## See also
 

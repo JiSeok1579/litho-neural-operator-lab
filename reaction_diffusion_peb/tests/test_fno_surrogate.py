@@ -16,12 +16,17 @@ from reaction_diffusion_peb.src.fno_surrogate import (
     INPUT_FIELD_NAMES,
     INPUT_SCALAR_NAMES,
     OUTPUT_FIELD_NAMES,
+    OUTPUT_FIELD_NAMES_WITH_R,
     SpectralConv2d,
+    area_error,
     build_fno_for_dataset,
     fit_channel_stats,
     make_input_tensor,
     make_output_tensor,
+    make_output_tensor_with_R,
     manual_seed_everything,
+    mask_iou_from_logits,
+    p_max_error,
     per_channel_relative_l2,
     relative_l2,
     thresholded_iou,
@@ -42,6 +47,7 @@ def _build_arrays(n: int = 4, grid: int = GRID) -> dict:
         "H0": np.stack([s.H0 for s in samples]),
         "H_final": np.stack([s.H_final for s in samples]),
         "P_final": np.stack([s.P_final for s in samples]),
+        "R": np.stack([s.R for s in samples]),
     }
     for name in INPUT_SCALAR_NAMES:
         arrays[name] = np.array(
@@ -209,3 +215,83 @@ def test_build_fno_for_dataset_matches_adapter():
     assert y.shape[1] == len(OUTPUT_FIELD_NAMES)
     assert y.shape[2] == x.shape[2]
     assert y.shape[3] == x.shape[3]
+
+
+def test_build_fno_for_dataset_with_R_head_has_three_outputs():
+    model = build_fno_for_dataset(width=4, n_blocks=2, modes_x=4, modes_y=4,
+                                   with_R_head=True)
+    arrays = _build_arrays(n=2)
+    x = make_input_tensor(arrays)
+    y = model(x)
+    assert y.shape[1] == len(OUTPUT_FIELD_NAMES_WITH_R) == 3
+
+
+def test_make_output_tensor_with_R_channel_layout():
+    arrays = _build_arrays(n=3)
+    y = make_output_tensor_with_R(arrays)
+    assert y.shape == (3, 3, GRID, GRID)
+    np.testing.assert_allclose(y[:, 0].numpy(), arrays["H_final"])
+    np.testing.assert_allclose(y[:, 1].numpy(), arrays["P_final"])
+    np.testing.assert_allclose(y[:, 2].numpy(), arrays["R"])
+    # R is binary
+    uniq = torch.unique(y[:, 2])
+    assert set(uniq.tolist()).issubset({0.0, 1.0})
+
+
+# ---- area / p_max metrics ----------------------------------------------
+
+def test_area_error_zero_when_masks_match():
+    P = torch.zeros(3, 1, 8, 8)
+    P[0, 0, :3, :3] = 1.0
+    P[1, 0, 4:, 4:] = 1.0
+    err = area_error(P, P, threshold=0.5)
+    assert torch.allclose(err, torch.zeros(3))
+
+
+def test_area_error_counts_pixel_difference():
+    pred = torch.zeros(1, 1, 8, 8)
+    pred[0, 0, :2, :2] = 1.0           # 4 pixels
+    target = torch.zeros(1, 1, 8, 8)
+    target[0, 0, :3, :3] = 1.0         # 9 pixels
+    err = area_error(pred, target, threshold=0.5)
+    assert float(err.item()) == 5.0
+
+
+def test_p_max_error_zero_when_pred_eq_target():
+    P = torch.rand(3, 1, 8, 8)
+    err = p_max_error(P, P)
+    assert torch.allclose(err, torch.zeros(3), atol=1e-7)
+
+
+def test_p_max_error_picks_per_sample_max_diff():
+    pred = torch.zeros(2, 1, 4, 4)
+    target = torch.zeros(2, 1, 4, 4)
+    pred[0, 0, 0, 0] = 0.7
+    target[0, 0, 0, 0] = 0.9
+    pred[1, 0, 1, 1] = 0.2
+    target[1, 0, 1, 1] = 0.8
+    err = p_max_error(pred, target)
+    assert torch.allclose(err, torch.tensor([0.2, 0.6]), atol=1e-6)
+
+
+# ---- mask IoU from logits ----------------------------------------------
+
+def test_mask_iou_from_logits_perfect_match():
+    target = torch.zeros(1, 1, 8, 8)
+    target[0, 0, :3, :3] = 1.0
+    # Logit > 0 means sigmoid > 0.5; -> matches target
+    logit = torch.full((1, 1, 8, 8), -10.0)
+    logit[0, 0, :3, :3] = +10.0
+    iou = mask_iou_from_logits(logit, target)
+    assert float(iou.item()) == pytest.approx(1.0)
+
+
+def test_mask_iou_from_logits_threshold_at_zero():
+    """A logit exactly at 0 is treated as the negative class
+    (matches the documented ``> 0`` rule)."""
+    target = torch.zeros(1, 1, 4, 4)
+    target[0, 0, :2, :2] = 1.0
+    logit = torch.full((1, 1, 4, 4), -1.0)
+    logit[0, 0, :2, :2] = 0.0          # NOT > 0
+    iou = mask_iou_from_logits(logit, target)
+    assert float(iou.item()) == 0.0    # no overlap, target has 4 pixels

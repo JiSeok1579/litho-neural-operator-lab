@@ -166,6 +166,7 @@ INPUT_SCALAR_NAMES: tuple[str, ...] = (
     "t_end_s",
 )
 OUTPUT_FIELD_NAMES: tuple[str, ...] = ("H_final", "P_final")
+OUTPUT_FIELD_NAMES_WITH_R: tuple[str, ...] = ("H_final", "P_final", "R")
 
 
 def make_input_tensor(arrays: dict[str, np.ndarray]) -> torch.Tensor:
@@ -191,6 +192,21 @@ def make_output_tensor(arrays: dict[str, np.ndarray]) -> torch.Tensor:
     H = torch.from_numpy(arrays["H_final"]).float()
     P = torch.from_numpy(arrays["P_final"]).float()
     return torch.stack([H, P], dim=1)                           # (n, 2, G, G)
+
+
+def make_output_tensor_with_R(arrays: dict[str, np.ndarray]) -> torch.Tensor:
+    """3-channel output tensor: ``H_final``, ``P_final``, and the
+    binary mask ``R`` (already saved as ``{0, 1}`` in Phase-9 archives).
+
+    The third channel is intended to be supervised by a separate
+    threshold head — ``train_fno_v2`` treats it as a raw logit and
+    applies BCE-with-logits while keeping H/P in normalized regression
+    mode. Channel order matches :data:`OUTPUT_FIELD_NAMES_WITH_R`.
+    """
+    H = torch.from_numpy(arrays["H_final"]).float()
+    P = torch.from_numpy(arrays["P_final"]).float()
+    R = torch.from_numpy(arrays["R"]).float()
+    return torch.stack([H, P, R], dim=1)                        # (n, 3, G, G)
 
 
 @dataclass
@@ -263,6 +279,45 @@ def thresholded_iou(
     return inter / union
 
 
+def area_error(
+    pred_P: torch.Tensor, target_P: torch.Tensor, threshold: float = 0.5,
+) -> torch.Tensor:
+    """Per-sample absolute pixel-count error: |area_pred - area_truth|.
+
+    Both inputs are P-style fields with shape ``(n, 1, H, W)``; the
+    binary masks are formed by ``> threshold``. Result has shape
+    ``(n,)`` of dtype float (counts).
+    """
+    pm = (pred_P > threshold).flatten(1).sum(dim=1).float()
+    tm = (target_P > threshold).flatten(1).sum(dim=1).float()
+    return (pm - tm).abs()
+
+
+def p_max_error(
+    pred_P: torch.Tensor, target_P: torch.Tensor,
+) -> torch.Tensor:
+    """Per-sample absolute peak-value error: |max(P_pred) - max(P_truth)|.
+
+    Returns shape ``(n,)``.
+    """
+    pm = pred_P.flatten(1).max(dim=1).values
+    tm = target_P.flatten(1).max(dim=1).values
+    return (pm - tm).abs()
+
+
+def mask_iou_from_logits(
+    pred_logit: torch.Tensor, target_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Per-sample IoU between ``sigmoid(pred_logit) > 0.5`` and a
+    ground-truth binary mask in ``{0, 1}``. Both inputs have shape
+    ``(n, 1, H, W)``."""
+    pm = pred_logit > 0.0           # sigmoid > 0.5  <=>  logit > 0
+    tm = target_mask > 0.5
+    inter = (pm & tm).flatten(1).sum(dim=1).float()
+    union = (pm | tm).flatten(1).sum(dim=1).float().clamp(min=1.0)
+    return inter / union
+
+
 # --------------------------------------------------------------------------
 # convenience
 # --------------------------------------------------------------------------
@@ -272,11 +327,19 @@ def build_fno_for_dataset(
     n_blocks: int = 4,
     modes_x: int = 12,
     modes_y: int = 12,
+    with_R_head: bool = False,
 ) -> FNO2d:
     """Construct an ``FNO2d`` with the input/output channel counts that
-    match :func:`make_input_tensor` / :func:`make_output_tensor`."""
+    match :func:`make_input_tensor` / :func:`make_output_tensor`.
+
+    With ``with_R_head=True`` the model has 3 output channels matching
+    :data:`OUTPUT_FIELD_NAMES_WITH_R` — H, P, and the R logit.
+    """
     in_channels = len(INPUT_FIELD_NAMES) + len(INPUT_SCALAR_NAMES)
-    out_channels = len(OUTPUT_FIELD_NAMES)
+    out_channels = (
+        len(OUTPUT_FIELD_NAMES_WITH_R) if with_R_head
+        else len(OUTPUT_FIELD_NAMES)
+    )
     return FNO2d(
         in_channels=in_channels, out_channels=out_channels,
         width=width, n_blocks=n_blocks,
