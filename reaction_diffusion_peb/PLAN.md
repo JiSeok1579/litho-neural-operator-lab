@@ -1,18 +1,23 @@
-# Reaction-Diffusion / PEB 국소 모듈 최종 구축 지시안
+# Reaction-Diffusion / PEB submodule — implementation plan
 
-## 0. 문서 목적
+## 0. Purpose
 
-이 문서는 기존 GitHub 프로젝트 `litho-neural-operator-lab`의 전체 방향은 그대로 유지하면서, 그 안에 **Reaction-Diffusion / PEB(Post-Exposure Bake)** 부분만 독립적으로 실험할 수 있는 국소 모듈을 구축하기 위한 최종 지시안이다.
+This document is the implementation plan for an isolated submodule that
+studies **Reaction-Diffusion / Post-Exposure Bake (PEB)** physics
+inside the existing `litho-neural-operator-lab` repository, without
+disturbing the main pipeline.
 
-이번 최종안의 핵심 수정점은 다음이다.
+The single most important methodological choice is:
 
 ```text
-데이터가 아직 없는 상태에서는 DeepONet/FNO보다 PINN을 먼저 사용한다.
-단, PINN만 단독으로 쓰지 않고 FD/FFT physics solver와 함께 비교한다.
-FD/FFT/PINN 결과가 쌓인 뒤 DeepONet/FNO를 operator surrogate로 후속 도입한다.
+With no simulation dataset on hand yet, use PINN before DeepONet / FNO.
+But never trust the PINN alone — always benchmark it against an FD or
+FFT physics solver. Once enough FD / FFT / PINN results have been
+accumulated as paired data, only then introduce DeepONet / FNO as
+operator surrogates.
 ```
 
-즉 전체 순서는 다음과 같다.
+The end-to-end ordering is therefore:
 
 ```text
 Physics equation
@@ -23,31 +28,32 @@ PINN comparison
   ↓
 Simulation dataset accumulation
   ↓
-DeepONet / FNO surrogate
+DeepONet / FNO surrogate (downstream / optional)
 ```
 
 ---
 
-## 1. 핵심 원칙
+## 1. Core principles
 
 ```text
-1. 기존 프로젝트는 건드리지 않는다.
-2. reaction_diffusion_peb/ 폴더를 새로 만들어 국소적으로 운용한다.
-3. Mask / optics / inverse design / FNO 코드는 초기에는 섞지 않는다.
-4. 초기 입력은 synthetic aerial image를 사용한다.
-5. Diffusion-only부터 시작한다.
-6. FD/FFT baseline을 먼저 또는 동시에 만든다.
-7. PINN은 DeepONet/FNO보다 먼저 사용한다.
-8. DeepONet/FNO는 데이터셋 생성 이후 후속 surrogate로 둔다.
-9. stiff reaction인 kq는 작은 값부터 시작한다.
-10. 모든 파라미터는 단계별로 활성화한다.
+1.  Do not modify the existing main project.
+2.  Operate entirely inside reaction_diffusion_peb/.
+3.  Do not couple to the main repo's mask / optics / inverse / FNO modules
+    in the early phases.
+4.  Use synthetic aerial images as inputs at first.
+5.  Start with diffusion-only.
+6.  Build the FD / FFT baselines first (or alongside) the PINN.
+7.  Use PINN before DeepONet / FNO.
+8.  Treat DeepONet / FNO as a downstream surrogate after data exists.
+9.  For the stiff acid–quencher reaction (`kq`), start at small values.
+10. Activate every parameter incrementally; never enable everything at once.
 ```
 
 ---
 
-## 2. 기존 전체 프로젝트와의 관계
+## 2. Relationship to the main project
 
-기존 전체 프로젝트의 큰 흐름은 다음과 같다.
+The full main-project pipeline is:
 
 ```text
 Mask
@@ -71,7 +77,7 @@ Resist threshold / contour
 PINN / FNO / DeepONet experiments
 ```
 
-이번 국소 모듈은 아래 부분만 다룬다.
+This submodule covers only the resist-internal part:
 
 ```text
 Aerial image or synthetic exposure map
@@ -91,20 +97,16 @@ Temperature-dependent reaction rate
 Soft threshold / latent resist image
 ```
 
-즉, 이번 작업은 **mask optics가 아니라 resist 내부 PEB 물리**에 집중한다.
+In short, the focus here is **resist chemistry inside the PEB**, not
+mask optics. The main project already touches the same equations at a
+study-grade level in its Phase 5; this submodule goes deeper:
+physically-meaningful units (mol/dm³, nm²/s, Celsius), Arrhenius
+temperature dependence, deprotection kinetics, stiff quencher reaction,
+and PINN-first methodology.
 
 ---
 
-## 3. 새로 만들 폴더
-
-기존 프로젝트 루트 아래에 다음 폴더를 새로 만든다.
-
-```text
-litho-neural-operator-lab/
-  reaction_diffusion_peb/
-```
-
-권장 구조:
+## 3. Folder layout
 
 ```text
 litho-neural-operator-lab/
@@ -210,24 +212,22 @@ litho-neural-operator-lab/
 
 ---
 
-## 4. 기존 코드와 분리하는 원칙
+## 4. Isolation from the rest of the codebase
 
-초기에는 `reaction_diffusion_peb/` 내부 코드가 자기 폴더 안에서 완결되도록 한다.
-
-초기에는 아래 모듈을 import하지 않는다.
+Early on, every module under `reaction_diffusion_peb/` should be
+self-contained. Do **not** import from the main repo's:
 
 ```text
-root src/
-mask/
-optics/
-inverse/
-neural_operator/
-closed_loop/
+src/mask/
+src/optics/
+src/inverse/
+src/neural_operator/
+src/closed_loop/
 ```
 
-초기 입력은 synthetic aerial image를 사용한다.
-
-나중에 전체 프로젝트와 연결할 때는 파일 기반 인터페이스를 사용한다.
+Initial inputs are synthetic exposure maps generated inside the
+submodule. When the time comes to plug back into the main pipeline,
+do it through file-based interfaces:
 
 ```text
 main optics module
@@ -240,7 +240,7 @@ PEB / reaction-diffusion simulation
 latent resist image
 ```
 
-권장 입력/출력:
+Recommended I/O:
 
 ```text
 input:
@@ -257,40 +257,38 @@ output:
 
 ---
 
-## 5. 왜 PINN을 DeepONet/FNO보다 먼저 쓰는가?
+## 5. Why PINN before DeepONet / FNO
 
-현재 상태는 다음과 같다.
-
-```text
-데이터는 아직 없음
-물리 PDE는 있음
-파라미터 범위는 있음
-```
-
-이때 DeepONet/FNO는 바로 쓰기 어렵다.  
-DeepONet/FNO는 operator learning 모델이므로 다음과 같은 데이터셋이 필요하다.
+The current state is:
 
 ```text
-input:
-  I(x,y), H0(x,y), DH0, kdep, kq, kloss, T, PEB time
-
-output:
-  H(x,y,t_final), Q(x,y,t_final), P(x,y,t_final), R(x,y)
+- No simulation dataset.
+- A well-defined family of PDEs.
+- A reasonable parameter range.
 ```
 
-아직 이런 입력-출력 쌍이 없으므로, 먼저 physics solver와 PINN으로 데이터를 만들고 검증해야 한다.
-
-PINN은 다음 이유로 먼저 사용할 수 있다.
+DeepONet / FNO cannot be trained immediately. Both are **operator-
+learning** models that need an existing supervised dataset:
 
 ```text
-1. PDE residual을 loss로 사용한다.
-2. 데이터가 적어도 initial condition과 boundary condition으로 학습 가능하다.
-3. diffusion / reaction-diffusion 물리 이해에 적합하다.
-4. DeepONet/FNO용 데이터셋 생성 전 단계로 좋다.
+input:   I(x, y), H0(x, y), DH0, kdep, kq, kloss, T, t_PEB
+output:  H(x, y, t_final), Q(x, y, t_final), P(x, y, t_final), R(x, y)
 ```
 
-하지만 PINN만 단독으로 쓰면 검증이 어렵다.  
-따라서 다음 비교 구조가 필수다.
+We do not have these (input, output) pairs yet, so the only path is to
+build a physics solver and a PINN first, accumulate paired data, and
+only then move to operator learning.
+
+PINN is usable right away because:
+
+```text
+1. The training signal is the PDE residual (no data needed).
+2. Initial- and boundary-condition penalties supplement it.
+3. It is well-suited to learning diffusion / reaction-diffusion physics.
+4. PINN solutions become a natural seed for DeepONet / FNO datasets.
+```
+
+But PINN alone is hard to validate. Hence the mandatory baseline:
 
 ```text
 FD solver
@@ -300,69 +298,35 @@ FFT heat-kernel solver
 PINN solver
 ```
 
-특히 diffusion-only 단계에서는 FFT heat-kernel solution이 좋은 기준 역할을 한다.
+For diffusion-only the FFT heat-kernel solution is essentially exact
+and serves as the truth reference.
 
 ---
 
-## 6. 전체 추천 진행 순서
-
-기존 계획에서 PINN을 뒤쪽 optional로 두지 않고, 앞쪽 비교 모듈로 올린다.
-
-최종 추천 순서:
+## 6. Recommended phase ordering
 
 ```text
-Phase 1:
-  Synthetic aerial image 생성
-  Exposure → initial acid H0 생성
-
-Phase 2:
-  Diffusion-only FD solver
-  Diffusion-only FFT solver
-  FD/FFT 비교
-
-Phase 3:
-  PINN diffusion solver
-  FD/FFT/PINN 비교
-
-Phase 4:
-  Acid loss 추가
-  FD/PINN 비교
-
-Phase 5:
-  Deprotection 추가
-  H → P 모델 구현
-  FD/PINN 비교 가능
-
-Phase 6:
-  Temperature / Arrhenius 추가
-
-Phase 7:
-  Quencher reaction 추가
-  작은 kq부터 시작
-  stiff handling 필요 시 별도 구현
-
-Phase 8:
-  Full reaction-diffusion 통합
-
-Phase 9:
-  FD/PINN simulation 결과를 dataset으로 저장
-
-Phase 10:
-  DeepONet/FNO operator surrogate 학습
-
-Phase 11:
-  Advanced stochastic / Petersen / z-axis 확장
+Phase 1:  Synthetic aerial image and exposure → initial acid H0
+Phase 2:  Diffusion-only FD and FFT baselines, FD vs FFT comparison
+Phase 3:  PINN diffusion solver, FD / FFT / PINN three-way comparison
+Phase 4:  Add acid loss, FD vs PINN comparison
+Phase 5:  Add deprotection, build the H → P kinetic model
+Phase 6:  Add temperature dependence (Arrhenius)
+Phase 7:  Add quencher reaction, starting at small kq
+Phase 8:  Integrate everything into one full reaction-diffusion model
+Phase 9:  Save FD / PINN simulation results as datasets
+Phase 10: Train DeepONet / FNO operator surrogates on those datasets
+Phase 11: Advanced stochastic / Petersen / z-axis extensions
 ```
 
 ---
 
-## 7. 입력과 출력
+## 7. Inputs and outputs
 
-## 7.1 입력
+### 7.1 Inputs
 
-초기에는 synthetic aerial image를 사용한다.
-
-입력 후보:
+Initially, generate synthetic aerial images inside the submodule.
+Candidates:
 
 ```text
 1. Gaussian spot
@@ -372,29 +336,29 @@ Phase 11:
 5. User-provided .npy aerial image
 ```
 
-입력 변수:
+Input variables:
 
 ```text
-I(x, y): normalized aerial / exposure intensity map
-dose: normalized exposure dose
-grid_spacing_nm: spatial grid size
+I(x, y)         : normalized aerial / exposure intensity map
+dose            : normalized exposure dose
+grid_spacing_nm : spatial grid spacing
 ```
 
-## 7.2 출력
+### 7.2 Outputs
 
-각 실험은 다음을 출력한다.
+Each experiment writes:
 
 ```text
-H0(x,y): initial acid concentration
-H(x,y,t): acid concentration after PEB
-Q(x,y,t): quencher concentration, if enabled
-P(x,y,t): deprotected fraction, if enabled
-R(x,y): soft-thresholded resist latent image
-metrics.csv: concentration / contour / error metrics
-figures: before-after visualization
+H0(x, y)            : initial acid concentration
+H(x, y, t)          : acid concentration after PEB
+Q(x, y, t)          : quencher concentration (when enabled)
+P(x, y, t)          : deprotected fraction (when enabled)
+R(x, y)             : soft-thresholded resist latent image
+metrics.csv         : concentration, contour, and error metrics
+figures             : before / after visualization
 ```
 
-PINN 비교 실험은 추가로 다음을 출력한다.
+PINN comparison experiments additionally write:
 
 ```text
 pinn_loss_curve.csv
@@ -403,7 +367,7 @@ fd_vs_pinn_error.npy
 fd_fft_pinn_comparison.png
 ```
 
-Dataset generation 단계에서는 다음을 출력한다.
+The dataset-generation phase writes:
 
 ```text
 outputs/datasets/
@@ -415,107 +379,108 @@ outputs/datasets/
 
 ---
 
-## 8. 변수 정의
+## 8. Variable nomenclature
 
 | Symbol | Code name | Meaning |
 |---|---|---|
-| `I(x,y)` | `I` | normalized aerial / exposure intensity |
-| `H(x,y,t)` | `H` | acid concentration |
-| `H0(x,y)` | `H0` | initial acid concentration after exposure |
-| `Q(x,y,t)` | `Q` | quencher concentration |
-| `P(x,y,t)` | `P` | deprotected fraction |
-| `R(x,y)` | `R` | soft threshold resist latent image |
+| `I(x, y)` | `I` | normalized aerial / exposure intensity |
+| `H(x, y, t)` | `H` | acid concentration |
+| `H0(x, y)` | `H0` | initial acid concentration after exposure |
+| `Q(x, y, t)` | `Q` | quencher concentration |
+| `P(x, y, t)` | `P` | deprotected fraction |
+| `R(x, y)` | `R` | soft-thresholded resist latent image |
 | `D_H` | `DH` | acid diffusion coefficient |
 | `D_Q` | `DQ` | quencher diffusion coefficient |
-| `k_q` | `kq` | acid-quencher neutralization rate |
+| `k_q` | `kq` | acid–quencher neutralization rate |
 | `k_loss` | `kloss` | acid loss rate |
 | `k_dep` | `kdep` | deprotection rate |
-| `T` | `temperature_c` | PEB temperature in Celsius |
+| `T` | `temperature_c` | PEB temperature (Celsius) |
 | `t_PEB` | `peb_time_s` | PEB time |
 | `Lz` | `film_thickness_nm` | resist film thickness |
 | `Ea` | `activation_energy_kj_mol` | activation energy |
 
-주의:
+Naming caveat:
 
 ```text
-D라는 한 글자는 사용하지 않는다.
-Dose와 diffusion coefficient가 헷갈리기 때문이다.
+Never use the bare letter D — it is ambiguous between "dose" and
+"diffusion coefficient".
 
-Dose는 dose.
-Acid diffusion coefficient는 DH.
-Quencher diffusion coefficient는 DQ.
-Deprotected fraction은 P.
+  dose                            -> dose
+  acid diffusion coefficient      -> DH
+  quencher diffusion coefficient  -> DQ
+  deprotected fraction            -> P
 ```
 
 ---
 
-## 9. 대상 파라미터 범위
+## 9. Parameter scope
 
-| 분류 | 파라미터 | 정량적 범위 / 수치 | 단위 | 역할 |
+| Group | Parameter | Range | Unit | Role |
 |---|---|---:|---|---|
-| 공정 조건 | PEB 온도 `temperature_c` | 80 ~ 120, MOR: 125 | °C | Arrhenius 계수로 reaction rate 보정 |
-| 공정 조건 | PEB 시간 `peb_time_s` | 60 ~ 90 | s | PEB simulation time, PINN time domain upper bound |
-| 공정 조건 | 온도 균일도 `temperature_uniformity_c` | ±0.02 | °C | stochastic / CDU proxy |
-| 확산 모델 | 초기 acid 확산 계수 `DH0_nm2_s` | 0.3 ~ 1.5 | nm²/s | acid diffusion strength |
-| 확산 모델 | Petersen 확산 가속 계수 `petersen_alpha` | 0.5 ~ 3.0 | - | nonlinear diffusion modulation |
-| 확산 모델 | Quencher 확산 `DQ_nm2_s` | ≤ 0.1 × DH0 | nm²/s | quencher diffusion |
-| 반응 속도 | 탈보호 속도 `kdep_s_inv` | 0.01 ~ 0.5 | s⁻¹ | deprotected fraction 생성 |
-| 반응 속도 | 중화 속도 `kq_s_inv` | 100 ~ 1000 | s⁻¹ | acid-quencher neutralization, stiff term |
-| 반응 속도 | 산 손실 속도 `kloss_s_inv` | 0.001 ~ 0.05 | s⁻¹ | acid loss / trap / decay |
-| 반응 속도 | 활성화 에너지 `activation_energy_kj_mol` | 약 100 | kJ/mol | temperature-dependent rate correction |
-| 레지스트 물성 | 필름 두께 `film_thickness_nm` | < 30 | nm | optional z-axis domain |
-| 레지스트 물성 | 분자/입자 크기 `particle_size_nm` | 0.5 MOR ~ 1.0 CAR | nm | molecular blur / resolution scale |
-| 레지스트 물성 | 초기 acid 농도 `Hmax_mol_dm3` | 0.1 ~ 0.3 | mol/dm³ | exposure-linked acid generation |
-| 수치 설정 | 격자 `grid_spacing_nm` | 0.5 ~ 1.0 | nm | spatial discretization |
-| 수치 설정 | 앙상블 반복 `ensemble_runs` | ≥ 10 ~ 20 | runs | stochastic variation analysis |
+| Process | PEB temperature `temperature_c` | 80 – 120 (MOR preset 125) | °C | Arrhenius-correct reaction rates |
+| Process | PEB time `peb_time_s` | 60 – 90 | s | Simulation horizon and PINN time-domain upper bound |
+| Process | Temperature uniformity `temperature_uniformity_c` | ±0.02 | °C | Stochastic / CDU proxy |
+| Diffusion | Initial acid diffusion `DH0_nm2_s` | 0.3 – 1.5 | nm²/s | Acid diffusion strength |
+| Diffusion | Petersen acceleration `petersen_alpha` | 0.5 – 3.0 | – | Nonlinear diffusion modulation |
+| Diffusion | Quencher diffusion `DQ_nm2_s` | ≤ 0.1 × `DH0` | nm²/s | Quencher diffusion |
+| Reaction | Deprotection rate `kdep_s_inv` | 0.01 – 0.5 | s⁻¹ | Generates the deprotected fraction `P` |
+| Reaction | Neutralization rate `kq_s_inv` | 100 – 1000 | s⁻¹ | Acid–quencher reaction (stiff) |
+| Reaction | Acid loss rate `kloss_s_inv` | 0.001 – 0.05 | s⁻¹ | Acid trap / decay |
+| Reaction | Activation energy `activation_energy_kj_mol` | ≈ 100 | kJ/mol | Temperature-dependent rate correction |
+| Resist | Film thickness `film_thickness_nm` | < 30 | nm | Optional z-axis domain |
+| Resist | Particle size `particle_size_nm` | 0.5 (MOR) – 1.0 (CAR) | nm | Molecular blur / resolution scale |
+| Resist | Initial acid `Hmax_mol_dm3` | 0.1 – 0.3 | mol/dm³ | Exposure-linked acid generation |
+| Numerical | Grid `grid_spacing_nm` | 0.5 – 1.0 | nm | Spatial discretization |
+| Numerical | Ensemble `ensemble_runs` | 10 – 20 | runs | Stochastic variation analysis |
 
----
+### 9.1 Per-parameter readiness
 
-## 10. 파라미터별 실험 가능 여부
+| Parameter group | Status | Phase |
+|---|---|---|
+| PEB temperature / time | available | Phase 2, 6 |
+| Temperature uniformity | later | Phase 11 |
+| `DH0` acid diffusion | available | Phase 2 |
+| Petersen `alpha` | later | Phase 11 |
+| Quencher diffusion `DQ` | available | Phase 7 |
+| `kdep` | available | Phase 5 |
+| `kq` | available with care | Phase 7 |
+| `kloss` | available | Phase 4 |
+| `Ea` | available | Phase 6 |
+| Film thickness `Lz` | later | Phase 11 / optional z-axis PINN |
+| Molecular size | later | Phase 11 |
+| Initial acid `H0` / `Hmax` | available | Phase 1 |
+| 0.5 – 1.0 nm grid | available | all PDE phases |
+| 10 – 20 ensemble runs | later | Phase 11 |
 
-| 파라미터 그룹 | 가능 여부 | 단계 |
-|---|---:|---|
-| PEB 온도 / 시간 | 가능 | Phase 2, 6 |
-| 온도 균일도 | 후반 가능 | Phase 11 |
-| DH0 acid diffusion | 가능 | Phase 2 |
-| Petersen alpha | 후반 가능 | Phase 11 |
-| Quencher diffusion DQ | 가능 | Phase 7 |
-| kdep | 가능 | Phase 5 |
-| kq | 가능하지만 주의 | Phase 7 |
-| kloss | 가능 | Phase 4 |
-| Ea | 가능 | Phase 6 |
-| 필름 두께 Lz | 후반 가능 | Phase 11 / optional z-axis PINN |
-| 분자/입자 크기 | 후반 가능 | Phase 11 |
-| 초기 acid 농도 H0/Hmax | 가능 | Phase 1 |
-| 격자 0.5~1.0 nm | 가능 | all PDE phases |
-| ensemble 10~20회 | 후반 가능 | Phase 11 |
-
-요약:
+### 9.2 Summary
 
 ```text
-바로 가능:
-PEB time, DH0, H0/Hmax, grid, kloss, kdep, DQ, temperature, Ea
+Available immediately:
+  PEB time, DH0, H0/Hmax, grid, kloss, kdep, DQ, temperature, Ea
 
-주의해서 가능:
-kq = 100~1000 s^-1
-→ stiff하므로 작은 값부터 시작
+Available with care:
+  kq = 100 – 1000 s^-1
+    -> Stiff. Start at small values.
 
-후반 확장:
-Petersen alpha, temperature uniformity, molecular size, ensemble, Lz/z-axis
+Defer to later phases:
+  Petersen alpha, temperature uniformity, molecular size,
+  ensemble runs, Lz / z-axis
 
-DeepONet/FNO:
-FD/PINN 데이터셋 생성 후 가능
+DeepONet / FNO:
+  Available only after FD / PINN datasets exist.
 ```
 
 ---
 
-# Phase 1. Synthetic Aerial + Exposure
+# Phase 1. Synthetic aerial + exposure
 
-## 목적
+## Goal
 
-Optics / mask simulation 없이 Reaction-diffusion / PEB만 공부하기 위해 synthetic exposure map을 만들고, 이를 초기 acid concentration으로 변환한다.
+Build the resist-side study without depending on optics or mask
+simulation. Generate a synthetic exposure map and convert it into an
+initial acid concentration field.
 
-## 구현 파일
+## Files
 
 ```text
 reaction_diffusion_peb/src/synthetic_aerial.py
@@ -525,7 +490,7 @@ reaction_diffusion_peb/experiments/01_synthetic_aerial/run_gaussian_spot.py
 reaction_diffusion_peb/experiments/01_synthetic_aerial/run_line_space.py
 ```
 
-## synthetic aerial 함수
+## Synthetic aerial helpers
 
 ```python
 def gaussian_spot(grid_size, sigma_px, center=None):
@@ -541,29 +506,22 @@ def normalize_intensity(I):
     ...
 ```
 
-## Exposure 모델
+## Exposure model
 
 ```math
-H_0(x,y)
-=
-H_{max}
-\left(
-1 - \exp(-\eta \cdot dose \cdot I(x,y))
-\right)
+H_0(x, y) = H_{max} \left( 1 - \exp(-\eta \cdot \text{dose} \cdot I(x, y)) \right)
 ```
-
-## 구현 함수
 
 ```python
 def acid_generation(I, dose=1.0, eta=1.0, Hmax=0.2):
-    # I: normalized aerial intensity, range [0, 1]
-    # dose: normalized exposure dose
-    # eta: acid generation efficiency
-    # Hmax: maximum acid concentration [mol/dm^3]
+    # I    : normalized aerial intensity, range [0, 1]
+    # dose : normalized exposure dose
+    # eta  : acid generation efficiency
+    # Hmax : maximum acid concentration [mol/dm^3]
     ...
 ```
 
-## 실험 파라미터
+## Parameters
 
 ```yaml
 exposure:
@@ -581,34 +539,31 @@ sweep:
   eta: [0.5, 1.0, 2.0]
 ```
 
-## 확인할 것
+## Things to verify
 
 ```text
-I(x,y)가 0~1 범위로 normalize되는지
-dose가 증가하면 H0가 증가하는지
-H0가 Hmax를 넘지 않는지
-I가 0이면 H0도 0에 가까운지
+- I(x, y) is normalized to [0, 1].
+- Increasing dose increases H0 monotonically.
+- H0 never exceeds Hmax.
+- I = 0 implies H0 ≈ 0.
 ```
 
 ---
 
-# Phase 2. Diffusion-only FD / FFT Baseline
+# Phase 2. Diffusion-only FD / FFT baseline
 
-## 목적
+## Goal
 
-PEB 동안 acid가 확산되는 기본 물리를 FD와 FFT로 구현한다.
-
-이 단계는 PINN 검증을 위한 baseline이다.
+Implement the basic PEB acid diffusion in two ways. Both serve as the
+reference solution against which the Phase-3 PINN will be evaluated.
 
 ## PDE
 
 ```math
-\frac{\partial H}{\partial t}
-=
-D_H \nabla^2 H
+\frac{\partial H}{\partial t} = D_H \nabla^2 H
 ```
 
-## 구현 파일
+## Files
 
 ```text
 reaction_diffusion_peb/src/diffusion_fd.py
@@ -622,34 +577,22 @@ reaction_diffusion_peb/experiments/02_diffusion_baseline/compare_fd_fft.py
 ## FD update
 
 ```math
-H^{n+1}
-=
-H^n
-+
-\Delta t D_H \nabla^2 H^n
+H^{n+1} = H^n + \Delta t\, D_H \nabla^2 H^n
 ```
 
-안정 조건:
+CFL stability:
 
 ```math
-\Delta t
-\leq
-\frac{\Delta x^2}{4D_H}
+\Delta t \leq \frac{\Delta x^2}{4 D_H}
 ```
 
 ## FFT heat-kernel solution
 
 ```math
-\hat{H}(f_x,f_y,t)
-=
-\hat{H}_0(f_x,f_y)
-\exp
-\left[
--4\pi^2D_H(f_x^2+f_y^2)t
-\right]
+\hat{H}(f_x, f_y, t) = \hat{H}_0(f_x, f_y) \exp\left[ -4 \pi^2 D_H (f_x^2 + f_y^2) t \right]
 ```
 
-## 실험 파라미터
+## Parameters
 
 ```yaml
 peb:
@@ -671,99 +614,73 @@ sweep:
   grid_spacing_nm: [0.5, 1.0]
 ```
 
-## 확인할 것
+## Things to verify
 
 ```text
-시간이 지날수록 H가 smooth해지는지
-DH가 커질수록 blur가 커지는지
-FD와 FFT 결과가 비슷한지
-loss term이 없을 때 total acid mass가 보존되는지
+- H smooths with time.
+- Larger DH gives more blur.
+- FD and FFT agree on the same initial condition.
+- Without loss terms, total acid mass is conserved.
 ```
 
 ---
 
-# Phase 3. PINN Diffusion Baseline
+# Phase 3. PINN diffusion baseline
 
-## 목적
+## Goal
 
-데이터가 없는 현재 상태에서 DeepONet/FNO보다 먼저 PINN을 사용해 diffusion PDE를 학습한다.
+Train a PINN against the same diffusion PDE before introducing
+DeepONet / FNO. Always cross-check PINN against FD and FFT.
 
-단, PINN 결과는 반드시 FD/FFT와 비교한다.
-
-## 대상 PDE
+## Target PDE
 
 ```math
-\frac{\partial H}{\partial t}
--
-D_H \nabla^2 H
-=
-0
+\frac{\partial H}{\partial t} - D_H \nabla^2 H = 0
 ```
 
-## PINN 입력/출력
+## PINN I/O
 
-입력:
+Input:
 
 ```text
 x, y, t
 ```
 
-출력:
+Output:
 
 ```text
-H(x,y,t)
+H(x, y, t)
 ```
 
 ## Loss
 
 ```math
-L
-=
-L_{PDE}
-+
-L_{IC}
-+
-L_{BC}
+L = L_{PDE} + L_{IC} + L_{BC}
 ```
 
 PDE residual:
 
 ```math
-r(x,y,t)
-=
-\frac{\partial H}{\partial t}
--
-D_H
-\left(
-\frac{\partial^2 H}{\partial x^2}
-+
-\frac{\partial^2 H}{\partial y^2}
-\right)
+r(x, y, t) = \frac{\partial H}{\partial t} - D_H \left( \frac{\partial^2 H}{\partial x^2} + \frac{\partial^2 H}{\partial y^2} \right)
 ```
 
 ```math
-L_{PDE} = \|r(x,y,t)\|^2
+L_{PDE} = \|r(x, y, t)\|^2
 ```
 
 Initial condition:
 
 ```math
-L_{IC}
-=
-\|H(x,y,0)-H_0(x,y)\|^2
+L_{IC} = \|H(x, y, 0) - H_0(x, y)\|^2
 ```
 
-Boundary condition:
+Boundary condition (or periodic):
 
 ```math
-L_{BC}
-=
-\|\nabla H \cdot n\|^2
+L_{BC} = \|\nabla H \cdot n\|^2
 ```
 
-또는 periodic boundary condition을 사용한다.
-
-## 구현 파일
+## Files
 
 ```text
 reaction_diffusion_peb/src/pinn_base.py
@@ -773,7 +690,7 @@ reaction_diffusion_peb/experiments/03_pinn_diffusion/run_pinn_diffusion.py
 reaction_diffusion_peb/experiments/03_pinn_diffusion/compare_fd_fft_pinn.py
 ```
 
-## 실험 파라미터
+## Parameters
 
 ```yaml
 pinn:
@@ -787,47 +704,37 @@ pinn:
   learning_rate: 0.001
 ```
 
-## 확인할 것
+## Things to verify
 
 ```text
-PINN이 diffusion-only를 FD/FFT와 비슷하게 재현하는지
-sharp initial condition에서 PINN이 어려워하는지
-PDE residual이 줄어드는지
-IC error와 PDE residual이 동시에 줄어드는지
-PINN이 빠른 solver가 아니라 PDE 학습 도구임을 이해했는지
+- PINN reproduces the FD / FFT diffusion-only result.
+- Sharp initial conditions are difficult for the PINN.
+- PDE residual decreases over training.
+- IC error and PDE residual decrease together.
+- The PINN is a PDE-fitting tool, not a fast solver.
 ```
 
 ---
 
-# Phase 4. Acid Loss + PINN 비교
+# Phase 4. Acid loss + PINN comparison
 
-## 목적
+## Goal
 
-Acid 자연 소멸, trap, 비활성화 효과를 추가한다.
+Add the natural decay / trapping term to the diffusion equation.
 
 ## PDE
 
 ```math
-\frac{\partial H}{\partial t}
-=
-D_H \nabla^2 H
--
-k_{loss}H
+\frac{\partial H}{\partial t} = D_H \nabla^2 H - k_{loss} H
 ```
 
 PINN residual:
 
 ```math
-r(x,y,t)
-=
-\frac{\partial H}{\partial t}
--
-D_H \nabla^2H
-+
-k_{loss}H
+r(x, y, t) = \frac{\partial H}{\partial t} - D_H \nabla^2 H + k_{loss} H
 ```
 
-## 구현 파일
+## Files
 
 ```text
 reaction_diffusion_peb/src/reaction_diffusion.py
@@ -838,7 +745,7 @@ reaction_diffusion_peb/experiments/04_acid_loss/run_acid_loss_pinn.py
 reaction_diffusion_peb/experiments/04_acid_loss/compare_fd_pinn.py
 ```
 
-## 실험 파라미터
+## Parameters
 
 ```yaml
 reaction:
@@ -852,40 +759,38 @@ sweep:
   kloss_s_inv: [0.001, 0.005, 0.01, 0.05]
 ```
 
-## 확인할 것
+## Things to verify
 
 ```text
-kloss가 0이면 diffusion-only와 같아지는지
-kloss가 커질수록 전체 acid mass가 감소하는지
-FD와 PINN의 H(x,y,t_final)이 비슷한지
+- kloss = 0 reproduces diffusion-only.
+- Larger kloss reduces total acid mass.
+- FD and PINN agree on H(x, y, t_final).
 ```
 
 ---
 
 # Phase 5. Deprotection
 
-## 목적
+## Goal
 
-Acid가 resin deprotection을 촉진하는 과정을 추가한다.
+Add the acid-driven deprotection step.
 
-## 모델
+## Model
 
-Deprotected fraction `P`를 사용한다.
+The deprotected fraction `P` evolves as:
 
 ```math
-\frac{\partial P}{\partial t}
-=
-k_{dep}H(1-P)
+\frac{\partial P}{\partial t} = k_{dep} H (1 - P)
 ```
 
-여기서:
+with:
 
 ```text
-P = 0: 아직 deprotected되지 않음
-P = 1: 완전히 deprotected됨
+P = 0  : fully protected
+P = 1  : fully deprotected
 ```
 
-## 구현 파일
+## Files
 
 ```text
 reaction_diffusion_peb/src/deprotection.py
@@ -894,7 +799,7 @@ reaction_diffusion_peb/experiments/05_deprotection/run_deprotection_fd.py
 reaction_diffusion_peb/experiments/05_deprotection/run_deprotection_pinn.py
 ```
 
-## 실험 파라미터
+## Parameters
 
 ```yaml
 reaction:
@@ -908,51 +813,40 @@ sweep:
   kdep_s_inv: [0.01, 0.05, 0.1, 0.5]
 ```
 
-## 확인할 것
+## Things to verify
 
 ```text
-H가 높은 영역에서 P가 빠르게 증가하는지
-PEB 시간이 길수록 P가 커지는지
-kdep가 커질수록 threshold contour가 넓어지는지
-P는 0~1 범위를 유지하는지
+- High-H regions accumulate P faster.
+- Longer PEB increases P.
+- Larger kdep widens the post-threshold contour.
+- P stays in [0, 1].
 ```
 
 ---
 
 # Phase 6. Temperature / Arrhenius PEB
 
-## 목적
+## Goal
 
-PEB 온도에 따라 reaction rate가 달라지는 효과를 추가한다.
+Make reaction rates temperature-dependent.
 
 ## Arrhenius correction
 
-기준 온도 `T_ref`에서의 rate `k_ref`가 있을 때:
+For a reference rate `k_ref` defined at `T_ref`:
 
 ```math
-k(T)
-=
-k_{ref}
-\exp
-\left[
--\frac{E_a}{R}
-\left(
-\frac{1}{T_K}
--
-\frac{1}{T_{ref,K}}
-\right)
-\right]
+k(T) = k_{ref} \exp\left[ -\frac{E_a}{R} \left( \frac{1}{T_K} - \frac{1}{T_{ref,K}} \right) \right]
 ```
 
-여기서:
+where:
 
 ```text
 T_K = temperature_c + 273.15
-R = 8.314 J/(mol K)
-Ea = activation energy [J/mol]
+R   = 8.314 J / (mol K)
+Ea  = activation energy [J / mol]
 ```
 
-## 구현 파일
+## Files
 
 ```text
 reaction_diffusion_peb/src/arrhenius.py
@@ -961,7 +855,7 @@ reaction_diffusion_peb/experiments/06_temperature_peb/run_temperature_sweep.py
 reaction_diffusion_peb/experiments/06_temperature_peb/run_time_sweep.py
 ```
 
-## 실험 파라미터
+## Parameters
 
 ```yaml
 peb:
@@ -982,70 +876,45 @@ sweep:
   activation_energy_kj_mol: [100]
 ```
 
-## 확인할 것
+## Things to verify
 
 ```text
-T가 올라가면 kdep, kq, kloss가 증가하는지
-T sweep이 P profile과 final resist threshold에 영향을 주는지
-온도 변화가 작은 경우에도 reaction rate가 민감하게 변하는지
-MOR 125°C preset이 별도로 동작하는지
+- Higher T raises kdep, kq, and kloss.
+- Temperature sweeps shift the P profile and the threshold contour.
+- Reaction rates are sensitive even to small temperature changes.
+- The 125 °C MOR preset behaves consistently.
 ```
 
 ---
 
-# Phase 7. Quencher Reaction
+# Phase 7. Quencher reaction
 
-## 목적
+## Goal
 
-Acid와 quencher의 neutralization을 추가한다.
-
-이 단계부터 stiff reaction-diffusion 가능성이 커진다.
+Add the acid–quencher neutralization. From here onwards stiff PDE
+behavior is possible.
 
 ## PDE
 
 ```math
-\frac{\partial H}{\partial t}
-=
-D_H \nabla^2 H
--
-k_qHQ
--
-k_{loss}H
+\frac{\partial H}{\partial t} = D_H \nabla^2 H - k_q H Q - k_{loss} H
 ```
 
 ```math
-\frac{\partial Q}{\partial t}
-=
-D_Q \nabla^2 Q
--
-k_qHQ
+\frac{\partial Q}{\partial t} = D_Q \nabla^2 Q - k_q H Q
 ```
 
-## PINN residual
+## PINN residuals
 
 ```math
-r_H
-=
-\frac{\partial H}{\partial t}
--
-D_H \nabla^2H
-+
-k_qHQ
-+
-k_{loss}H
+r_H = \frac{\partial H}{\partial t} - D_H \nabla^2 H + k_q H Q + k_{loss} H
 ```
 
 ```math
-r_Q
-=
-\frac{\partial Q}{\partial t}
--
-D_Q \nabla^2Q
-+
-k_qHQ
+r_Q = \frac{\partial Q}{\partial t} - D_Q \nabla^2 Q + k_q H Q
 ```
 
-## 구현 파일
+## Files
 
 ```text
 reaction_diffusion_peb/src/reaction_diffusion.py
@@ -1055,9 +924,9 @@ reaction_diffusion_peb/experiments/07_quencher_reaction/run_quencher_reaction_sa
 reaction_diffusion_peb/experiments/07_quencher_reaction/run_quencher_reaction_stiff.py
 ```
 
-## 실험 파라미터
+## Parameters
 
-처음에는 안정성을 위해 작은 값으로 시작한다.
+Start safe, then escalate.
 
 ```yaml
 diffusion:
@@ -1075,77 +944,60 @@ Sweep:
 ```yaml
 sweep:
   DQ_ratio: [0.05, 0.1]
-  kq_s_inv_safe: [1, 5, 10]
+  kq_s_inv_safe:   [1, 5, 10]
   kq_s_inv_target: [100, 300, 1000]
 ```
 
-주의:
+Caveat:
 
 ```text
-kq = 100 ~ 1000 s^-1는 stiff하다.
-처음부터 이 범위를 쓰지 않는다.
-먼저 kq = 1, 5, 10 s^-1에서 동작 확인 후,
-time step을 줄이거나 semi-implicit / operator splitting을 도입한 뒤 큰 kq를 테스트한다.
+kq in the 100 – 1000 s^-1 band is stiff.
+Do not start there. First confirm correctness at kq = 1, 5, 10 s^-1,
+then introduce one of:
+
+  - much smaller dt
+  - operator splitting
+  - semi-implicit / implicit reaction update
+  - adaptive time-stepping
+
+before pushing kq up. PINNs also struggle in the stiff regime — do
+not insist on PINN success at large kq before the FD / semi-implicit
+baseline is stable.
 ```
 
-큰 `kq`를 다루려면 다음 중 하나가 필요하다.
+## Things to verify
 
 ```text
-1. 매우 작은 dt 사용
-2. operator splitting
-3. semi-implicit method
-4. implicit reaction update
-5. adaptive time step
-```
-
-PINN도 stiff reaction에서는 어려울 수 있다.  
-따라서 stiff kq 범위에서는 PINN을 먼저 성공시키려고 하지 말고, FD/semi-implicit baseline을 먼저 안정화한다.
-
-## 확인할 것
-
-```text
-H가 높은 영역에서 Q가 빠르게 소모되는지
-Q가 충분히 많으면 H가 강하게 억제되는지
-DQ가 작으면 Q profile이 acid보다 덜 퍼지는지
-kq가 커지면 수치 안정성이 나빠지는지
-PINN residual 학습이 kq 증가에 따라 어려워지는지
+- Q is consumed quickly where H is high.
+- Sufficient Q strongly suppresses H.
+- Smaller DQ keeps Q tighter than the acid.
+- Larger kq degrades numerical stability.
+- The PINN residual fit becomes harder as kq grows.
 ```
 
 ---
 
-# Phase 8. Full Reaction-Diffusion 통합
+# Phase 8. Full reaction-diffusion
 
-## 목적
+## Goal
 
-이전 단계들을 하나의 모델로 통합한다.
+Combine every term added so far into a single integrated model.
 
-## 최종 PDE
+## Final PDE system
 
 ```math
-\frac{\partial H}{\partial t}
-=
-\nabla \cdot (D_H \nabla H)
--
-k_qHQ
--
-k_{loss}H
+\frac{\partial H}{\partial t} = \nabla \cdot (D_H \nabla H) - k_q H Q - k_{loss} H
 ```
 
 ```math
-\frac{\partial Q}{\partial t}
-=
-\nabla \cdot (D_Q \nabla Q)
--
-k_qHQ
+\frac{\partial Q}{\partial t} = \nabla \cdot (D_Q \nabla Q) - k_q H Q
 ```
 
 ```math
-\frac{\partial P}{\partial t}
-=
-k_{dep}H(1-P)
+\frac{\partial P}{\partial t} = k_{dep} H (1 - P)
 ```
 
-## 구현 파일
+## Files
 
 ```text
 reaction_diffusion_peb/src/reaction_diffusion.py
@@ -1153,7 +1005,7 @@ reaction_diffusion_peb/src/reaction_diffusion.py
 reaction_diffusion_peb/experiments/08_full_reaction_diffusion/run_full_model.py
 ```
 
-## 실험 파라미터
+## Parameters
 
 ```yaml
 peb:
@@ -1189,32 +1041,32 @@ threshold:
   beta: 20.0
 ```
 
-## 확인할 것
+## Things to verify
+
+Disabling each term should reproduce the corresponding earlier phase:
 
 ```text
-각 항을 끄면 이전 단계 결과와 일치하는지
-diffusion만 켜면 Phase 2와 일치하는지
-kloss만 추가하면 Phase 4와 일치하는지
-deprotection을 켜면 Phase 5와 일치하는지
-temperature를 켜면 Phase 6과 일치하는지
-Q reaction을 켜면 Phase 7과 일치하는지
+- Diffusion-only          → Phase 2 result
+- + kloss                 → Phase 4
+- + kdep                  → Phase 5
+- + Arrhenius temperature → Phase 6
+- + quencher              → Phase 7
 ```
 
 ---
 
-# Phase 9. Dataset Generation
+# Phase 9. Dataset generation
 
-## 목적
+## Goal
 
-FD/FFT/PINN 결과를 축적하여 DeepONet/FNO 학습용 데이터셋을 만든다.
+Accumulate FD / FFT / PINN runs as a dataset that DeepONet / FNO can
+learn from. Without this phase, Phase 10 cannot start.
 
-이 단계가 있어야 DeepONet/FNO로 넘어갈 수 있다.
-
-## Dataset input
+## Dataset inputs
 
 ```text
-I(x,y)
-H0(x,y)
+I(x, y)
+H0(x, y)
 DH0_nm2_s
 DQ_ratio
 kdep_s_inv
@@ -1226,16 +1078,16 @@ dose
 eta
 ```
 
-## Dataset output
+## Dataset outputs
 
 ```text
-H(x,y,t_final)
-Q(x,y,t_final)
-P(x,y,t_final)
-R(x,y)
+H(x, y, t_final)
+Q(x, y, t_final)
+P(x, y, t_final)
+R(x, y)
 ```
 
-## 구현 파일
+## Files
 
 ```text
 reaction_diffusion_peb/src/dataset_builder.py
@@ -1245,7 +1097,7 @@ reaction_diffusion_peb/experiments/09_dataset_generation/generate_pinn_dataset.p
 reaction_diffusion_peb/experiments/09_dataset_generation/validate_dataset.py
 ```
 
-## 저장 포맷
+## Storage format
 
 ```text
 outputs/datasets/
@@ -1255,7 +1107,7 @@ outputs/datasets/
   metadata.json
 ```
 
-metadata 예시:
+Example metadata:
 
 ```json
 {
@@ -1269,44 +1121,39 @@ metadata 예시:
 }
 ```
 
-## 확인할 것
+## Things to verify
 
 ```text
-각 sample의 input/output shape이 일관적인지
-parameter range가 metadata에 저장되는지
-train/validation/test split이 가능한지
-FD-generated data와 PINN-generated data를 구분하는지
-stiff kq 데이터는 별도 subset으로 분리하는지
+- Sample input / output shapes are consistent.
+- Parameter ranges are recorded in metadata.
+- Train / validation / test splits are easy.
+- FD-generated and PINN-generated subsets are distinguishable.
+- Stiff-kq samples are kept in a separate subset.
 ```
 
 ---
 
-# Phase 10. DeepONet / FNO Optional Surrogate
+# Phase 10. DeepONet / FNO operator surrogate (optional)
 
-## 목적
+## Goal
 
-데이터셋이 쌓인 뒤, PEB reaction-diffusion operator를 학습한다.
+Once Phase-9 datasets exist, learn the PEB operator with DeepONet
+and / or FNO. This is **not** a required step — it is the optional
+follow-up to data accumulation.
 
-이 단계는 초기 필수가 아니다.  
-DeepONet/FNO는 PINN과 FD/FFT 결과가 쌓인 후 진행한다.
-
-## 학습할 operator
-
-```text
-(I(x,y), parameters)
-  → H(x,y,t_final), P(x,y,t_final), R(x,y)
-```
-
-또는:
+## Operator to learn
 
 ```text
-H0(x,y), DH0, kdep, kloss, T, t_PEB
-  → P(x,y,t_final)
+(I(x, y), parameters)  →  H(x, y, t_final), P(x, y, t_final), R(x, y)
 ```
 
-## DeepONet 사용 위치
+or, more compactly:
 
-DeepONet은 다음처럼 쓰기 좋다.
+```text
+H0(x, y), DH0, kdep, kloss, T, t_PEB  →  P(x, y, t_final)
+```
+
+## DeepONet layout
 
 ```text
 Branch input:
@@ -1314,28 +1161,26 @@ Branch input:
   process parameters
 
 Trunk input:
-  coordinate x, y, optionally t
+  coordinate (x, y), optionally t
 
 Output:
-  H(x,y,t), P(x,y,t)
+  H(x, y, t), P(x, y, t)
 ```
 
-## FNO 사용 위치
-
-FNO는 다음처럼 쓰기 좋다.
+## FNO layout
 
 ```text
 Input channels:
-  H0(x,y)
+  H0(x, y)
   parameter maps: DH0, kdep, kloss, T, t_PEB
 
 Output channels:
-  H_final(x,y)
-  P_final(x,y)
-  R(x,y)
+  H_final(x, y)
+  P_final(x, y)
+  R(x, y)
 ```
 
-## 구현 파일
+## Files
 
 ```text
 reaction_diffusion_peb/experiments/10_operator_learning_optional/train_deeponet.py
@@ -1343,56 +1188,45 @@ reaction_diffusion_peb/experiments/10_operator_learning_optional/train_fno.py
 reaction_diffusion_peb/experiments/10_operator_learning_optional/evaluate_operator_surrogate.py
 ```
 
-## 확인할 것
+## Things to verify
 
 ```text
-DeepONet/FNO는 데이터가 쌓인 뒤에만 시작한다.
-FD/PINN 대비 surrogate error를 측정한다.
-parameter extrapolation에서는 성능이 떨어질 수 있음을 확인한다.
-stiff kq case는 별도 평가한다.
+- Start only after Phase 9 produced data.
+- Measure surrogate error against FD / PINN truth.
+- Expect parameter-extrapolation degradation.
+- Evaluate stiff-kq cases on a separate split.
 ```
 
 ---
 
-# Phase 11. Advanced Stochastic / Petersen / z-axis
+# Phase 11. Advanced stochastic / Petersen / z-axis
 
-## 목적
+## Goal
 
-초기 모델이 안정화된 뒤 고급 파라미터를 추가한다.
+After the core model is stable, layer in the higher-order parameters.
 
 ## Petersen nonlinear diffusion
 
-권장 표기:
+```math
+D_H = D_{H0} \exp(\alpha P)
+```
+
+or:
 
 ```math
-D_H
-=
-D_{H0}
-\exp(\alpha P)
+D_H = D_{H0} \exp(\alpha \cdot \text{dose\_field})
 ```
 
-또는:
-
-```math
-D_H
-=
-D_{H0}
-\exp(\alpha \cdot dose\_field)
-```
-
-주의:
+Naming caveat:
 
 ```text
-기존 표의 DH = DH0 exp(αD)에서 D가 무엇인지 명확히 해야 한다.
-Dose, diffusion coefficient, deprotected fraction을 모두 D라고 쓰면 안 된다.
-```
+The original "DH = DH0 exp(αD)" formulation is ambiguous: D could be
+dose, diffusion coefficient, or deprotected fraction. Pick one and
+spell it out:
 
-권장:
-
-```text
-P = deprotected fraction
-dose_field = normalized local exposure dose
-DH = acid diffusion coefficient
+  P            : deprotected fraction
+  dose_field   : normalized local exposure dose
+  DH           : acid diffusion coefficient
 ```
 
 ## Temperature uniformity
@@ -1402,7 +1236,7 @@ stochastic:
   temperature_uniformity_c: 0.02
 ```
 
-각 ensemble run에서 다음처럼 perturbation을 준다.
+Per-run perturbation:
 
 ```text
 temperature_c_run = temperature_c + Normal(0, temperature_uniformity_c)
@@ -1415,17 +1249,17 @@ resist:
   particle_size_nm: 1.0
 ```
 
-사용 방식:
+Usage options:
 
 ```text
-1. final P field에 Gaussian blur 적용
-2. stochastic noise scale로 사용
-3. minimum meaningful grid scale로 사용
+1. Apply a Gaussian blur to the final P field.
+2. Use it as a stochastic-noise scale.
+3. Treat it as the minimum meaningful grid scale.
 ```
 
 ## z-axis / film thickness
 
-초기 모델:
+Initial 2D model:
 
 ```text
 H(x, y, t)
@@ -1433,7 +1267,7 @@ Q(x, y, t)
 P(x, y, t)
 ```
 
-후반 z-axis 모델:
+Later 3D model:
 
 ```text
 H(x, y, z, t)
@@ -1441,15 +1275,15 @@ Q(x, y, z, t)
 P(x, y, z, t)
 ```
 
-PINN에서 z-axis를 넣는 경우:
+PINN with z-axis:
 
 ```text
-input: x, y, z, t
-output: H, Q, P
-domain z: 0 ~ film_thickness_nm
+input  : x, y, z, t
+output : H, Q, P
+domain : z in [0, film_thickness_nm]
 ```
 
-## advanced sweep
+## Advanced sweep
 
 ```yaml
 advanced:
@@ -1462,9 +1296,9 @@ advanced:
 
 ---
 
-## 11. 추천 config 파일
+## 12. Reference configs
 
-## 11.1 minimal_diffusion.yaml
+### 12.1 minimal_diffusion.yaml
 
 ```yaml
 grid:
@@ -1483,7 +1317,7 @@ diffusion:
   DH0_nm2_s: 0.8
 ```
 
-## 11.2 pinn_diffusion.yaml
+### 12.2 pinn_diffusion.yaml
 
 ```yaml
 grid:
@@ -1507,7 +1341,7 @@ pinn:
   learning_rate: 0.001
 ```
 
-## 11.3 acid_loss.yaml
+### 12.3 acid_loss.yaml
 
 ```yaml
 grid:
@@ -1529,7 +1363,7 @@ reaction:
   kloss_s_inv: 0.005
 ```
 
-## 11.4 quencher_reaction.yaml
+### 12.4 quencher_reaction.yaml
 
 ```yaml
 grid:
@@ -1554,7 +1388,7 @@ reaction:
   Q0_mol_dm3: 0.1
 ```
 
-## 11.5 deprotection.yaml
+### 12.5 deprotection.yaml
 
 ```yaml
 grid:
@@ -1580,7 +1414,7 @@ reaction:
   Q0_mol_dm3: 0.1
 ```
 
-## 11.6 temperature_peb.yaml
+### 12.6 temperature_peb.yaml
 
 ```yaml
 grid:
@@ -1612,7 +1446,7 @@ reaction:
   Q0_mol_dm3: 0.1
 ```
 
-## 11.7 parameter_sweep.yaml
+### 12.7 parameter_sweep.yaml
 
 ```yaml
 sweep:
@@ -1627,7 +1461,7 @@ sweep:
   kloss_s_inv: [0.001, 0.005, 0.01, 0.05]
   kdep_s_inv: [0.01, 0.05, 0.1, 0.5]
 
-  kq_s_inv_safe: [1, 5, 10]
+  kq_s_inv_safe:   [1, 5, 10]
   kq_s_inv_target: [100, 300, 1000]
 
   activation_energy_kj_mol: [100]
@@ -1644,132 +1478,115 @@ advanced:
 
 ---
 
-## 12. GitHub 작업 방식
+## 13. GitHub workflow
 
-## 기존 프로젝트는 그대로 둔다
+### 13.1 Do not touch the existing project
 
-금지:
-
-```text
-기존 README 전체 갈아엎기
-기존 src/ 구조에 바로 섞기
-FNO / optics 모듈과 직접 결합하기
-DeepONet/FNO부터 시작하기
-```
-
-허용:
+Disallowed:
 
 ```text
-reaction_diffusion_peb/ 폴더 추가
-reaction_diffusion_peb/README.md 추가
-reaction_diffusion_peb/PLAN.md 추가
-reaction_diffusion_peb/PARAMETER_SCOPE.md 추가
-reaction_diffusion_peb/configs/ 추가
-reaction_diffusion_peb/src/ 추가
-reaction_diffusion_peb/experiments/ 추가
+- Rewriting the main README.
+- Mixing this code into the main src/ tree.
+- Coupling to FNO / optics modules directly.
+- Starting from DeepONet / FNO.
 ```
 
-## 추천 브랜치명
+Allowed:
+
+```text
+- Adding the reaction_diffusion_peb/ folder.
+- Adding reaction_diffusion_peb/{README,PLAN,PARAMETER_SCOPE}.md.
+- Adding reaction_diffusion_peb/configs/ .
+- Adding reaction_diffusion_peb/src/ .
+- Adding reaction_diffusion_peb/experiments/ .
+```
+
+### 13.2 Branch name
 
 ```text
 feature/reaction-diffusion-peb
 ```
 
-또는:
+or:
 
 ```text
 peb-pinn-reaction-module
 ```
 
-## 추천 커밋 순서
+### 13.3 Recommended commit / PR cadence
+
+Each phase becomes its own commit (and ideally its own PR with metrics
++ figures, mirroring the main project's workflow):
 
 ```text
-Commit 1:
-  Add reaction_diffusion_peb workspace skeleton
-
-Commit 2:
-  Add parameter scope and sweep configs
-
-Commit 3:
-  Add synthetic aerial generation and exposure model
-
-Commit 4:
-  Add diffusion-only FD/FFT baseline solvers
-
-Commit 5:
-  Add PINN diffusion baseline and FD/FFT/PINN comparison
-
-Commit 6:
-  Add acid loss model with FD/PINN comparison
-
-Commit 7:
-  Add deprotection model
-
-Commit 8:
-  Add Arrhenius temperature-dependent PEB
-
-Commit 9:
-  Add quencher reaction model with safe kq range
-
-Commit 10:
-  Add full reaction-diffusion demo
-
-Commit 11:
-  Add dataset generation from FD/PINN simulations
-
-Commit 12:
-  Add optional DeepONet/FNO surrogate plan or prototype
-
-Commit 13:
-  Add advanced stochastic/Petersen/z-axis plan
+Commit 1:  Add reaction_diffusion_peb workspace skeleton
+Commit 2:  Add parameter scope and sweep configs
+Commit 3:  Add synthetic aerial generation and exposure model
+Commit 4:  Add diffusion-only FD / FFT baseline solvers
+Commit 5:  Add PINN diffusion baseline and FD / FFT / PINN comparison
+Commit 6:  Add acid loss model with FD / PINN comparison
+Commit 7:  Add deprotection model
+Commit 8:  Add Arrhenius temperature-dependent PEB
+Commit 9:  Add quencher reaction with safe kq range
+Commit 10: Add full reaction-diffusion demo
+Commit 11: Add dataset generation from FD / PINN simulations
+Commit 12: Add optional DeepONet / FNO surrogate plan or prototype
+Commit 13: Add advanced stochastic / Petersen / z-axis plan
 ```
 
-## 추천 PR 제목
+### 13.4 PR title
 
 ```text
 Add local Reaction-Diffusion / PEB PINN-first study module
 ```
 
-## 추천 PR 설명
+### 13.5 PR description template
 
 ```markdown
 ## Summary
 
-This PR adds a local `reaction_diffusion_peb/` workspace for studying post-exposure bake resist physics independently from the main lithography/neural-operator pipeline.
+This PR adds a local `reaction_diffusion_peb/` workspace for studying
+post-exposure-bake resist physics independently from the main
+lithography / neural-operator pipeline.
 
-Because no simulation dataset exists yet, the module follows a physics-first and PINN-first workflow:
+Because no simulation dataset exists yet, the module follows a
+physics-first and PINN-first workflow:
 
-1. Build FD/FFT baselines for diffusion.
-2. Train PINNs against the same PDEs and compare with FD/FFT.
-3. Add acid loss, deprotection, temperature dependence, and quencher reaction incrementally.
+1. Build FD / FFT baselines for diffusion.
+2. Train PINNs against the same PDEs and compare with FD / FFT.
+3. Add acid loss, deprotection, temperature dependence, and
+   quencher reaction incrementally.
 4. Generate reusable simulation datasets.
-5. Keep DeepONet/FNO as optional downstream operator surrogates after data accumulation.
+5. Keep DeepONet / FNO as optional downstream operator surrogates
+   after data accumulation.
 
 ## Scope
 
-- Keep existing project structure unchanged
-- Add local Reaction-Diffusion / PEB workspace
-- Use synthetic exposure maps first
-- Build FD/FFT physics baselines
-- Add PINN diffusion and reaction-diffusion experiments before DeepONet/FNO
-- Track process, diffusion, reaction, resist, and numerical parameter ranges
-- Separate safe kq values from stiff target kq values
+- Keep the existing project structure unchanged.
+- Add the local Reaction-Diffusion / PEB workspace.
+- Use synthetic exposure maps first.
+- Build FD / FFT physics baselines.
+- Add PINN diffusion and reaction-diffusion experiments before
+  DeepONet / FNO.
+- Track process, diffusion, reaction, resist, and numerical parameter
+  ranges.
+- Separate safe `kq` values from stiff target `kq` values.
 
 ## Out of scope
 
-- Mask simulation
-- Fourier optics
-- Full lithography pipeline integration
-- Production-grade stiff PDE solver
-- Real calibrated CAR/MOR fitting
-- DeepONet/FNO as the first modeling step
+- Mask simulation.
+- Fourier optics.
+- Full lithography pipeline integration.
+- Production-grade stiff PDE solver.
+- Real calibrated CAR / MOR fitting.
+- DeepONet / FNO as the first modeling step.
 ```
 
 ---
 
-## 13. 실행 예시
+## 14. Execution recipes
 
-## 환경 생성
+### 14.1 Environment
 
 ```bash
 cd litho-neural-operator-lab/reaction_diffusion_peb
@@ -1778,13 +1595,13 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Synthetic aerial 생성
+### 14.2 Synthetic aerial
 
 ```bash
 python experiments/01_synthetic_aerial/run_gaussian_spot.py
 ```
 
-## Diffusion baseline 실행
+### 14.3 Diffusion baseline
 
 ```bash
 python experiments/02_diffusion_baseline/run_diffusion_fd.py
@@ -1792,14 +1609,14 @@ python experiments/02_diffusion_baseline/run_diffusion_fft.py
 python experiments/02_diffusion_baseline/compare_fd_fft.py
 ```
 
-## PINN diffusion 실행
+### 14.4 PINN diffusion
 
 ```bash
 python experiments/03_pinn_diffusion/run_pinn_diffusion.py
 python experiments/03_pinn_diffusion/compare_fd_fft_pinn.py
 ```
 
-## Acid loss 실행
+### 14.5 Acid loss
 
 ```bash
 python experiments/04_acid_loss/run_acid_loss_fd.py
@@ -1807,25 +1624,25 @@ python experiments/04_acid_loss/run_acid_loss_pinn.py
 python experiments/04_acid_loss/compare_fd_pinn.py
 ```
 
-## Deprotection 실행
+### 14.6 Deprotection
 
 ```bash
 python experiments/05_deprotection/run_deprotection_fd.py
 ```
 
-## Temperature sweep 실행
+### 14.7 Temperature sweep
 
 ```bash
 python experiments/06_temperature_peb/run_temperature_sweep.py
 ```
 
-## Quencher reaction 실행
+### 14.8 Quencher reaction
 
 ```bash
 python experiments/07_quencher_reaction/run_quencher_reaction_safe.py
 ```
 
-## Dataset 생성
+### 14.9 Dataset generation
 
 ```bash
 python experiments/09_dataset_generation/generate_fd_dataset.py
@@ -1834,78 +1651,79 @@ python experiments/09_dataset_generation/validate_dataset.py
 
 ---
 
-## 14. 최소 성공 기준
+## 15. Minimum success criteria
 
-이번 국소 모듈의 최소 성공 기준은 다음이다.
+The submodule is considered "working" when:
 
 ```text
-1. Synthetic exposure map을 만들 수 있다.
-2. Exposure map에서 initial acid H0를 만들 수 있다.
-3. FD diffusion-only PEB에서 acid blur가 시간과 DH에 따라 증가한다.
-4. FFT diffusion과 FD diffusion 결과가 비슷하다.
-5. PINN diffusion이 FD/FFT baseline을 일정 수준 재현한다.
-6. PINN의 PDE residual, IC loss, BC loss를 추적할 수 있다.
-7. Acid loss를 켜면 total acid mass가 감소한다.
-8. Acid-loss PINN이 FD와 비교 가능하다.
-9. Deprotection P가 H가 높은 영역에서 증가한다.
-10. Temperature를 올리면 Arrhenius correction에 의해 reaction rate가 증가한다.
-11. Quencher reaction은 safe kq range에서 먼저 안정적으로 동작한다.
-12. kq target range는 stiff handling 전까지 별도 분리한다.
-13. Soft threshold를 통해 latent resist image를 만들 수 있다.
-14. FD/PINN 결과를 dataset으로 저장할 수 있다.
-15. DeepONet/FNO는 dataset 생성 이후 optional로 시작한다.
+1.  Synthetic exposure maps can be generated.
+2.  Initial acid H0 can be derived from an exposure map.
+3.  FD diffusion-only PEB shows acid blur growing with time and DH.
+4.  FFT diffusion and FD diffusion agree.
+5.  PINN diffusion reproduces the FD / FFT baseline at study-grade level.
+6.  PINN PDE residual, IC loss, and BC loss are tracked over training.
+7.  Enabling acid loss reduces total acid mass.
+8.  Acid-loss PINN is comparable with FD.
+9.  Deprotection P grows where H is large.
+10. Higher temperature speeds up reactions through Arrhenius correction.
+11. Quencher reaction is stable inside the safe kq range.
+12. The target kq range is kept in a separate subset until stiff handling
+    is in place.
+13. Soft thresholding produces a latent resist image.
+14. FD / PINN results can be written out as a dataset.
+15. DeepONet / FNO start only after the dataset is in place.
 ```
 
 ---
 
-## 15. 초기에는 하지 않을 것
-
-초기 Reaction-Diffusion / PEB 모듈에서는 아래는 하지 않는다.
+## 16. Out of scope (initially)
 
 ```text
-1. 3D Maxwell / RCWA / FDTD
-2. Mask 3D effect
-3. Inverse mask optimization
-4. DeepONet/FNO를 첫 모델로 사용
-5. 실제 calibrated CAR/MOR fitting
-6. full 3D z-axis resist simulation
-7. production-grade stochastic LER/LWR model
-8. OPC / ILT integration
+1. 3D Maxwell / RCWA / FDTD.
+2. Mask 3D effects.
+3. Inverse mask optimization.
+4. Treating DeepONet / FNO as the first model.
+5. Calibrated CAR / MOR fitting.
+6. Full 3D z-axis resist simulation.
+7. Production-grade stochastic LER / LWR model.
+8. OPC / ILT integration.
 ```
 
-후속으로 가능한 항목:
+Open follow-ups (after the core is stable):
 
 ```text
-1. FD/PINN dataset 기반 DeepONet/FNO
-2. Petersen nonlinear diffusion
-3. temperature uniformity ensemble
-4. molecular blur
-5. z-axis PINN
-6. main optics pipeline과 파일 기반 연결
+1. DeepONet / FNO trained on the FD / PINN dataset.
+2. Petersen nonlinear diffusion.
+3. Temperature-uniformity ensembles.
+4. Molecular blur.
+5. z-axis PINN.
+6. File-based hand-off with the main optics pipeline.
 ```
 
 ---
 
-## 16. 최종 요약
+## 17. Final summary
 
-이번 작업의 최종 방향은 다음이다.
+The plan in one paragraph:
 
 ```text
-기존 GitHub 프로젝트는 그대로 둔다.
-reaction_diffusion_peb/ 폴더를 새로 만든다.
-그 안에서 Reaction-diffusion / PEB만 독립적으로 운용한다.
-데이터가 없으므로 DeepONet/FNO보다 PINN을 먼저 사용한다.
-하지만 PINN만 단독으로 믿지 않고 FD/FFT baseline과 반드시 비교한다.
-Diffusion-only → PINN diffusion → acid loss → deprotection → temperature → quencher → full model 순서로 확장한다.
-FD/PINN 결과를 dataset으로 저장한 뒤 DeepONet/FNO를 optional surrogate로 진행한다.
+Leave the existing GitHub project untouched. Add a new
+reaction_diffusion_peb/ folder. Run Reaction-Diffusion / PEB
+experiments inside that folder only. Because there is no data yet,
+use PINN before DeepONet / FNO — but never rely on the PINN alone:
+always benchmark it against an FD or FFT baseline. Ramp through:
+diffusion-only -> PINN diffusion -> acid loss -> deprotection ->
+temperature -> quencher -> full model. Once the FD / PINN results
+have been saved as a dataset, only then move to DeepONet / FNO as a
+downstream operator surrogate.
 ```
 
-가장 먼저 만들 파일은 다음이다.
+The first files to land are:
 
 ```text
 reaction_diffusion_peb/
   README.md
-  PLAN.md
+  PLAN.md                          (this file)
   PARAMETER_SCOPE.md
   requirements.txt
 
@@ -1930,15 +1748,17 @@ reaction_diffusion_peb/
     03_pinn_diffusion/compare_fd_fft_pinn.py
 ```
 
-첫 목표는 이것이다.
+The first concrete milestone:
 
 ```text
 Gaussian synthetic aerial image
-  → initial acid H0
-  → 60s PEB diffusion using FD/FFT
-  → PINN diffusion 학습
-  → FD/FFT/PINN before-after 비교
-  → figure, metrics, loss curve 저장
+  -> initial acid H0
+  -> 60 s PEB diffusion via FD and FFT
+  -> PINN diffusion training
+  -> FD / FFT / PINN before / after comparison
+  -> figures, metrics, and loss curves saved to outputs/
 ```
 
-이 첫 목표가 안정적으로 동작하면 그다음에 acid loss, deprotection, temperature, quencher reaction, dataset generation, DeepONet/FNO surrogate를 순서대로 추가한다.
+Once that milestone is stable, layer in acid loss, deprotection,
+temperature dependence, quencher reaction, dataset generation, and
+finally the optional DeepONet / FNO surrogate.
