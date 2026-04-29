@@ -803,6 +803,92 @@ def show_fno_training(
     return fig
 
 
+def show_closed_loop_comparison(
+    rows: list[dict],
+    extent: float | None = None,
+    target_value: float = 1.0,
+    suptitle: str = "",
+):
+    """One row per scenario in ``rows``.
+
+    Each row dict expects: ``label``, ``mask``, ``aerial``,
+    ``target_region``, ``forbidden_region`` (and optionally
+    ``aerial_alt`` for the validation row in Phase 9).
+
+    Layout per row: mask | aerial | y=0 cut | regions overlay (4 cols).
+    """
+    n = len(rows)
+    fig, axes = plt.subplots(n, 4, figsize=(16, 4 * n))
+    if n == 1:
+        axes = axes.reshape(1, 4)
+    real_ext = None if extent is None else (-extent / 2, extent / 2,
+                                            -extent / 2, extent / 2)
+
+    for r, row in enumerate(rows):
+        label = row["label"]
+        mask = row["mask"]
+        aerial = row["aerial"]
+        target_region = row["target_region"]
+        forbidden_region = row["forbidden_region"]
+
+        # mask
+        axes[r, 0].imshow(_to_numpy(mask.real if torch.is_complex(mask) else mask),
+                          cmap="gray", extent=real_ext, origin="lower",
+                          vmin=0.0, vmax=1.0)
+        axes[r, 0].set_title(f"{label}: mask")
+        axes[r, 0].set_xlabel("x"); axes[r, 0].set_ylabel("y")
+
+        # aerial
+        a_max = float(aerial.max().item())
+        im = axes[r, 1].imshow(_to_numpy(aerial), cmap="inferno",
+                               extent=real_ext, origin="lower",
+                               vmin=0.0, vmax=max(a_max, 1e-6))
+        axes[r, 1].set_title(f"{label}: aerial  peak={a_max:.3f}")
+        axes[r, 1].set_xlabel("x"); axes[r, 1].set_ylabel("y")
+        fig.colorbar(im, ax=axes[r, 1], fraction=0.046, pad=0.04)
+
+        # row cut
+        nside = aerial.shape[-1]
+        cut = _to_numpy(aerial[nside // 2, :])
+        x_axis = np.linspace(-extent / 2, extent / 2, nside) if extent else np.arange(nside)
+        axes[r, 2].plot(x_axis, cut, label="aerial", color="C1")
+        if "aerial_alt" in row and row["aerial_alt"] is not None:
+            cut_alt = _to_numpy(row["aerial_alt"][nside // 2, :])
+            axes[r, 2].plot(x_axis, cut_alt, label=row.get("aerial_alt_label", "aerial alt"),
+                            color="C0", linestyle="--")
+        axes[r, 2].axhline(target_value, color="C2", linestyle=":",
+                           label=f"target={target_value}")
+        tr_cut = _to_numpy(target_region[nside // 2, :])
+        upper = max(target_value, a_max)
+        axes[r, 2].fill_between(x_axis, 0, upper, where=tr_cut > 0.5,
+                                alpha=0.15, color="green")
+        fr_cut = _to_numpy(forbidden_region[nside // 2, :])
+        axes[r, 2].fill_between(x_axis, 0, upper, where=fr_cut > 0.5,
+                                alpha=0.10, color="red")
+        axes[r, 2].set_title(f"{label}: y=0 cut")
+        axes[r, 2].set_xlabel("x"); axes[r, 2].set_ylabel("intensity")
+        axes[r, 2].legend(loc="upper right", fontsize=8)
+        axes[r, 2].grid(alpha=0.3)
+
+        # regions overlay
+        rgb = np.stack([
+            _to_numpy(forbidden_region) * 0.6,
+            _to_numpy(target_region) * 0.6,
+            np.zeros_like(_to_numpy(target_region)),
+        ], axis=-1)
+        bg = _to_numpy(aerial) / max(a_max, 1e-12)
+        gray = np.stack([bg, bg, bg], axis=-1) * 0.4
+        composite = np.clip(gray + rgb, 0, 1)
+        axes[r, 3].imshow(composite, extent=real_ext, origin="lower")
+        axes[r, 3].set_title(f"{label}: regions on aerial")
+        axes[r, 3].set_xlabel("x"); axes[r, 3].set_ylabel("y")
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
