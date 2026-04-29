@@ -67,6 +67,69 @@
 
 ---
 
+### A.4 Phase 1 — Scalar diffraction — ☑ done (2026-04-29)
+
+**What**
+- `src/common/grid.py` — `Grid2D` dataclass with normalized real / frequency
+  axes (`extent`, `dx`, `df`, Nyquist, mesh + radial helpers).
+- `src/common/fft_utils.py` — `fft2c`, `ifft2c`, plus `amplitude` / `phase` /
+  `log_amplitude` helpers. The single FFT convention used everywhere is
+  `fftshift(fft2(ifftshift(x)))` with `norm='ortho'`.
+- `src/common/visualization.py` — `show_mask`, `show_spectrum`,
+  `show_field_pair`, `save_figure`. The pair view supports `freq_zoom`
+  (crop to central 2 * freq_zoom bins) and `amp_percentile` (clip the
+  linear `|T|` colormap so the DC spike stops washing out the orders).
+- `src/mask/patterns.py` — `line_space`, `contact_hole`, `isolated_line`,
+  `two_bar`, `elbow`, `random_binary`. All return float32 tensors with
+  values in {0, 1} on the supplied `Grid2D`.
+- `src/mask/transmission.py` — `binary_transmission`,
+  `attenuated_phase_shift` (Att-PSM), `alternating_phase_shift` (Alt-PSM).
+- `src/optics/scalar_diffraction.py` — `diffraction_spectrum(t)` and the
+  matching `reconstruct_field(T)`.
+- `experiments/01_scalar_diffraction/demo_line_space.py` — pitch sweep
+  {0.40, 0.20, 0.10, 0.05} at duty 0.5.
+- `experiments/01_scalar_diffraction/demo_contact_hole.py` — radius sweep
+  {0.20, 0.10, 0.05} plus a binary-vs-Att-PSM comparison at r = 0.10.
+- `tests/test_fft_utils.py`, `tests/test_patterns.py`,
+  `tests/test_scalar_diffraction.py` — 16 tests, all green.
+
+**How**
+- Centered FFT keeps DC at index `(n//2, n//2)` so frequency axes line up
+  with `imshow` extent without manual unshifting.
+- The Hermitian-symmetry test drops the index-0 row and column (which has
+  no centered pair) before flipping; the rest must satisfy
+  `T(-f) = conj(T(f))` to better than 1e-4 for fp32.
+- Pitch-sweep test verifies that halving the line-space pitch roughly
+  doubles the first-order frequency offset, with a 25% tolerance for DFT
+  discretization.
+- The contact hole spectrum reproduces a 2D sinc / Bessel-J1 pattern; the
+  phase panel shows the canonical 0 / pi flip at every Bessel zero.
+
+**Why**
+- Putting the FFT and grid in `src/common/` from day one prevents every
+  later phase from reinventing conventions. Phase 2 (pupil filtering) and
+  Phase 3 (autograd-based mask optimization) reuse these helpers verbatim.
+- Building Att-PSM in Phase 1 (even though it isn't used until Phase 4 / 8)
+  gives us a non-trivial complex transmission to test conjugate symmetry
+  against — a binary mask alone can't.
+- Frequency zoom + percentile clip in the visualization were necessary to
+  see diffraction orders at all; for pitch=0.1 on a 256² grid the orders
+  sit only 10 pixels off DC and were invisible at full extent.
+
+**Why (this direction)**
+- Goal of Phase 1 is to *see* the physics: sharp edges -> high frequencies,
+  pitch -> order spacing, holes -> 2D sinc. Every subsequent phase will
+  attach more machinery to this same FFT pipeline, so it has to be both
+  correct (tests) and visually inspectable (demos).
+
+**Next**
+- Phase 2: `src/optics/pupil.py` (circular pupil, NA cutoff) and
+  `src/optics/coherent_imaging.py` (`coherent_aerial_image`). Sweep NA in
+  {0.2, 0.4, 0.6, 0.8} on a vertical line-space and a contact hole; save
+  `outputs/figures/phase2_aerial_NA_sweep.png`.
+
+---
+
 ### A.3 Documentation baseline — ☑ done (2026-04-29)
 
 **What**
@@ -88,7 +151,7 @@
 | Phase | Name | Status | Key artifact |
 |---|---|---|---|
 | 0 | Env / scaffold / docs | ☑ | this scaffold + README + PROGRESS |
-| 1 | Scalar diffraction | ☐ | mask FFT, diffraction spectrum figures |
+| 1 | Scalar diffraction | ☑ | mask FFT, diffraction spectrum figures |
 | 2 | Coherent aerial imaging | ☐ | pupil filtering, NA sweep |
 | 3 | Inverse aerial optimization | ☐ | gradient-descent mask optimization |
 | 4 | Partial coherence / source integration | ☐ | annular / dipole / quadrupole |
@@ -104,15 +167,15 @@
 ## C. Per-phase module checklist
 
 ### Phase 1 — Scalar diffraction
-- [ ] `src/common/grid.py` — normalized real-space and frequency grids
-- [ ] `src/common/fft_utils.py` — `fft2c` / `ifft2c` (centered FFT)
-- [ ] `src/common/visualization.py` — mask / spectrum / aerial plotting helpers
-- [ ] `src/mask/patterns.py` — line-space, contact hole, isolated line, two-bar, elbow, random
-- [ ] `src/mask/transmission.py` — binary, attenuated phase shift
-- [ ] `src/optics/scalar_diffraction.py` — `diffraction_spectrum(t)`
-- [ ] `experiments/01_scalar_diffraction/demo_line_space.py`
-- [ ] `experiments/01_scalar_diffraction/demo_contact_hole.py`
-- [ ] `tests/test_fft_utils.py`, `tests/test_patterns.py`
+- [x] `src/common/grid.py` — normalized real-space and frequency grids
+- [x] `src/common/fft_utils.py` — `fft2c` / `ifft2c` (centered FFT)
+- [x] `src/common/visualization.py` — mask / spectrum / aerial plotting helpers (with freq zoom + percentile clip)
+- [x] `src/mask/patterns.py` — line-space, contact hole, isolated line, two-bar, elbow, random
+- [x] `src/mask/transmission.py` — binary, attenuated phase shift, alternating phase shift
+- [x] `src/optics/scalar_diffraction.py` — `diffraction_spectrum(t)`, `reconstruct_field`
+- [x] `experiments/01_scalar_diffraction/demo_line_space.py`
+- [x] `experiments/01_scalar_diffraction/demo_contact_hole.py`
+- [x] `tests/test_fft_utils.py`, `tests/test_patterns.py`, `tests/test_scalar_diffraction.py` — 16 pass
 
 ### Phase 2 — Coherent aerial image
 - [ ] `src/optics/pupil.py` — circular pupil with NA cutoff
@@ -220,6 +283,13 @@
   to editable install (`pip install -e .`) at any time.
 - **2026-04-29** All docs and code comments in English; only the source study
   plan stays in Korean. Mixing languages bloats greps and review noise.
+- **2026-04-29** `Grid2D` is a frozen dataclass rather than a free function
+  returning a tuple — keeps `extent` / `dx` / `df` / device / dtype tied
+  together so later modules can't accidentally mix conventions.
+- **2026-04-29** Demo scripts inject the repo root into `sys.path` directly.
+  Cleaner alternatives (`pip install -e .` or running with `PYTHONPATH=.`)
+  exist but the inline bootstrap keeps `experiments/*/demo_*.py` runnable
+  with a plain `python path/to/demo.py` and no setup step.
 
 ---
 
@@ -231,3 +301,9 @@
   start at `src/common/grid.py` and `src/common/fft_utils.py`, then
   `tests/test_fft_utils.py` to verify the centered-FFT round-trip error
   is below 1e-6.
+- **2026-04-29** Phase 1 done (scalar diffraction). 16 tests green, demos
+  produce 9 figures under `outputs/figures/phase1_*`. Resume with Phase 2:
+  add `src/optics/pupil.py` (circular pupil with NA cutoff) and
+  `src/optics/coherent_imaging.py` (`coherent_aerial_image(mask_t, pupil)`),
+  then `experiments/01_scalar_diffraction/demo_coherent_aerial.py` for the
+  NA sweep figure.
