@@ -1,12 +1,13 @@
 # PEB submodule (`reaction_diffusion_peb/`)
 
-**Status:** Phases 1 – 8 done (Phase 8 integrates Arrhenius from
-Phase 6 with the (H, Q, P) quencher system from Phase 7; the
-disable-each-term equivalence check reproduces Phases 2 / 4 / 6 / 7
-to machine precision). Phases 9 – 11 planned. Open follow-ups in
+**Status:** Phases 1 – 9 done (Phase 9 packages the Phase-8 integrated
+FD evolver into ``.npz`` datasets — separate safe-``k_q`` and
+stiff-``k_q`` archives with metadata + train/val/test splits, ready
+for Phase 10 surrogate training). Phases 10 – 11 planned. Open
+follow-ups in
 [`reaction_diffusion_peb/FUTURE_WORK.md`](../reaction_diffusion_peb/FUTURE_WORK.md)
 (items 1 and 4 closed; items 2 and 3 still open).
-147 PEB tests green; total repo tests at 279 / 279.
+161 PEB tests green; total repo tests at 293 / 293.
 
 ## Goal
 
@@ -37,7 +38,7 @@ the submodule:
 | 6 | Arrhenius temperature dependence | ✅ done (FD-only) |
 | 7 | Quencher reaction (`kq` safe vs stiff target) | ✅ done (FD-only) |
 | 8 | Full reaction-diffusion (everything combined) | ✅ done (FD-only) |
-| 9 | Save FD / PINN runs as a dataset | planned |
+| 9 | Save FD / PINN runs as a dataset | ✅ done (FD-only) |
 | 10 | DeepONet / FNO operator surrogate (optional) | planned |
 | 11 | Petersen / temperature uniformity / z-axis | planned |
 
@@ -536,12 +537,95 @@ the bimolecular ``H * Q`` term plus a temperature input would need a
 fresh training rig and is tracked alongside the Phase-6/7 PINN
 extensions in `FUTURE_WORK.md`.
 
+## Phase 9 — what's already there
+
+```text
+reaction_diffusion_peb/
+  src/dataset_builder.py            SampleSpec, aerial_from_spec,
+                                    random_safe_spec / random_stiff_spec,
+                                    generate_sample (calls Phase-8
+                                    evolver), make_split_indices,
+                                    save_dataset / load_dataset,
+                                    parameter_ranges.
+
+  experiments/09_dataset_generation/
+    generate_fd_dataset.py          Generates the safe and stiff
+                                    .npz archives + .json metadata.
+    validate_dataset.py             Asserts shapes / bounds / splits /
+                                    regime-specific kq ranges; writes
+                                    a per-archive summary CSV.
+```
+
+Per-sample fields stored in each ``.npz``:
+
+```text
+inputs (float32, shape (n, G, G)):
+  I, H0
+outputs (float32, shape (n, G, G)):
+  H_final, Q_final, P_final, R                    (R is binary 0/1)
+per-sample scalars (float32, shape (n,)):
+  dose, eta, Hmax,
+  DH_nm2_s, DQ_ratio,
+  kq_ref_s_inv, kdep_ref_s_inv, kloss_ref_s_inv,
+  Q0_mol_dm3,
+  temperature_c, temperature_ref_c, activation_energy_kj_mol,
+  t_end_s,
+  aerial_param_a, aerial_param_b
+per-sample int8:
+  aerial_kind_code   (0=gaussian_spot, 1=line_space, 2=contact_array,
+                      3=two_spot)
+```
+
+Sibling ``.json`` records ``grid_size``, ``grid_spacing_nm``,
+``P_threshold``, ``solver`` (``"fd"``), ``regime`` (``"safe"`` or
+``"stiff"``), ``seed``, parameter ranges, and the train / val / test
+index lists. Stiff samples live in their own archive because they take
+~100× longer per sample (up to 15k explicit Euler steps each at the
+upper end of ``k_q``) and Phase 10 may want to train safe and stiff
+surrogates separately.
+
+Verified results from
+`reaction_diffusion_peb/outputs/logs/peb_phase9_dataset_summary.csv`
+(seeds 20260429 / 20260430):
+
+| regime | file | n | grid | k_q range | mean P_max | mean R px | train / val / test |
+|---|---|---|---|---|---|---|---|
+| safe | `peb_phase9_safe_dataset.npz` | 64 | 128×128 | [0.5, 5.0] | 0.46 | 1019 | 52 / 6 / 6 |
+| stiff | `peb_phase9_stiff_dataset.npz` | 8 | 128×128 | [100, 1000] | 0.05 | 0 | 6 / 1 / 1 |
+
+What the numbers say:
+
+1. ✅ Every per-sample input / output array has the expected shape and
+   dtype; ``H, Q ≥ 0``, ``P ∈ [0, 1]``, ``R`` is binary (validated by
+   `validate_dataset.py`).
+2. ✅ Splits are non-overlapping and cover every sample exactly once;
+   sizes are deterministic in the seed.
+3. ✅ Safe / stiff archives are cleanly separated by ``k_q`` range
+   ([0.5, 5.0] vs [100, 1000]); ``solver: fd`` and ``regime`` fields
+   in metadata are the discriminators a future PINN-dataset .npz would
+   distinguish itself with.
+4. ✅ Aerial-pattern coverage in the safe archive: 27 ``gaussian_spot``,
+   19 ``two_spot``, 12 ``line_space``, 6 ``contact_array``.
+5. ✅ ``P_max`` covers a wide range in the safe archive (0.035 → 0.972)
+   — the parameter ranges are wide enough to give the surrogate room
+   to learn, not all converged-on-one-answer.
+6. ✅ Wall-clock: 64 safe samples in ~2.5 s, 8 stiff samples in ~39 s.
+   Predictable and tractable on CPU.
+
+PINN-dataset generation is intentionally deferred — PINN training
+across the integrated (H, Q, P, T) system is itself deferred — so the
+matching `generate_pinn_dataset.py` script is not implemented in this
+phase. The ``solver`` field in metadata is reserved as the
+discriminator for when that future dataset arrives.
+
 ## Where to start when reopening
 
-Phase 9 starts saving paired FD-truth runs (parameters → final
-``H, Q, P, R``) that Phase 10 will reuse as a dataset for operator
-learning. The integrated Phase-8 evolver is the single source of truth
-the dataset builder will call.
+Phase 10 (DeepONet / FNO operator surrogate, optional) is the natural
+next step. Inputs are everything in the ``.npz`` per-sample inputs
+(``I``, ``H0``, scalar parameters); the targets are ``P_final`` and
+``R``. The safe archive is large enough for an end-to-end training
+loop sanity check; the stiff archive is the harder out-of-distribution
+test. Both archives carry train / val / test splits in the metadata.
 
 ## See also
 
