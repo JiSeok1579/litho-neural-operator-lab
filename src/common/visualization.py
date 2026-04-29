@@ -688,6 +688,121 @@ def show_correction_samples(
     return fig
 
 
+def show_fno_predictions(
+    samples: list[dict],
+    df: float | None = None,
+    freq_zoom: int | None = 16,
+    suptitle: str = "",
+):
+    """Per-sample 4-panel row: |delta_T true| | |delta_T pred| | |error| | |T_3d true vs pred ratio|.
+
+    ``samples`` is a list of dicts with keys
+    ``delta_T_true``, ``delta_T_pred``, ``T_thin``, ``params_str`` (str).
+    """
+    n = len(samples)
+    fig, axes = plt.subplots(n, 4, figsize=(16, 4 * n))
+    if n == 1:
+        axes = axes.reshape(1, 4)
+
+    for r, s in enumerate(samples):
+        dt_true = s["delta_T_true"]
+        dt_pred = s["delta_T_pred"]
+        T_thin = s["T_thin"]
+        params_str = s.get("params_str", "")
+
+        amp_true = _to_numpy(dt_true.abs())
+        amp_pred = _to_numpy(dt_pred.abs())
+        amp_err = _to_numpy((dt_pred - dt_true).abs())
+        T_3d_true = T_thin + dt_true
+        T_3d_pred = T_thin + dt_pred
+        amp_T_true = _to_numpy(T_3d_true.abs())
+        amp_T_pred = _to_numpy(T_3d_pred.abs())
+
+        nside = amp_true.shape[-1]
+        if freq_zoom is not None:
+            amp_true = _crop_center(amp_true, freq_zoom)
+            amp_pred = _crop_center(amp_pred, freq_zoom)
+            amp_err = _crop_center(amp_err, freq_zoom)
+            amp_T_true = _crop_center(amp_T_true, freq_zoom)
+            amp_T_pred = _crop_center(amp_T_pred, freq_zoom)
+            if df is not None:
+                fmax = freq_zoom * df
+                ext = (-fmax, fmax, -fmax, fmax)
+            else:
+                ext = None
+        else:
+            if df is None:
+                ext = None
+            else:
+                fmax = (nside / 2) * df
+                ext = (-fmax, fmax, -fmax, fmax)
+
+        # Use the same vmax for true vs pred panels for fairness
+        delta_max = max(float(amp_true.max()), float(amp_pred.max()), 1e-12)
+
+        im0 = axes[r, 0].imshow(amp_true, cmap="viridis", extent=ext, origin="lower",
+                                vmin=0, vmax=delta_max)
+        axes[r, 0].set_title(f"|Delta T| true   {params_str}" if r == 0 and params_str else "|Delta T| true")
+        axes[r, 0].set_xlabel("fx"); axes[r, 0].set_ylabel("fy")
+        fig.colorbar(im0, ax=axes[r, 0], fraction=0.046, pad=0.04)
+
+        im1 = axes[r, 1].imshow(amp_pred, cmap="viridis", extent=ext, origin="lower",
+                                vmin=0, vmax=delta_max)
+        axes[r, 1].set_title("|Delta T| pred")
+        axes[r, 1].set_xlabel("fx"); axes[r, 1].set_ylabel("fy")
+        fig.colorbar(im1, ax=axes[r, 1], fraction=0.046, pad=0.04)
+
+        im2 = axes[r, 2].imshow(amp_err, cmap="inferno", extent=ext, origin="lower",
+                                vmin=0, vmax=max(float(amp_err.max()), 1e-12))
+        axes[r, 2].set_title(f"|err|  max={float(amp_err.max()):.4f}")
+        axes[r, 2].set_xlabel("fx"); axes[r, 2].set_ylabel("fy")
+        fig.colorbar(im2, ax=axes[r, 2], fraction=0.046, pad=0.04)
+
+        T_max = max(float(amp_T_true.max()), float(amp_T_pred.max()), 1e-12)
+        im3 = axes[r, 3].imshow(amp_T_pred, cmap="viridis", extent=ext, origin="lower",
+                                vmin=0, vmax=T_max)
+        axes[r, 3].set_title("|T_3d| pred")
+        axes[r, 3].set_xlabel("fx"); axes[r, 3].set_ylabel("fy")
+        fig.colorbar(im3, ax=axes[r, 3], fraction=0.046, pad=0.04)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
+def show_fno_training(
+    epochs: list[int],
+    train_losses: list[float],
+    test_losses: list[float],
+    test_complex_rel_err: list[float] | None = None,
+    suptitle: str = "",
+):
+    """Training history with train / test loss on log y plus optional
+    complex-relative-error subplot."""
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    axes[0].plot(epochs, train_losses, label="train spectrum MSE", color="C0")
+    axes[0].plot(epochs, test_losses, label="test spectrum MSE",
+                 color="C3", linestyle="--")
+    axes[0].set_yscale("log")
+    axes[0].set_title("loss")
+    axes[0].set_xlabel("epoch"); axes[0].set_ylabel("MSE (log)")
+    axes[0].legend(); axes[0].grid(alpha=0.3)
+
+    if test_complex_rel_err is not None:
+        axes[1].plot(epochs, test_complex_rel_err, color="C2")
+        axes[1].set_title("test complex relative error")
+        axes[1].set_xlabel("epoch"); axes[1].set_ylabel("rel err")
+        axes[1].grid(alpha=0.3)
+    else:
+        axes[1].axis("off")
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    return fig
+
+
 def save_figure(fig, path: str | Path, dpi: int = 150) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
