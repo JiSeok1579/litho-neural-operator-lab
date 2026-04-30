@@ -1,23 +1,23 @@
-# High-NA EUV PEB v2 실험 지시서
+# High-NA EUV PEB v2 Experiment Plan
 
 ## Status — first-pass closeout
 
-| Stage | Status | 비고 |
+| Stage | Status | Note |
 |---|---|---|
 | 1   | ✅ complete | Stage-1 clean geometry baseline (σ=0, t=30) |
-| 1A  | ✅ complete | σ-호환 budget calibration; σ ∈ [0, 3] usable at kdep=0.5 / Hmax≤0.2 |
+| 1A  | ✅ complete | σ-compatible budget calibration; σ ∈ [0, 3] usable at kdep=0.5 / Hmax≤0.2 |
 | 1B  | ✅ complete | over-budget reference (σ=5/t=60 = lines merge) |
 | 2   | ✅ complete | DH × time process window (algorithmic best vs robust alternates) |
-| 3   | ✅ complete | electron blur 분리 + 3-stage LER 측정 규약 |
-| 3B  | ⏸ deferred | σ=5/8 호환 budget search (search space 확장 필요) |
+| 3   | ✅ complete | electron blur decomposition + 3-stage LER measurement convention |
+| 3B  | ⏸ deferred | σ=5/8 compatible budget search (search-space expansion required) |
 | 4   | ✅ complete | weak quencher 52-run sweep + balanced OP (Q0=0.02, kq=1) |
-| 4B  | ✅ complete | CD-locked LER + Stage-5B mini-sweep; CD-locked = helper default 채택 |
+| 4B  | ✅ complete | CD-locked LER + Stage-5B mini-sweep; CD-locked adopted as helper default |
 | 5   | ✅ complete | pitch × dose process window (108 runs, primary + 2 controls) |
 | 5C  | ⏸ deferred | σ=0 small-pitch follow-up |
 | 6   | ✅ complete | x-z standing wave (12 runs, 3 thickness × 4 amplitude) |
-| 6B  | ⏸ deferred | full 3D x-y-z (compute cost 큼) |
+| 6B  | ⏸ deferred | full 3D x-y-z (large compute cost) |
 
-### 권장 v2 operating point (검증된 robust 영역)
+### Recommended v2 operating point (verified robust zone)
 
 ```yaml
 pitch_nm:           24
@@ -31,65 +31,65 @@ kdep_s_inv:         0.5
 Hmax_mol_dm3:       0.2
 kloss_s_inv:        0.005
 quencher:           Q0=0.02, kq=1.0, DQ=0     # Stage-4 balanced
-P_threshold:        0.5                       # CD-locked variant 도 helper 가 자동 계산
+P_threshold:        0.5                       # the CD-locked variant is also auto-computed by the helper
 ```
 
-이 OP 는 Stage 2 의 `robust alt 2` 로 시작해 Stage 3 에서 σ=2 추가, Stage 4 에서 quencher balanced, Stage 5 에서 pitch ≥ 24 robust 검증, Stage 6 에서 z-modulation 흡수 확인됨.
+This OP starts from Stage 2's `robust alt 2`, adds σ=2 in Stage 3, balances the quencher in Stage 4, is verified as robust at pitch ≥ 24 in Stage 5, and is confirmed to absorb z-modulation in Stage 6.
 
 ### Next milestone
 
-literature 또는 측정 데이터와의 calibration 이 다음 단계.
+The next step is calibration against literature or measurement data.
 
 ```text
-- 외부 reference 의 CD / LER / process window 모양과 비교
-- 체계적 offset 발견 시 kdep, Hmax, dose 보정
-- calibration 후 Stage 6B (3D), Stage 3B (σ=5/8), Stage 5C (small pitch) 등의 확장 결정
-- 그전에는 chemistry 추가나 새 stage 시작 보류
+- Compare against external reference CD / LER / process-window shapes
+- If a systematic offset is found, correct kdep, Hmax, or dose
+- After calibration, decide on extensions such as Stage 6B (3D), Stage 3B (σ=5/8), Stage 5C (small pitch)
+- Until then, hold off on adding new chemistry or starting new stages
 ```
 
-상세 finding 은 `STUDY_SUMMARY.md` 와 `study_notes/` 를 참조.
+For detailed findings see `STUDY_SUMMARY.md` and `study_notes/`.
 
 ---
 
-## 0. 목적
+## 0. Purpose
 
-현재 `reaction_diffusion_peb/` 폴더는 그대로 유지한다.  
-새로운 두 번째 실험 폴더를 만들어, 기존 toy/sandbox 성격의 PEB 모델을 **High-NA EUV line/space 기반 공정 지향 실험**으로 재설정한다.
+The current `reaction_diffusion_peb/` folder is kept as is.
+A new second experiment folder is created, repurposing the existing toy/sandbox PEB model into a **process-oriented experiment based on High-NA EUV line/space patterns**.
 
-새 폴더의 권장 이름:
+Recommended name for the new folder:
 
 ```text
 reaction_diffusion_peb_v2_high_na/
 ```
 
-v2의 목표는 다음이다.
+The goals of v2 are as follows.
 
 ```text
-High-NA EUV 조건에서
-line/space pitch, CD, edge roughness, electron blur, film thickness, z 방향 standing wave,
-weak quencher 조건을 단계적으로 추가하여
-PEB가 LER/LWR/CD shift에 미치는 영향을 정량화한다.
+Under High-NA EUV conditions,
+incrementally add line/space pitch, CD, edge roughness, electron blur, film thickness,
+z-direction standing wave, and weak quencher conditions
+to quantify the impact of PEB on LER/LWR/CD shift.
 ```
 
-핵심 질문은 다음이다.
+The key questions are as follows.
 
 ```text
-1. 초기 line edge roughness가 PEB diffusion 후 얼마나 줄어드는가?
-2. roughness smoothing과 CD shift 사이의 trade-off는 어느 정도인가?
-3. electron blur와 PEB acid diffusion blur를 분리해서 볼 수 있는가?
-4. quencher를 약하게 넣었을 때 acid tail과 CD shift가 줄어드는가?
-5. z 방향 film thickness / standing wave modulation이 PEB 후 얼마나 완화되는가?
+1. By how much does initial line edge roughness shrink after PEB diffusion?
+2. What is the trade-off between roughness smoothing and CD shift?
+3. Can electron blur and PEB acid-diffusion blur be separated?
+4. When a weak quencher is added, do the acid tail and CD shift decrease?
+5. By how much are z-direction film thickness / standing-wave modulation relaxed after PEB?
 ```
 
 ---
 
-## 1. 기존 v1 폴더의 한계
+## 1. Limitations of the existing v1 folder
 
-기존 `reaction_diffusion_peb/`는 PEB physics sandbox로서는 성공적이다. 그러나 실제 High-NA EUV 공정 실험으로 보기에는 다음 한계가 있다.
+The existing `reaction_diffusion_peb/` is successful as a PEB physics sandbox. However, viewed as an actual High-NA EUV process experiment, it has the following limitations.
 
-### 1.1 Geometry가 약함
+### 1.1 Geometry is weak
 
-기존은 주로 synthetic Gaussian spot 또는 단순 line-space exposure map을 사용한다.
+The existing setup mostly uses a synthetic Gaussian spot or a simple line-space exposure map.
 
 ```text
 Gaussian / simple synthetic I(x,y)
@@ -97,7 +97,7 @@ Gaussian / simple synthetic I(x,y)
 → diffusion / reaction
 ```
 
-하지만 실제로 필요한 것은 다음이다.
+But what is actually needed is the following.
 
 ```text
 pitch
@@ -109,11 +109,11 @@ LWR / LER metric
 CD shift metric
 ```
 
-즉 v1은 “field가 잘 확산되는가”를 보기에는 좋지만, “High-NA line/space pattern이 PEB 후 어떻게 변하는가”를 보기에는 geometry 정보가 부족하다.
+In other words, v1 is fine for "does the field diffuse well?", but lacks the geometry information needed to see "how does a High-NA line/space pattern change after PEB?"
 
-### 1.2 z 방향 정보가 없음
+### 1.2 No z-direction information
 
-v1의 core model은 기본적으로 2D이다.
+v1's core model is essentially 2D.
 
 ```text
 H(x,y,t)
@@ -121,7 +121,7 @@ Q(x,y,t)
 P(x,y,t)
 ```
 
-따라서 다음 현상을 직접 볼 수 없다.
+As a result, the following phenomena cannot be observed directly.
 
 ```text
 resist film thickness effect
@@ -130,18 +130,18 @@ top / bottom boundary effect
 x-z cross-section striation
 ```
 
-v2에서는 처음부터 full 3D로 가지 말고, 먼저 `x-z` 단면 실험을 별도 stage로 둔다.
+In v2 we do not jump straight to full 3D; first we set up an `x-z` cross-section experiment as a separate stage.
 
-### 1.3 Exposure가 normalized toy dose임
+### 1.3 Exposure uses a normalized toy dose
 
-v1의 exposure는 대략 다음 형태다.
+v1's exposure has roughly the following form.
 
 ```text
 H0 = Hmax * (1 - exp(-eta * dose * I))
 ```
 
-여기서 `dose=1.0`은 normalized dose이지, 실제 `mJ/cm^2` 단위의 dose가 아니다.  
-v2에서는 실제 dose 값과 normalized dose를 분리한다.
+Here `dose=1.0` is a normalized dose, not an actual dose in `mJ/cm^2`.
+In v2, the actual dose value and the normalized dose are separated.
 
 ```text
 dose_mJ_cm2
@@ -149,63 +149,63 @@ reference_dose_mJ_cm2
 dose_norm = dose_mJ_cm2 / reference_dose_mJ_cm2
 ```
 
-### 1.4 Quencher parameter가 너무 강한 regime으로 들어감
+### 1.4 Quencher parameters fall into too strong a regime
 
-v1에서 문제가 된 핵심 조합은 다음이다.
+The key combination that caused problems in v1 is as follows.
 
 ```text
 H0_peak ≈ 0.126
 Q0 = 0.1
 kq >= 5 s^-1
-kdep = 0.05 또는 0.5 s^-1
+kdep = 0.05 or 0.5 s^-1
 P_threshold = 0.5
 ```
 
-이 조합에서는 acid가 polymer를 충분히 deprotect하기 전에 quencher에게 너무 빨리 잡힌다.  
-그 결과 `P > 0.5` contour가 사라진다.
+In this combination, acid is captured by quencher too quickly before it can sufficiently deprotect the polymer.
+As a result, the `P > 0.5` contour disappears.
 
-v2에서는 반드시 다음 순서로 진행한다.
+In v2 we must proceed in the following order.
 
 ```text
 1. quencher off baseline
 2. weak quencher only
 3. medium quencher
-4. stiff quencher는 별도 stress-test
+4. stiff quencher only as a separate stress-test
 ```
 
-### 1.5 PINN/FNO는 기본 solver로 부적절
+### 1.5 PINN/FNO are unsuitable as default solvers
 
-v1에서 PINN은 diffusion-only 및 deprotection에서 정량 정확도가 낮았다.  
-특히 Phase 5 PINN에서는 `P_min < 0` 문제가 있었다.
+In v1, PINN had low quantitative accuracy on diffusion-only and deprotection.
+In particular, the Phase 5 PINN had a `P_min < 0` problem.
 
-v2에서는 초기 실험의 truth solver를 다음으로 고정한다.
+In v2 we fix the truth solver for the initial experiments to the following.
 
 ```text
 primary solver: FD / FFT
 secondary analysis: optional PINN/FNO only after FD baseline is verified
 ```
 
-PINN/FNO는 v2 초기에 사용하지 않는다.
+PINN/FNO are not used in early v2 experiments.
 
 ---
 
-## 2. v2 실험의 방향성
+## 2. Direction of v2 experiments
 
-v2는 “phase를 많이 늘리는 것”이 목적이 아니다.  
-목표는 **geometry와 공정 조건을 현실화하고, 각 물리항의 효과를 분리해서 보는 것**이다.
+The goal of v2 is not "to add many phases".
+The goal is to **make the geometry and process conditions realistic, and to separate the effect of each physical term**.
 
-v2의 기본 전략:
+Basic v2 strategy:
 
 ```text
-Step A: geometry를 실제 line/space scale로 바꾼다.
-Step B: electron blur와 initial roughness를 넣는다.
-Step C: quencher 없이 PEB baseline을 확인한다.
-Step D: weak quencher를 추가한다.
-Step E: x-z standing wave 실험을 추가한다.
-Step F: pitch / dose / DH / time sweep을 수행한다.
+Step A: change the geometry to real line/space scale.
+Step B: add electron blur and initial roughness.
+Step C: confirm a no-quencher PEB baseline.
+Step D: add a weak quencher.
+Step E: add the x-z standing wave experiment.
+Step F: perform pitch / dose / DH / time sweeps.
 ```
 
-v2에서 처음부터 넣지 말아야 할 것:
+Things that should not be added from the start in v2:
 
 ```text
 strong kq = 100~1000 s^-1
@@ -217,9 +217,9 @@ complex development rate model
 
 ---
 
-## 3. 새 폴더 구조
+## 3. New folder structure
 
-권장 구조:
+Recommended layout:
 
 ```text
 reaction_diffusion_peb_v2_high_na/
@@ -271,9 +271,9 @@ reaction_diffusion_peb_v2_high_na/
 
 ---
 
-## 4. v2 입력 파라미터
+## 4. v2 input parameters
 
-아래 값들은 업로드된 High-NA EUV PEB 정량 파라미터 표를 v2 실험용으로 정리한 것이다.
+The values below organize the uploaded High-NA EUV PEB quantitative parameter table for v2 experiments.
 
 ### 4.1 Geometry parameters
 
@@ -302,8 +302,8 @@ geometry:
   edge_roughness_seed: 7
 ```
 
-초기 baseline은 `pitch=24 nm`, `line_cd=12.5 nm`로 시작한다.  
-바로 16 nm pitch로 가지 않는다. 작은 pitch는 process window가 좁아서 원인 분리가 어렵다.
+The initial baseline starts at `pitch=24 nm`, `line_cd=12.5 nm`.
+Do not jump straight to 16 nm pitch. Small pitches have a narrow process window which makes cause isolation difficult.
 
 ### 4.2 Exposure / aerial image parameters
 
@@ -330,20 +330,20 @@ exposure:
   target_NILS: 1.5
 ```
 
-주의:
+Note:
 
 ```text
-dose_mJ_cm2는 실제 단위값이고,
-dose_norm은 acid generation 식에 넣는 normalized scale이다.
+dose_mJ_cm2 is the actual physical-unit value,
+dose_norm is the normalized scale fed into the acid-generation formula.
 ```
 
-초기에는:
+Initially we set:
 
 ```text
 dose_norm = dose_mJ_cm2 / 40.0
 ```
 
-으로 둔다. 이후 실험값에 맞춰 `eta` 또는 `Hmax`를 calibration한다.
+Later, `eta` or `Hmax` is calibrated against experimental values.
 
 ### 4.3 PEB reaction parameters
 
@@ -364,8 +364,8 @@ peb:
   kdep_s_inv: 0.5
 ```
 
-초기 baseline에서는 `kdep=0.5`를 사용한다.  
-`kdep=0.05`는 v1 결과상 threshold contour를 만들기엔 너무 약하므로 v2 기본값으로 쓰지 않는다.
+The initial baseline uses `kdep=0.5`.
+`kdep=0.05` proved too weak in v1 to form a threshold contour, so it is not used as the v2 default.
 
 ### 4.4 Quencher parameters
 
@@ -387,11 +387,11 @@ quencher:
   kq_sweep_stiff_s_inv: [100.0, 300.0, 1000.0]
 ```
 
-중요:
+Important:
 
 ```text
-Q0=0.1과 kq>=5를 baseline으로 쓰지 않는다.
-강한 quencher는 P contour를 없애므로 별도 stress-test로 분리한다.
+Do not use Q0=0.1 with kq>=5 as a baseline.
+Strong quencher destroys the P contour, so it is separated into a stand-alone stress-test.
 ```
 
 ### 4.5 Development / threshold parameters
@@ -409,12 +409,12 @@ metrics:
   compute_edge_PSD: true
 ```
 
-초기에는 full dissolution model을 넣지 않는다.  
-`P > P_threshold` contour로 developable region을 정의한다.
+Initially, no full dissolution model is included.
+The developable region is defined by the `P > P_threshold` contour.
 
 ### 4.6 z direction / standing wave parameters
 
-z 방향은 v2 후반에 별도 stage로 넣는다.
+The z direction is added as a separate stage later in v2.
 
 ```yaml
 film:
@@ -435,7 +435,7 @@ standing_wave:
   absorption_length_nm: 30.0
 ```
 
-x-z 초기 exposure model:
+Initial x-z exposure model:
 
 ```text
 I(x,z) = I_xy(x) * [1 + A*cos(2*pi*z/period + phase)] * exp(-z/absorption_length)
@@ -443,35 +443,35 @@ I(x,z) = I_xy(x) * [1 + A*cos(2*pi*z/period + phase)] * exp(-z/absorption_length
 
 ---
 
-## 5. 실험 단계
+## 5. Experiment stages
 
 ## Stage 1 — 2D line/space baseline, no quencher (CLEAN GEOMETRY)
 
-### 목적
+### Purpose
 
-기존 Gaussian toy map 대신 실제 line/space pitch/CD 기반 H0를 만들고, quencher 없이 PEB smoothing이 정상적으로 나오는지 확인한다.
+Replace the previous Gaussian toy map with an H0 built from realistic line/space pitch/CD, and confirm that PEB smoothing behaves normally without a quencher.
 
-### 중요 — nominal 변경 사유
+### Important — why the nominal changed
 
-§4.2 / §4.3 의 원본 nominal `electron_blur_sigma_nm=5, time_s=60` 조합은 24 nm pitch / 12.5 nm CD 에서 **interior gate 통과 불가**임이 calibration 결과로 확인됨 (see Stage 1A 아래).
-- σ=5, t=60 → P_space_center_mean=0.83, area_frac=1.0, CD_final≈pitch (line 완전 merge).
-- σ=5 의 경우 t={10,15,20,30} × DH={0.3,0.8} × kdep=0.5 × Hmax={0.1,0.15,0.2} grid 전수 실패.
-- 따라서 σ=5/t=60 은 Stage 1 baseline이 **아님**. §6.4 over-budget 스트레스 케이스로 분리.
+Calibration confirmed that the original nominal in §4.2 / §4.3 (`electron_blur_sigma_nm=5, time_s=60`) **cannot pass the interior gate** at 24 nm pitch / 12.5 nm CD (see Stage 1A below).
+- σ=5, t=60 → P_space_center_mean=0.83, area_frac=1.0, CD_final≈pitch (lines fully merge).
+- For σ=5, the entire t={10,15,20,30} × DH={0.3,0.8} × kdep=0.5 × Hmax={0.1,0.15,0.2} grid fails.
+- Therefore σ=5/t=60 is **not** the Stage 1 baseline. It is moved to the §6.4 over-budget stress case.
 
-Stage 1 의 baseline 은 electron blur 효과가 제거된 **clean geometry** 조건으로 재정의한다.
-Electron blur 효과는 Stage 3 에서 σ-호환 budget 과 함께 별도 평가한다.
+The Stage 1 baseline is redefined as a **clean geometry** condition with electron-blur effects removed.
+Electron-blur effects are evaluated separately in Stage 3 together with the σ-compatible budget.
 
-### 설정 (clean geometry baseline)
+### Setup (clean geometry baseline)
 
 ```yaml
 geometry.pitch_nm: 24
 geometry.line_cd_nm: 12.5
-geometry.domain_x_nm: 120          # 5 * pitch — pitch-aligned (FFT seam artifact 방지)
+geometry.domain_x_nm: 120          # 5 * pitch — pitch-aligned (prevents FFT seam artifact)
 geometry.domain_y_nm: 120
 exposure.dose_mJ_cm2: 40
 exposure.electron_blur_sigma_nm: 0  # NO e-blur for Stage 1
 peb.DH_nm2_s: 0.8
-peb.time_s: 30                      # half of original nominal — 60s에서는 모든 σ가 merge
+peb.time_s: 30                      # half of original nominal — at 60 s every σ merges
 peb.kdep_s_inv: 0.5
 peb.kloss_s_inv: 0.005
 quencher.enabled: false
@@ -480,7 +480,7 @@ development.P_threshold: 0.5
 
 config: `configs/v2_stage1_clean_geometry.yaml`
 
-### 출력
+### Outputs
 
 ```text
 H0(x,y)
@@ -493,22 +493,22 @@ LER_before / LER_after
 CD_before / CD_after
 ```
 
-### 성공 기준 — interior gate (seam-artifact-resistant)
+### Success criteria — interior gate (seam-artifact-resistant)
 
 ```text
 H >= 0
 0 <= P <= 1
-interior P_space_center_mean < 0.50    # line 사이 strip 평균이 임계 미만
-interior P_line_center_mean  > 0.65    # line 중심 strip 평균이 임계 이상
+interior P_space_center_mean < 0.50    # the strip-mean between lines is below threshold
+interior P_line_center_mean  > 0.65    # the strip-mean at line center is above threshold
 contrast = P_line_mean - P_space_mean > 0.15
-area_frac (P>=threshold) < 0.90        # 전 영역 over-deprotect 방지
-CD_final / pitch < 0.85                # line 들이 merge 하지 않음
-CD shift 와 LER 가 측정 가능
+area_frac (P>=threshold) < 0.90        # prevents whole-domain over-deprotection
+CD_final / pitch < 0.85                # lines do not merge
+CD shift and LER are measurable
 ```
 
-global P_min 은 사용하지 않는다. 도메인이 pitch 의 정수배가 아니면 FFT seam 의 wider-space artifact 가 P_min 을 인위적으로 낮추기 때문.
+Global P_min is not used. If the domain is not an integer multiple of the pitch, the FFT-seam wider-space artifact lowers P_min artificially.
 
-### 검증된 결과 (σ=0, t=30)
+### Verified results (σ=0, t=30)
 
 ```text
 P_space_center_mean = 0.31
@@ -525,34 +525,34 @@ all interior gates  = PASS
 
 ## Stage 1A — σ-compatible exposure / PEB budget calibration
 
-### 목적
+### Purpose
 
-§4.2 의 sweep `electron_blur_sigma_nm: [0,2,5,8]` 를 의미 있게 수행하려면, 각 σ 에 대해 line-space 구분이 살아있는 (t, DH, Hmax, kdep) budget 이 필요하다.
-원본 `kdep=0.5, time=60, DH=0.8, Hmax=0.2` 는 24 nm pitch 에서 σ≥4 부터 lines 가 merge 하므로 σ-스윕이 불가능.
-Stage 1A 는 각 σ 의 호환 budget 을 찾는다.
+To run the §4.2 sweep `electron_blur_sigma_nm: [0,2,5,8]` meaningfully, each σ needs a (t, DH, Hmax, kdep) budget that preserves line-space separation.
+With the original `kdep=0.5, time=60, DH=0.8, Hmax=0.2`, lines merge at σ≥4 on 24 nm pitch, making the σ-sweep impossible.
+Stage 1A finds a compatible budget per σ.
 
-### 절차
+### Procedure
 
 ```text
 Stage 1A.1  σ sweep at fixed t=30, DH=0.8, kdep=0.5, Hmax=0.2:
               σ ∈ {0,1,2,3,4,5}
-              gate = interior gate 위 그대로
-              결과: σ ∈ {0,1,2,3} pass, σ ∈ {4,5} fail.
+              gate = interior gate above, unchanged
+              result: σ ∈ {0,1,2,3} pass, σ ∈ {4,5} fail.
 
-Stage 1A.2  σ=5 budget search (기존 spec 범위):
+Stage 1A.2  σ=5 budget search (within existing spec range):
               time × DH grid: time ∈ {10,15,20,30}, DH ∈ {0.3,0.8}, kdep=0.5
-              필요 시 Hmax sweep ∈ {0.1,0.15,0.2} at the highest-contrast (t,DH)
-              결과: 전수 실패 (σ=5,t=20,DH=0.3,Hmax=0.2 가 cond_line 0.630<0.65 로 가장 근접).
-              결론: 위 search 범위 내에서 σ=5 호환 budget 없음.
-              해석: σ=5/24 nm pitch 에서 I_blurred contrast 가 너무 약하다.
+              if needed, Hmax sweep ∈ {0.1,0.15,0.2} at the highest-contrast (t,DH)
+              result: complete failure (σ=5,t=20,DH=0.3,Hmax=0.2 came closest with cond_line 0.630<0.65).
+              conclusion: no σ=5 compatible budget within the search range.
+              interpretation: at σ=5/24 nm pitch, I_blurred contrast is too weak.
 
-Stage 1A.3  필요 시 search space 확장:
+Stage 1A.3  expand search space if needed:
               kdep ∈ {0.5, 1.0}                 # P_line lift
               dose_mJ_cm2 ∈ {40, 50, 60}        # H0 contrast lift
-              또는 σ 의 effective upper bound 를 σ_max=3 으로 확정.
+              or fix the effective upper bound of σ at σ_max=3.
 ```
 
-### Stage 1A 관측
+### Stage 1A observations
 
 | σ (nm) | t (s) | DH | Hmax | P_space | P_line | contrast | area_frac | CD/p | passed |
 |--------|-------|-----|------|---------|--------|----------|-----------|------|--------|
@@ -564,28 +564,28 @@ Stage 1A.3  필요 시 search space 확장:
 | 5      | 30    | 0.8 | 0.2  | 0.58    | 0.73   | 0.16     | 1.000     | 0.98 | ❌ |
 | 5      | 20    | 0.3 | 0.2  | 0.38    | 0.63   | 0.25     | 0.598     | 0.60 | ❌ (P_line 0.02 low) |
 
-### Stage 1A 결정
+### Stage 1A decision
 
 ```text
-24 nm pitch 에서 σ-호환 운용 범위 = σ ∈ [0, 3] nm (kdep=0.5, Hmax=0.2 spec 내)
-σ ≥ 4 는 budget search space 확장 후 재검토 (Stage 1A.3).
-σ=5 와 σ=5/t=60 는 §6.4 over-budget 스트레스 케이스로 분리.
+σ-compatible operating range at 24 nm pitch = σ ∈ [0, 3] nm (within kdep=0.5, Hmax=0.2 spec)
+σ ≥ 4 is revisited after expanding the budget search space (Stage 1A.3).
+σ=5 and σ=5/t=60 are moved to the §6.4 over-budget stress case.
 ```
 
 ---
 
 ## Stage 1B — over-budget stress reference (σ=5, t=60)
 
-### 목적
+### Purpose
 
-Plan §4 의 원본 nominal 이 line merge 를 일으킨다는 것을 명시적으로 기록.
-공정 윈도우 평가에서 "이 조합은 비정상 영역" 의 reference 로 사용.
+Explicitly record that the original nominal in plan §4 causes line merge.
+Used in process-window evaluation as a "this combination is in the abnormal region" reference.
 
-### 설정
+### Setup
 
-config: `configs/v2_baseline_lspace.yaml` (헤더에 OVER-BUDGET 경고 명시)
+config: `configs/v2_baseline_lspace.yaml` (the header carries an OVER-BUDGET warning)
 
-### 관측 결과
+### Observed results
 
 ```text
 P_space_center_mean = 0.83
@@ -593,39 +593,39 @@ P_line_center_mean  = 0.90
 contrast            = 0.07
 area_frac           = 1.000
 CD_final / pitch    = 0.98
-모든 interior gate fail. lines 가 슬랩으로 합쳐짐.
+All interior gates fail. Lines merge into a single slab.
 ```
 
-이 결과는 Stage 5 process-window 분석에서 "high-σ × long-t × strong-kdep 조합은 lines collapse" 경향의 데이터 포인트로 사용한다.
+This result is used as a data point for the trend "high-σ × long-t × strong-kdep combinations cause lines to collapse" in the Stage 5 process-window analysis.
 
 ---
 
 ## Stage 2 — DH / PEB time smoothing sweep
 
-### 목적
+### Purpose
 
-PEB diffusion length가 roughness와 CD shift에 주는 영향을 분리한다.
+Separate the contributions of PEB diffusion length to roughness and to CD shift.
 
 ### Sweep
 
 ```yaml
-DH_sweep_nm2_s: [0.3, 0.5, 0.8, 1.0, 1.5]    # 실제 수행: 5점 (원안의 3점 + 0.5/1.0 추가)
-time_sweep:     [15, 20, 30, 45, 60]          # 실제 수행: lower 절반 추가
+DH_sweep_nm2_s: [0.3, 0.5, 0.8, 1.0, 1.5]    # actually executed: 5 points (3 from the original plan + 0.5/1.0 added)
+time_sweep:     [15, 20, 30, 45, 60]          # actually executed: lower half added
 ```
 
-### 봐야 할 경향
+### Trends to look for
 
 ```text
-DH 증가 → LER 감소
-DH 증가 → CD shift 증가
-PEB time 증가 → LER 감소
-PEB time 증가 → CD shift 증가
-너무 큰 DH/time → line edge blur 과도
+DH increases → LER decreases
+DH increases → CD shift increases
+PEB time increases → LER decreases
+PEB time increases → CD shift increases
+Excessively large DH/time → line edges blur too much
 ```
 
-### 검증된 결과
+### Verified results
 
-config: `configs/v2_stage2_dh_time.yaml` (Stage 1 baseline 그대로 + sweep 변수만 override)
+config: `configs/v2_stage2_dh_time.yaml` (Stage 1 baseline as is, only the sweep variables override it)
 
 ```text
 LER reduction (%) — DH (rows) × time (cols), ✓ = interior gate pass
@@ -637,131 +637,131 @@ LER reduction (%) — DH (rows) × time (cols), ✓ = interior gate pass
   DH=1.00:    8.62✗     8.84✗    -1.98✓    62.62✗   100.00✗
   DH=1.50:   -4.48✗     3.98✗   -38.01✓   100.00✗   100.00✗
 
-✗ 영역의 LER% 는 신뢰 불가 (lines merged → edge extract NaN/0).
-✗에서의 100% 는 artifact, ✓ 영역에서만 의미 있음.
+LER% in the ✗ region is not reliable (lines merged → edge extraction NaN/0).
+100% values in ✗ rows are artifacts; only ✓ rows are meaningful.
 ```
 
-알고리즘 best (max LER% s.t. CD_shift ≤ 3, CD/p < 0.85, area_frac < 0.9):
-**DH=0.8 nm²/s, t=20 s** — LER 9.61% 감소, CD_shift = −1.18 nm, P_line=0.65 (margin 0.003).
+Algorithmic best (max LER% subject to CD_shift ≤ 3, CD/p < 0.85, area_frac < 0.9):
+**DH=0.8 nm²/s, t=20 s** — LER reduced by 9.61%, CD_shift = −1.18 nm, P_line=0.65 (margin 0.003).
 
-실용 권장 (P_line margin 큰 후보): **DH=0.5, t=20** (LER 8.80%, P_line=0.68) 또는 **DH=0.5, t=30** (LER 8.69%, P_line=0.79).
+Practical recommendation (candidates with larger P_line margin): **DH=0.5, t=20** (LER 8.80%, P_line=0.68) or **DH=0.5, t=30** (LER 8.69%, P_line=0.79).
 
-세부 분석은 `study_notes/02_stage2_dh_time_sweep.md` 참조.
+For detailed analysis see `study_notes/02_stage2_dh_time_sweep.md`.
 
 ---
 
-## Stage 3 — electron blur 분리 실험
+## Stage 3 — electron blur decomposition experiment
 
-### 목적
+### Purpose
 
-EUV 2차 전자 blur 와 PEB acid diffusion blur 를 분리한다.
+Separate EUV secondary-electron blur from PEB acid-diffusion blur.
 
 ### Sweep (revised)
 
 ```yaml
-electron_blur_sigma_nm: [0, 1, 2, 3]      # 24 nm pitch / kdep=0.5 / Hmax<=0.2 호환 범위
-DH_nm2_s, time_s: Stage 2 의 두 operating point
+electron_blur_sigma_nm: [0, 1, 2, 3]      # range compatible with 24 nm pitch / kdep=0.5 / Hmax<=0.2
+DH_nm2_s, time_s: the two operating points from Stage 2
                   - robust OP             : DH=0.5, t=30
                   - algorithmic-best OP   : DH=0.8, t=20
 ```
 
-원안 `[0, 2, 5, 8]` 에서 σ=5, σ=8 은 24 nm pitch / kdep=0.5 / Hmax≤0.2 budget 과 호환되지 않음 (Stage 1A 에서 search space 전수 fail). 호환 budget 을 찾으려면 dose / kdep / Hmax 를 늘려야 하며 이는 별도 stage (Stage 3B) 로 분리.
+In the original plan `[0, 2, 5, 8]`, σ=5 and σ=8 are not compatible with the 24 nm pitch / kdep=0.5 / Hmax≤0.2 budget (Stage 1A's full search space fails). Finding a compatible budget requires raising dose / kdep / Hmax, which is moved into a separate stage (Stage 3B).
 
-### 측정 규약 (재정의)
+### Measurement convention (redefined)
 
-Stage 1/2 의 "initial edge" 정의는 σ-의존성 (`I_blurred` 가 σ 따라 매끈해짐) 이 있어 σ-스윕에서 불공정. Stage 3 부터는 LER 를 세 단계로 분리해서 측정.
+The "initial edge" definition in Stage 1/2 has σ-dependence (`I_blurred` smooths out as σ grows), making it unfair across a σ-sweep. From Stage 3, LER is measured in three separated stages.
 
 ```text
-LER_design_initial    : binary I (blur 전) 의 threshold 0.5 contour
-LER_after_eblur_H0    : I_blurred (blur 후, PEB 전) 의 threshold 0.5 contour
-LER_after_PEB_P       : P (PEB 후) 의 threshold 0.5 contour
+LER_design_initial    : threshold 0.5 contour of binary I (before blur)
+LER_after_eblur_H0    : threshold 0.5 contour of I_blurred (after blur, before PEB)
+LER_after_PEB_P       : threshold 0.5 contour of P (after PEB)
 
 electron_blur_LER_reduction_pct = 100 * (LER_design_initial - LER_after_eblur_H0) / LER_design_initial
 PEB_LER_reduction_pct           = 100 * (LER_after_eblur_H0 - LER_after_PEB_P)   / LER_after_eblur_H0
 total_LER_reduction_pct         = 100 * (LER_design_initial - LER_after_PEB_P)   / LER_design_initial
 ```
 
-`LER_design_initial` 은 σ 독립이므로 σ-스윕의 baseline 으로 일관된다.
+`LER_design_initial` is σ-independent, so it is a consistent baseline across the σ-sweep.
 
-### Gate (Stage 3, 강화)
+### Gate (Stage 3, tightened)
 
-Stage 1/2 interior gate + `P_line_margin >= 0.03` 추가.
+The Stage 1/2 interior gate plus an added `P_line_margin >= 0.03`.
 
 ```text
 P_space_center_mean < 0.50
 P_line_center_mean  > 0.65
-P_line_margin = P_line_center_mean - 0.65 >= 0.03   # 새로 추가
+P_line_margin = P_line_center_mean - 0.65 >= 0.03   # newly added
 contrast > 0.15
 area_frac < 0.90
 CD_final / pitch < 0.85
-CD_final, LER_after_PEB_P 가 finite
+CD_final, LER_after_PEB_P are finite
 ```
 
-P_line_margin 게이트는 Stage 2 에서 algorithmic best (DH=0.8, t=20) 가 P_line=0.6534 로 boundary 에 안착했던 문제를 방지한다.
+The P_line_margin gate prevents the issue from Stage 2 where the algorithmic best (DH=0.8, t=20) sat right on the boundary at P_line=0.6534.
 
-### 분석
+### Analysis
 
 ```text
-electron_blur 단독 효과 (PEB 전): I_blurred → LER 감소 = electron_blur_LER_reduction_pct
-PEB 단독 효과 (electron_blur 후): I_blurred → P    → LER 감소 = PEB_LER_reduction_pct
-두 효과 합산                   : binary I  → P    → LER 감소 = total_LER_reduction_pct
+Electron-blur effect alone (before PEB): I_blurred → LER reduction = electron_blur_LER_reduction_pct
+PEB effect alone (after electron blur):  I_blurred → P → LER reduction = PEB_LER_reduction_pct
+Combined effect:                         binary I  → P → LER reduction = total_LER_reduction_pct
 ```
 
-### 성공 기준
+### Success criteria
 
 ```text
-σ 증가 → LER_after_eblur_H0 감소 (electron blur 의 1차 smoothing)
-σ 증가 → LER_after_PEB_P 감소 또는 유사 (PEB 가 추가 smoothing)
-두 효과를 별도 컬럼으로 분리 가능
-gate 통과 σ 가 OP 별로 1 개 이상 존재
+σ increases → LER_after_eblur_H0 decreases (primary smoothing from electron blur)
+σ increases → LER_after_PEB_P decreases or stays similar (PEB adds further smoothing)
+The two effects can be separated into independent columns
+At least one gate-passing σ exists per OP
 ```
 
 ---
 
-## Stage 3B — σ=5/8 호환 budget search (future / optional)
+## Stage 3B — σ=5/8 compatible budget search (future / optional)
 
-### 목적
+### Purpose
 
-Stage 1A 에서 `σ=5` 의 호환 budget 이 spec 범위 (`kdep=0.5`, `Hmax∈{0.1,0.15,0.2}`) 안에 없음을 확인. Stage 3 결과로 σ ∈ {0,1,2,3} 의 분리 분석은 가능하지만, 실제 High-NA EUV 의 e-beam blur 는 σ ≈ 5 nm 가 reference. 이 σ 값을 살리려면 search space 확장이 필요.
+Stage 1A confirmed that no compatible budget for `σ=5` exists within the spec range (`kdep=0.5`, `Hmax∈{0.1,0.15,0.2}`). Stage 3's results allow the separated analysis for σ ∈ {0,1,2,3}, but real High-NA EUV e-beam blur is around σ ≈ 5 nm as reference. Recovering this σ value requires expanding the search space.
 
-### 진행은 Stage 3 결과를 본 후 결정
+### Whether to proceed is decided after seeing the Stage 3 results
 
-trigger 조건 (다음 중 하나가 만족되면 Stage 3B 를 시작):
+Trigger conditions (Stage 3B starts if any of the following is satisfied):
 
 ```text
-- Stage 3 의 electron_blur_LER_reduction_pct 가 σ=3 까지의 trend 로 σ=5/8 의 효과 추정 불가
-- PSD 분해에서 high-frequency cutoff 를 σ=3 까지로는 정량 못함
-- 외부 reference (literature / 실측) 와의 비교가 σ=5 에서 필수
+- Stage 3's electron_blur_LER_reduction_pct trend up to σ=3 cannot estimate the σ=5/8 effect
+- PSD decomposition cannot quantify the high-frequency cutoff with only σ=3
+- A comparison with external references (literature / measurement) at σ=5 is essential
 ```
 
 ### Search space (Stage 3B)
 
 ```text
-변수 1: dose_mJ_cm2          ∈ {40, 50, 60}    # H0 contrast 강화
-변수 2: kdep_s_inv           ∈ {0.5, 1.0}      # P_line lift
-변수 3: Hmax_mol_dm3         ∈ {0.1, 0.15, 0.2}
-변수 4: σ                    ∈ {5, 8}
-변수 5: time_s               ∈ {15, 20, 30}
-변수 6: DH_nm2_s             ∈ {0.3, 0.5, 0.8}
+variable 1: dose_mJ_cm2          ∈ {40, 50, 60}    # boost H0 contrast
+variable 2: kdep_s_inv           ∈ {0.5, 1.0}      # P_line lift
+variable 3: Hmax_mol_dm3         ∈ {0.1, 0.15, 0.2}
+variable 4: σ                    ∈ {5, 8}
+variable 5: time_s               ∈ {15, 20, 30}
+variable 6: DH_nm2_s             ∈ {0.3, 0.5, 0.8}
 ```
 
-전수 grid (3×2×3×2×3×3 = 324) 는 너무 크므로, factorial design 또는 Latin-Hypercube 등 sampling 으로 축소.
+The full grid (3×2×3×2×3×3 = 324) is too large, so it is reduced by factorial design or Latin-Hypercube sampling.
 
-### 성공 기준 (Stage 3B)
+### Success criteria (Stage 3B)
 
-Stage 3 의 interior gate (P_line_margin 포함) 를 σ=5 와 σ=8 각각에서 **하나 이상** 의 (dose, kdep, Hmax, t, DH) 조합이 통과.
+The Stage 3 interior gate (including P_line_margin) is passed by **at least one** (dose, kdep, Hmax, t, DH) combination for both σ=5 and σ=8.
 
 ---
 
-## Stage 4 — weak quencher 실험
+## Stage 4 — weak quencher experiment
 
-### 목적
+### Purpose
 
-v1 에서 너무 강했던 quencher 를 약하게 재도입한다. acid tail 감소와 CD shift 억제, 그리고 Stage 3 에서 발견한 σ-증가 시 PEB LER 악화 (high σ 에서 line widening → contour 가 design edge 에서 멀어져 LER 증가) 를 완화하는지 확인.
+Re-introduce the quencher that was too strong in v1, but weakly. Verify whether it reduces the acid tail and suppresses CD shift, and whether it relaxes the σ-induced PEB LER degradation found in Stage 3 (line widening at high σ → the contour drifts away from the design edge, increasing LER).
 
 ### Operating point
 
-Stage 2 의 robust OP **만** 사용한다. Stage 3 에서 algorithmic-best OP 가 P_line_margin gate 를 모든 σ 에서 fail 하므로 downstream 에서 채택하지 않는다.
+Use **only** the robust OP from Stage 2. The algorithmic-best OP from Stage 3 fails the P_line_margin gate for every σ, so it is not adopted downstream.
 
 ```yaml
 DH_nm2_s    : 0.5
@@ -783,9 +783,9 @@ DQ_nm2_s       : 0.0
 quencher_enabled : Q0=0 → false, Q0>0 → true
 ```
 
-총 4 × (1 + 4×3) = 52 runs.
+Total 4 × (1 + 4×3) = 52 runs.
 
-### Gate (Stage 3 그대로)
+### Gate (same as Stage 3)
 
 ```text
 P_space_center_mean < 0.50
@@ -794,21 +794,21 @@ P_line_margin       >= 0.03
 contrast > 0.15
 area_frac < 0.90
 CD_final / pitch < 0.85
-CD_final, LER_after_PEB_P 가 finite
+CD_final, LER_after_PEB_P are finite
 ```
 
-### Stage 4 비교 기준 (vs same-σ no-quencher baseline)
+### Stage 4 comparison criteria (vs same-σ no-quencher baseline)
 
 ```text
-dCD_shift_nm      < 0     # quencher 가 line widening 을 줄임
-darea_frac        < 0     # quencher 가 over-deprotect area 를 줄임
-dtotal_LER_pp     >= -1.0 # total LER reduction 이 1pp 이상 떨어지면 안 됨
-P_line_margin     >= 0.05 # robust 후보의 추가 안전 margin
+dCD_shift_nm      < 0     # quencher reduces line widening
+darea_frac        < 0     # quencher reduces over-deprotect area
+dtotal_LER_pp     >= -1.0 # total LER reduction must not drop by more than 1pp
+P_line_margin     >= 0.05 # extra safety margin for robust candidates
 ```
 
-위 조건을 모두 만족하는 row 를 robust candidate 로 표시한다.
+Rows that satisfy all of the above are flagged as robust candidates.
 
-### 측정 (Stage 3 measurement convention 그대로 + PSD)
+### Measurement (same as Stage 3 measurement convention + PSD)
 
 ```text
 LER_design_initial  / LER_after_eblur_H0  / LER_after_PEB_P
@@ -823,27 +823,27 @@ PSD bands (default):
 psd_high_band_reduction_pct = 100*(design_high - PEB_high)/design_high
 ```
 
-### 검증된 결과
+### Verified results
 
 config: `configs/v2_stage4_weak_quencher.yaml`
 
-**52 runs 모두 Stage-3 gate 통과.** σ=3, Q0=0.03, kq=2 한 row 만 robust margin 미달 (P_line_margin = 0.039 < 0.05).
+**All 52 runs pass the Stage-3 gate.** Only one row, σ=3, Q0=0.03, kq=2, falls short of the robust margin (P_line_margin = 0.039 < 0.05).
 
-quencher 도입 효과 (vs σ-matched baseline):
+Effect of introducing the quencher (vs σ-matched baseline):
 
 ```text
-모든 σ 에서:
-  dCD_shift   < 0   (line widening 감소)
-  darea_frac  < 0   (over-deprotect 감소)
-  dtotal_LER ≥ 0   (LER reduction 가 baseline 보다 증가 또는 동등)
+For every σ:
+  dCD_shift   < 0   (line widening decreases)
+  darea_frac  < 0   (over-deprotect area decreases)
+  dtotal_LER ≥ 0   (LER reduction is greater than or equal to the baseline)
 
-특히 σ=3 (Stage 3 에서 PEB 가 LER 를 -22.5% 로 악화시켰던 case):
+In particular at σ=3 (the case where Stage 3 saw PEB worsen LER to -22.5%):
   Q0=0.03, kq=1.0  →  total LER reduction = +6.64% (baseline -22.5%, dLER=+29.15pp)
   Q0=0.02, kq=2.0  →  total LER reduction = +5.95% (dLER=+28.47pp)
-  → quencher 가 line widening 을 막아 contour 가 design edge 가까이 유지되며
-    LER 측정이 정상화됨.
+  → the quencher prevents line widening, so the contour stays near the design edge
+    and the LER measurement is normalised.
 
-σ=2 (primary analysis) 의 dtotal_LER_pp heatmap (Q0 행, kq 열):
+σ=2 (primary analysis) dtotal_LER_pp heatmap (Q0 rows, kq cols):
               kq=0.5  kq=1.0  kq=2.0
   Q0=0.030    +4.90   +6.47   +7.64
   Q0=0.020    +3.74   +5.21   +6.44
@@ -851,41 +851,41 @@ quencher 도입 효과 (vs σ-matched baseline):
   Q0=0.005    +1.18   +1.84   +2.49
 ```
 
-PSD 분석:
-- 모든 row 에서 `psd_high_band_reduction_pct ≈ 99–100%` — high-frequency edge noise 는 baseline 에서도 PEB 로 거의 완전히 제거됨.
-- LER 변화의 차이는 low/mid band (long-range wiggle, main corr regime) 에서 발생.
-- 즉 quencher 의 효과는 high-freq 노이즈가 아닌 mid-freq 의 line wiggle 을 줄이는 데서 온다.
+PSD analysis:
+- Every row shows `psd_high_band_reduction_pct ≈ 99–100%` — high-frequency edge noise is essentially fully removed by PEB even in the baseline.
+- The LER differences originate in the low/mid band (long-range wiggle, main correlation regime).
+- That is, the quencher's effect comes from suppressing the mid-frequency line wiggle, not the high-frequency noise.
 
-추천 σ=2 robust candidate:
+Recommended σ=2 robust candidates:
 
 ```text
-Q0=0.02, kq=1.0  (균형형)   : dCD=-1.76, darea=-0.073, dLER=+5.21pp, margin=0.096
-Q0=0.03, kq=2.0  (max LER 감소): dCD=-3.54, darea=-0.147, dLER=+7.64pp, margin=0.053
+Q0=0.02, kq=1.0  (balanced)         : dCD=-1.76, darea=-0.073, dLER=+5.21pp, margin=0.096
+Q0=0.03, kq=2.0  (max LER reduction): dCD=-3.54, darea=-0.147, dLER=+7.64pp, margin=0.053
 ```
 
-세부 분석은 `study_notes/04_stage4_weak_quencher.md` 참조.
+For detailed analysis see `study_notes/04_stage4_weak_quencher.md`.
 
-### 실패 기준 (원래 plan 의 정의 유지)
+### Failure criteria (preserving the original plan's definition)
 
 ```text
-Q0=0.01, kq=1 부터 P>0.5 contour 가 사라지면
-Hmax/dose/kdep 중 하나가 너무 약하거나 Q0 가 여전히 강한 것
-→ 본 sweep 에서는 발생하지 않음 (모든 row P contour 정상).
+If the P>0.5 contour disappears starting from Q0=0.01, kq=1,
+then one of Hmax/dose/kdep is too weak or Q0 is still too strong
+→ this did not occur in this sweep (the P contour is healthy in every row).
 ```
 
 ### Stage 4B — CD-locked LER (executed)
 
-Stage 3/4 의 LER 비교는 fixed P_threshold=0.5 contour 에서 측정하므로, σ 또는 quencher 가 CD 를 바꾸면 contour 위치가 함께 이동해 LER 측정 위치가 달라진다. Stage 5 에서 pitch ≤ 20 의 negative LER reduction artifact 가 trigger 되어 CD-lock 재측정 진행.
+The LER comparisons in Stages 3/4 are measured on the fixed P_threshold=0.5 contour, so when σ or the quencher changes CD, the contour location shifts with it and LER is measured at a different place. The negative-LER-reduction artifact at pitch ≤ 20 in Stage 5 triggered the CD-lock re-measurement.
 
-#### 측정 규약
+#### Measurement convention
 
 ```text
-P_threshold 를 [0.2, 0.8] 에서 bisect 해 CD_overall_mean ≈ CD_initial (tol 0.25 nm) 로 맞춤.
-끝점이 contour-empty 면 0.05 step 으로 안쪽 narrow.
-status 는 ok / unstable_low_bound / unstable_high_bound / unstable_no_crossing / unstable_no_converge.
+Bisect P_threshold within [0.2, 0.8] to match CD_overall_mean ≈ CD_initial (tol 0.25 nm).
+If an endpoint is contour-empty, narrow inward in 0.05 steps.
+status ∈ ok / unstable_low_bound / unstable_high_bound / unstable_no_crossing / unstable_no_converge.
 ```
 
-#### Block A 결과 (12 runs)
+#### Block A results (12 runs)
 
 | OP | pitch | dose | LER_design | LER_fixed | LER_locked | decision |
 |---|---|---|---|---|---|---|
@@ -902,56 +902,56 @@ status 는 ok / unstable_low_bound / unstable_high_bound / unstable_no_crossing 
 | ctrl σ0 | 24 | 28.4 | 2.77 | 2.52 | 2.52 | OK |
 | ctrl σ0 | 24 | 40   | 2.77 | 2.53 | 2.52 | OK |
 
-#### 핵심 finding
+#### Key findings
 
 ```text
-1. pitch=24 의 LER 값 (fixed 와 locked 모두 ~ design) → PEB smoothing 정상.
-2. control σ=0 / pitch=20 / dose=40 만 displacement artifact (fixed=3.32, locked=2.84).
-   Stage 5 에서 본 "negative LER reduction at pitch=20" 의 일부는 이 artifact.
-3. 그러나 primary OP (σ=2 + Q0=0.02 + kq=1) / pitch=20 의 LER 는 CD-lock 후에도
-   3.14–3.25 로 design 2.77 보다 높음 → "real roughness degradation" 진단.
-4. pitch=18 dose=40 은 lines 가 완전 merged 라 fixed LER 가 인공적으로 낮음.
-   CD-lock 이 contour 를 진짜 line 자리로 이동시키면 LER=4.16 으로 정확하게 잡힌다.
+1. LER values at pitch=24 (both fixed and locked ≈ design) → PEB smoothing is normal.
+2. Only the control σ=0 / pitch=20 / dose=40 row shows a displacement artifact (fixed=3.32, locked=2.84).
+   This artifact accounts for part of the "negative LER reduction at pitch=20" seen in Stage 5.
+3. However, the primary OP (σ=2 + Q0=0.02 + kq=1) at pitch=20 still has LER = 3.14–3.25
+   even after CD-lock — higher than design 2.77 → diagnosed as "real roughness degradation".
+4. At pitch=18, dose=40 the lines are fully merged so the fixed LER is artificially low.
+   CD-lock moves the contour back onto the real line position and gives LER=4.16, which is correct.
 ```
 
-→ **Stage 4 의 quencher 가 pitch=20 에서는 LER 를 더 악화**시킨다. Stage 4 의 "quencher rescues σ-induced LER degradation" 결론은 pitch=24 에서만 유효. 이는 Stage 5 의 small-pitch process-window 축소와 동일한 메커니즘.
+→ **The Stage 4 quencher actually worsens LER at pitch=20.** The Stage 4 conclusion that "the quencher rescues σ-induced LER degradation" only holds at pitch=24. This is the same mechanism as the small-pitch process-window shrinkage seen in Stage 5.
 
 #### Block B — pitch-dependent weak-quencher mini-sweep (Stage-5 follow-up)
 
-**목적**: pitch ∈ {18, 20} 에서 quencher 약화 (Q0 ≤ 0.005, kq ≤ 0.5) 가 LER_locked 를 회복시키는지 검증.
+**Purpose**: at pitch ∈ {18, 20}, verify whether weakening the quencher (Q0 ≤ 0.005, kq ≤ 0.5) recovers LER_locked.
 
-**설정**: σ=2, DH=0.5, t=30. (pitch=18, dose=28.4) + (pitch=20, dose=40) 의 두 (pitch, dose) × (Q0=0 baseline + Q0 ∈ {0.005, 0.01, 0.02} × kq ∈ {0.5, 1.0, 2.0}) = 20 runs.
+**Setup**: σ=2, DH=0.5, t=30. Two (pitch, dose) pairs (pitch=18, dose=28.4) + (pitch=20, dose=40) × (Q0=0 baseline + Q0 ∈ {0.005, 0.01, 0.02} × kq ∈ {0.5, 1.0, 2.0}) = 20 runs.
 
-**결과 요약**:
+**Result summary**:
 
 ```text
 pitch=18 / dose=28.4:
   baseline (no q):  LER_lock = 4.16
-  최선 (Q0=0.005, kq=0.5): LER_lock = 4.13   (ΔLER_lock = -0.02 nm 회복 거의 없음)
-  최강 (Q0=0.02,  kq=2.0): LER_lock = 4.05   (ΔLER_lock = -0.11)
-  → 모든 quencher 설정에서 LER_lock 이 design 2.77 보다 +1.3 nm 이상 → 회복 불가.
+  best (Q0=0.005, kq=0.5): LER_lock = 4.13   (ΔLER_lock = -0.02 nm, almost no recovery)
+  strongest (Q0=0.02, kq=2.0): LER_lock = 4.05   (ΔLER_lock = -0.11)
+  → in every quencher setting LER_lock is more than +1.3 nm above design 2.77 → cannot be recovered.
 
 pitch=20 / dose=40:
   baseline (no q):  LER_lock = 3.28
-  최선 (Q0=0.02, kq=2.0): LER_lock = 3.21   (ΔLER_lock = -0.08)
-  → 회복은 작음. design 2.77 에 도달 불가.
+  best (Q0=0.02, kq=2.0): LER_lock = 3.21   (ΔLER_lock = -0.08)
+  → recovery is small. design 2.77 cannot be reached.
 
-→ pitch ≤ 20 의 LER 악화는 quencher 로 회복 안 됨. 24 nm pitch 와는 다른 regime.
+→ The LER degradation at pitch ≤ 20 cannot be recovered by the quencher. This is a different regime than 24 nm pitch.
 ```
 
-**결론**: pitch=18, 20 의 LER degradation 은 (a) e-blur σ=2 의 영향이 큼, (b) quencher 를 약화해도 회복 안 됨. Stage 4 의 balanced OP 는 pitch ≥ 24 에서만 권장.
+**Conclusion**: the LER degradation at pitch=18, 20 is (a) dominated by e-blur σ=2, and (b) not recovered by weakening the quencher. The Stage 4 balanced OP is recommended only at pitch ≥ 24.
 
 config: `configs/v2_stage4b_cd_locked.yaml`
-세부 분석: `study_notes/06_stage4B_cd_locked.md`
+detailed analysis: `study_notes/06_stage4B_cd_locked.md`
 
 ---
 
 ## Stage 5 — pitch / dose process window
 
-### 목적
+### Purpose
 
-Stage 4 의 balanced operating point 가 다양한 pitch / dose 에서 유지되는지 확인.
-pitch 별로 robust_valid 한 dose window 크기와 추천 dose 를 정량화.
+Confirm whether the balanced operating point from Stage 4 holds across pitch / dose.
+For each pitch, quantify the size of the robust_valid dose window and the recommended dose.
 
 ### Operating point (primary)
 
@@ -963,7 +963,7 @@ kdep_s_inv  : 0.5
 kloss_s_inv : 0.005
 Hmax_mol_dm3: 0.2
 quencher    : Q0=0.02, kq=1.0, DQ=0    # Stage 4 balanced
-line_cd_nm  : 12.5                       # pitch 별 고정
+line_cd_nm  : 12.5                       # fixed across all pitches
 ```
 
 ### Sweep
@@ -972,42 +972,42 @@ line_cd_nm  : 12.5                       # pitch 별 고정
 pitch_sweep_nm:    [16, 18, 20, 24, 28, 32]
 dose_sweep_mJ_cm2: [21, 28.4, 40, 44.2, 59, 60]
 domain_x_nm  = pitch_nm * 5     # n_periods_x = 5
-domain_y_nm  = 120              # 고정 (LER y-sample 수 동일)
+domain_y_nm  = 120              # fixed (so the LER y-sample count is constant)
 ```
 
-총 36 runs (primary). 추가 controls 36 + 36 = 108 runs.
+Total 36 runs (primary). With additional controls: 36 + 36 = 108 runs.
 
 ### Optional controls
 
 ```text
-control_sigma0_no_q : sigma=0, quencher disabled  → 측정 규약 σ-독립 reference
-control_sigma2_no_q : sigma=2, quencher disabled  → quencher 만의 효과 분리
+control_sigma0_no_q : sigma=0, quencher disabled  → σ-independent measurement-convention reference
+control_sigma2_no_q : sigma=2, quencher disabled  → isolates the quencher-only effect
 ```
 
-### Per-run 분류 (precedence 순)
+### Per-run classification (in precedence order)
 
 ```text
-unstable      : NaN / Inf / bounds violation / 등고선 추출 실패
+unstable      : NaN / Inf / bounds violation / contour-extraction failure
 merged        : P_space_mean >= 0.50  OR  area_frac >= 0.90  OR  CD/pitch >= 0.85
 under_exposed : P_line_mean  < 0.65
-low_contrast  : contrast      <= 0.15  (드물게 등장. 본 sweep 에서는 0)
-valid         : interior gate 통과, margin 부족
-robust_valid  : interior gate 통과 AND P_line_margin >= 0.05
+low_contrast  : contrast      <= 0.15  (rarely appears; 0 cases in this sweep)
+valid         : passes the interior gate but lacks margin
+robust_valid  : passes the interior gate AND P_line_margin >= 0.05
 ```
 
-### 추천 dose 선택 알고리즘
+### Recommended-dose selection algorithm
 
-각 pitch 에서:
+For each pitch:
 
 ```text
-1. robust_valid pool 우선
-2. 없으면 valid pool
-3. pool 안에서 |CD_shift_nm| 최소화
-4. 동률 시 total_LER_reduction_pct 최대화
-5. 동률 시 P_line_margin 최대화
+1. prefer the robust_valid pool
+2. otherwise use the valid pool
+3. minimise |CD_shift_nm| within the pool
+4. break ties by maximising total_LER_reduction_pct
+5. further break ties by maximising P_line_margin
 ```
 
-### 검증된 결과 (primary OP)
+### Verified results (primary OP)
 
 config: `configs/v2_stage5_pitch_dose.yaml`
 
@@ -1021,14 +1021,14 @@ status heatmap (primary):
   pitch=18     unde   vali   merg   merg   merg   merg
   pitch=16     unde   merg   merg   merg   merg   merg
 
-→ pitch=16 에서는 dose 어디에서도 valid 영역 없음. process window 닫힘.
-→ pitch ≥ 24 에서는 4 dose 점이 robust_valid (workable window).
+→ At pitch=16, no dose yields a valid region — the process window is closed.
+→ At pitch ≥ 24, four dose points are robust_valid (workable window).
 ```
 
-추천 dose per pitch:
+Recommended dose per pitch:
 
 ```text
-pitch=16: 추천 없음 (process window closed)
+pitch=16: no recommendation (process window closed)
 pitch=18: dose=28.4 (valid only, margin 0.012, CD_shift +1.99, LER -34.18%)
 pitch=20: dose=40   (robust_valid, margin 0.098, CD_shift +4.10, LER -26.22%)
 pitch=24: dose=40   (robust_valid, margin 0.096, CD_shift +2.07, LER  +8.77%)
@@ -1036,43 +1036,43 @@ pitch=28: dose=40   (robust_valid, margin 0.095, CD_shift +1.81, LER +14.33%)
 pitch=32: dose=40   (robust_valid, margin 0.095, CD_shift +1.78, LER +15.03%)
 ```
 
-pitch ≤ 20 에서 음수 LER reduction 은 Stage 3 / 4 에서 진단된 contour-displacement artifact (line widening 으로 contour 가 design edge 에서 벗어남). Stage 4B (CD-locked LER) 에서 수정될 예정이지만 robust_valid 분류 자체는 정상.
+The negative LER reductions at pitch ≤ 20 are the contour-displacement artifact diagnosed in Stages 3 / 4 (line widening pulls the contour off the design edge). It will be corrected in Stage 4B (CD-locked LER), but the robust_valid classification itself is correct.
 
-### Control 비교 (primary 대비)
-
-```text
-control_sigma0_no_q:  pitch=16 만 process window 닫힘. pitch ≥ 18 부터 robust_valid 대부분
-control_sigma2_no_q:  pitch=20 까지는 process window 좁음, pitch ≥ 24 에서 robust_valid 대부분
-primary (sigma=2 + Q0=0.02, kq=1):  pitch=20 에서 dose=40 단 한 점만 robust_valid
-```
-
-흥미로운 발견: **quencher 추가가 small pitch process window 를 좁힌다.** 이는 Stage 4 의 LER 개선 효과와 trade-off (line widening 감소 = contour 가 더 가까워져 small pitch 에서 merge 임계 빨리 도달).
-
-### 성공 기준
+### Control comparison (vs primary)
 
 ```text
-✓ 20~24 nm pitch 에서 stable contour 형성 → primary 에서 pitch=20 (dose=40) / pitch=24 (4 dose) robust_valid
-✓ 16~18 nm pitch 에서 process window 가 좁아지는 경향 → pitch=16 closed, pitch=18 valid only at one dose
-✓ high dose 에서 CD widening / over-deprotection → pitch ≤ 20, dose ≥ 44 에서 merged
-✓ low dose 에서 under-deprotection → 모든 pitch, dose=21 에서 under_exposed
+control_sigma0_no_q: only pitch=16 has a closed window; pitch ≥ 18 is mostly robust_valid
+control_sigma2_no_q: process window is narrow up to pitch=20, mostly robust_valid at pitch ≥ 24
+primary (sigma=2 + Q0=0.02, kq=1): only one point (pitch=20, dose=40) is robust_valid
 ```
 
-세부 분석은 `study_notes/05_stage5_pitch_dose.md` 참조.
+Interesting finding: **adding the quencher narrows the small-pitch process window.** This is a trade-off with the Stage 4 LER improvement (less line widening = contour pulled in tighter, hitting the merge threshold sooner at small pitch).
+
+### Success criteria
+
+```text
+✓ stable contour at 20~24 nm pitch → primary has robust_valid at pitch=20 (dose=40) and pitch=24 (4 doses)
+✓ process window narrows at 16~18 nm pitch → pitch=16 closed, pitch=18 valid at only one dose
+✓ CD widening / over-deprotection at high dose → merged at pitch ≤ 20, dose ≥ 44
+✓ under-deprotection at low dose → under_exposed at every pitch for dose=21
+```
+
+For detailed analysis see `study_notes/05_stage5_pitch_dose.md`.
 
 ---
 
-## Stage 6 — x-z standing wave 실험 (executed)
+## Stage 6 — x-z standing wave experiment (executed)
 
-### 목적
+### Purpose
 
-z 방향 film thickness 와 standing wave modulation 이 PEB 후 완화되는지 확인. pitch=24 의 robust OP (Stage 4 balanced + Stage 5 검증) 를 그대로 사용.
+Verify whether z-direction film thickness and standing-wave modulation are relaxed after PEB. The robust OP at pitch=24 (Stage 4 balanced + Stage 5 verified) is used as is.
 
 ### Operating point (fixed)
 
 ```yaml
 pitch_nm    : 24
 line_cd_nm  : 12.5
-sigma_nm    : 2          # e-blur (1D, x 방향)
+sigma_nm    : 2          # e-blur (1D, along x)
 DH_nm2_s    : 0.5
 time_s      : 30
 kdep_s_inv  : 0.5
@@ -1089,27 +1089,27 @@ film.dz_nm                  : 0.5
 standing_wave.period_nm     : 6.75
 standing_wave.amplitude_sweep: [0.0, 0.05, 0.10, 0.20]
 standing_wave.absorption_length_nm: 30.0
-top / bottom BC             : no-flux (Neumann), even-mirror FFT 로 처리
+top / bottom BC             : no-flux (Neumann), implemented via even-mirror FFT
 ```
 
-총 12 runs.
+Total 12 runs.
 
-### 측정 (per run)
+### Measurement (per run)
 
 ```text
 H0_z_modulation_pct          (peak-to-peak / mean of H0[:, ix_line])
 H0_z_modulation_sw_only_pct  (= H0_z_modulation_pct - same-thickness A=0 baseline)
 H_final_z_modulation_pct
 P_final_z_modulation_pct
-modulation_reduction_pct     (H0 → P_final 의 zmod 감소)
+modulation_reduction_pct     (z-mod reduction from H0 to P_final)
 top_bottom_asymmetry         (|P[top] - P[bot]| / max at line-center column)
 LER_fixed_threshold_nm       (extract_edges on P(x,z) treating z as the edge-track axis;
-                              사이드월 x-위치 변동을 측정)
+                              measures sidewall x-position variation)
 LER_CD_locked_nm             (same with P_threshold bisected to design CD)
 psd_mid_fixed / psd_mid_locked (Stage 4 PSD mid-band on z-tracks)
 H_min, P_min, P_max          (bounds)
-mass_budget_drift_pct        (H trapezoidal 적분의 H0 → H_final 변화율;
-                              kloss + quencher 의 정상 H 소모 → 약 -35% 가 expected)
+mass_budget_drift_pct        (relative change of the trapezoidal integral of H from H0 to H_final;
+                              normal H consumption from kloss + quencher → about -35% expected)
 ```
 
 ### Gate (per row)
@@ -1117,120 +1117,120 @@ mass_budget_drift_pct        (H trapezoidal 적분의 H0 → H_final 변화율;
 ```text
 no NaN / no Inf
 H_min >= -1e-6, P_min >= -1e-6, P_max <= 1+1e-6
-A == 0  → H0_z_modulation_sw_only_pct < 1 %     (absorption 분 제외)
+A == 0  → H0_z_modulation_sw_only_pct < 1 %     (excluding absorption contribution)
 A > 0   → H0_z_modulation_sw_only_pct increases monotonically with A
-PEB     → P_final_z_modulation_pct < H0_z_modulation_pct (전 row)
+PEB     → P_final_z_modulation_pct < H0_z_modulation_pct (every row)
 ```
 
-### 검증된 결과
+### Verified results
 
 config: `configs/v2_stage6_xz_standing_wave.yaml`
 
 **12/12 rows PASS** all gates (per-row + cross-row).
 
 ```text
-H0_z_modulation_sw_only_pct (standing-wave 단독, absorption 제외):
+H0_z_modulation_sw_only_pct (standing wave only, absorption excluded):
 
                 A=0.00   A=0.05   A=0.10   A=0.20
   thick=15      +0.00    +2.70    +5.26   +15.56
   thick=20      +0.00    +1.04    +7.12   +20.27
   thick=30      +0.00    +6.51   +12.93   +25.54
 
-  → A 단조 증가, thickness 단조 증가 (긴 film 일수록 standing wave 가
-    누적 효과 많음). 모든 A=0 row 에서 sw_only ≡ 0 (정의에 의해).
+  → monotonic in A, monotonic in thickness (longer films accumulate more
+    standing-wave effect). Every A=0 row has sw_only ≡ 0 (by definition).
 
-P_final_z_modulation_pct (PEB 후 전체 z-mod, absorption 포함):
+P_final_z_modulation_pct (full post-PEB z-mod, absorption included):
 
                 A=0.00   A=0.05   A=0.10   A=0.20
   thick=15       9.86    10.00    10.06    10.20
   thick=20      20.05    20.19    20.34    20.71
   thick=30      38.17    38.24    38.31    38.42
 
-  → A 가 커도 P_final z-mod 의 거의 모든 부분 (95%) 은 absorption 의 결정성.
-    standing wave 의 PEB 후 잔여 효과는 0.14–0.85% 로 매우 작음.
+  → almost the entire P_final z-mod (95%) is determined by absorption, even at large A.
+    The residual standing-wave effect after PEB is only 0.14–0.85%, which is very small.
 
 modulation_reduction_pct = (H0_zmod - P_zmod) / H0_zmod:
   thick=15, A=0.20: +78.89 % (H0 48.31 → Pf 10.20)
   thick=20, A=0.20: +68.24 % (H0 65.20 → Pf 20.71)
   thick=30, A=0.20: +60.00 % (H0 96.06 → Pf 38.42)
 
-  → film 이 두꺼울수록 PEB 의 z-mod 감쇠율 작아짐.
-    diffusion length 가 thickness 보다 짧아 z-uniform 화 못함.
+  → the thicker the film, the smaller the z-mod attenuation by PEB.
+    The diffusion length is shorter than the film thickness, so z cannot be uniformised.
 
 top_bottom_asymmetry (line-center column):
   thick=15: 0.10
   thick=20: 0.18-0.19
   thick=30: 0.32
 
-  → film 이 두꺼울수록 absorption 으로 top/bottom 격차 커짐.
+  → thicker films have a larger top/bottom gap because of absorption.
 
-LER_CD_locked_nm (사이드월 x-displacement std):
-  thick=15: 1.32 (very small; PEB 가 thin film 에서 매우 효과적)
-  thick=20: 2.32-2.40 (A 에 따라 약간 증가)
-  thick=30: 3.80-3.87 (큼; PEB 가 thick film 에서 약함)
+LER_CD_locked_nm (sidewall x-displacement std):
+  thick=15: 1.32 (very small; PEB is highly effective in thin films)
+  thick=20: 2.32-2.40 (slightly increases with A)
+  thick=30: 3.80-3.87 (large; PEB is weak in thick films)
 
-H_min ≈ 0.014–0.022, P_min ≈ 0.13–0.21, P_max ≈ 0.73 → bounds 모두 정상.
-mass_budget_drift_pct ≈ -35% → kloss(0.005)*30s ≈ 14% + quencher(Q0=0.02
-  consumes proportional H) ≈ 21% 의 합. 정상 H 소모.
+H_min ≈ 0.014–0.022, P_min ≈ 0.13–0.21, P_max ≈ 0.73 → all bounds healthy.
+mass_budget_drift_pct ≈ -35% → kloss(0.005)*30s ≈ 14% + quencher (Q0=0.02
+  consumes proportional H) ≈ 21%, summed. Normal H consumption.
 ```
 
-### 성공 기준 매핑 (plan §6 의 success vs observed)
+### Success criteria mapping (plan §6 expected vs observed)
 
 | plan expected | observed |
 |---|---|
-| A=0 이면 z modulation (standing-wave 만) 없음 | yes — `H0_zmod_sw_only_pct` ≡ 0 at A=0 (정의) |
-| A>0 이면 H0/P 에 z 방향 층상 modulation 발생 | yes — sw_only +1.04 ~ +25.54 %, 단조 증가 |
-| PEB 후 modulation amplitude 감소 | yes — 12/12 rows 에서 `P_zmod < H0_zmod` |
-| thickness 15 / 20 / 30 nm 영향 차이 확인 | yes — modulation_reduction (15: 79% > 20: 68% > 30: 60%), top/bottom asymmetry (0.10 < 0.19 < 0.32) |
+| At A=0 there is no standing-wave-only z-modulation | yes — `H0_zmod_sw_only_pct` ≡ 0 at A=0 (by definition) |
+| At A>0, z-direction layered modulation appears in H0/P | yes — sw_only +1.04 ~ +25.54 %, monotonic |
+| Modulation amplitude decreases after PEB | yes — `P_zmod < H0_zmod` in 12/12 rows |
+| Thickness 15 / 20 / 30 nm shows a clear effect difference | yes — modulation_reduction (15: 79% > 20: 68% > 30: 60%), top/bottom asymmetry (0.10 < 0.19 < 0.32) |
 
-### 다음 단계 후보
+### Candidate next steps
 
-- **Stage 6B (full 3D)**: x-y-z 통합. 본 stage 는 (x, z) 만이라 y-roughness 와 결합 효과를 보지 못함. compute cost 크다.
-- **CD-locked LER + PSD mid-band 의 plotting / heatmap 화**: 본 stage CSV 는 풍부하지만 figure 가 thick=20 만 있음. 다른 thickness 도 추가 가능.
-- **Stage 4B sigma=0 follow-up**, **Stage 3B σ=5/8 호환 budget**: 여전히 보류 가능.
+- **Stage 6B (full 3D)**: integrate x-y-z. This stage is (x, z) only, so it does not capture coupling with y-roughness. Compute cost is large.
+- **Plotting / heatmap of CD-locked LER + PSD mid-band**: the stage CSV is rich but only thick=20 has a figure; other thicknesses can be added.
+- **Stage 4B sigma=0 follow-up**, **Stage 3B σ=5/8 compatible budget**: can remain deferred.
 
-세부 분석은 `study_notes/07_stage6_xz_standing_wave.md` 참조.
+For detailed analysis see `study_notes/07_stage6_xz_standing_wave.md`.
 
 ---
 
-## 6. 구현 세부 지시
+## 6. Implementation details
 
-### 6.1 기존 폴더 보존
+### 6.1 Preserve the existing folder
 
-절대 기존 `reaction_diffusion_peb/` 파일을 수정하지 않는다.
+Never modify any file in the existing `reaction_diffusion_peb/`.
 
 ```text
 Do not edit:
 reaction_diffusion_peb/
 ```
 
-새 실험은 모두 아래에서 진행한다.
+All new experiments are conducted under:
 
 ```text
 reaction_diffusion_peb_v2_high_na/
 ```
 
-### 6.2 v1 코드 재사용 원칙
+### 6.2 v1 code-reuse policy
 
-v1의 검증된 solver는 복사해서 사용하되, import coupling은 피한다.
+Copy v1's verified solvers for use, but avoid import coupling.
 
-권장:
+Recommended:
 
 ```text
 copy selected FD/FFT utilities into v2 src/
 ```
 
-비권장:
+Discouraged:
 
 ```text
 from reaction_diffusion_peb.src... import ...
 ```
 
-이유는 v2가 독립 재현 가능한 실험이어야 하기 때문이다.
+The reason is that v2 must be an independently reproducible experiment.
 
-### 6.3 첫 구현 대상
+### 6.3 First implementation targets
 
-가장 먼저 구현할 파일:
+Files to implement first:
 
 ```text
 src/geometry.py
@@ -1240,16 +1240,16 @@ src/metrics_edge.py
 experiments/01_lspace_baseline/run_baseline_no_quencher.py
 ```
 
-### 6.4 Edge metric 구현
+### 6.4 Edge-metric implementation
 
-`P_threshold` contour에서 edge 위치를 추출한다.
+Extract edge positions from the `P_threshold` contour.
 
-권장 방식:
+Recommended approach:
 
 ```text
-각 y row에 대해 P(x,y)=P_threshold가 되는 x 위치를 interpolation으로 찾음
-edge_x(y)를 얻음
-LER = 3*sigma(edge_x - mean(edge_x)) 또는 RMS 기준 병기
+For each y row, find the x-position where P(x,y)=P_threshold by interpolation
+Obtain edge_x(y)
+LER = 3*sigma(edge_x - mean(edge_x)), or report alongside an RMS-based variant
 CD(y) = right_edge_x(y) - left_edge_x(y)
 LWR = 3*sigma(CD(y))
 ```
@@ -1259,12 +1259,12 @@ PSD metric:
 ```text
 edge_residual(y) = edge_x(y) - smooth_mean_edge
 FFT(edge_residual)
-PSD_before / PSD_after 비교
+Compare PSD_before / PSD_after
 ```
 
-### 6.5 물리 bounds test
+### 6.5 Physics bounds tests
 
-모든 stage에서 다음을 test로 강제한다.
+Enforce the following as tests at every stage.
 
 ```text
 H >= -1e-8
@@ -1277,9 +1277,9 @@ mass budget reasonable
 
 ---
 
-## 7. 산출물 규칙
+## 7. Output artefact rules
 
-각 실험은 figure와 CSV를 반드시 같이 저장한다.
+Every experiment must save figures and CSV together.
 
 ```text
 outputs/figures/*.png
@@ -1287,7 +1287,7 @@ outputs/logs/*.csv
 outputs/fields/*.npz
 ```
 
-권장 figure:
+Recommended figures:
 
 ```text
 01_lspace_H0.png
@@ -1300,7 +1300,7 @@ outputs/fields/*.npz
 06_xz_standing_wave_before_after.png
 ```
 
-권장 CSV columns:
+Recommended CSV columns:
 
 ```text
 run_id
@@ -1334,54 +1334,55 @@ notes
 
 ---
 
-## 8. 판단 기준
+## 8. Judgement criteria
 
-### 정상적인 물리 경향
+### Normal physical trends
 
 ```text
-DH 증가 → H peak 감소
-DH 증가 → LER 감소
-DH 증가 → CD shift 증가
-PEB time 증가 → Pmax 증가
-PEB time 증가 → LER 감소
-temperature 증가 → reaction rate 증가
-weak quencher 증가 → acid tail 감소
-strong quencher 증가 → Pmax 감소
-standing wave amplitude 증가 → z modulation 증가
-PEB diffusion → z modulation 감소
+DH increases → H peak decreases
+DH increases → LER decreases
+DH increases → CD shift increases
+PEB time increases → Pmax increases
+PEB time increases → LER decreases
+temperature increases → reaction rate increases
+weak quencher increases → acid tail decreases
+strong quencher increases → Pmax decreases
+standing-wave amplitude increases → z modulation increases
+PEB diffusion → z modulation decreases
 ```
 
-### 즉시 중단해야 하는 비정상 경향
+### Abnormal trends that must halt the run
 
 ```text
-H가 큰 음수가 됨
-P가 0 미만 또는 1 초과
-Q가 음수가 됨
-DH 증가했는데 peak가 증가
-time 증가했는데 Pmax가 감소, 단 강한 acid loss 예외는 별도 확인
-Q0=0.01, kq=1에서 contour가 완전히 사라짐
-모든 dose에서 P>threshold area가 0
-모든 dose에서 전 영역 P>threshold
+H becomes a large negative number
+P below 0 or above 1
+Q goes negative
+DH increases but peak increases
+time increases but Pmax decreases — investigate the strong-acid-loss exception separately
+contour fully disappears at Q0=0.01, kq=1
+P>threshold area is 0 at every dose
+The whole domain has P>threshold at every dose
 ```
 
 ---
 
-## 9. v2 첫 번째 목표 결과 (Stage 1 종료 기준)
+## 9. v2 first-target result (Stage 1 closure criterion)
 
-v2의 첫 성공 목표는 거창한 full High-NA simulation이 아니다.  
-아래 하나만 먼저 성공하면 된다.
+v2's first success target is not a grandiose full High-NA simulation.
+Only the following needs to succeed first.
 
 ```text
-24 nm pitch, 12.5 nm CD line-space (도메인 = 5 * pitch = 120 nm) 에서
-초기 edge roughness 가 있는 H0를 만들고,
-quencher 없이 PEB 후 P>0.5 contour 가 line-space 분리를 유지하며 (interior gate),
-LER_before > LER_after 이면서 CD_shift 를 정량화한다.
+At 24 nm pitch, 12.5 nm CD line-space (domain = 5 * pitch = 120 nm),
+construct an H0 with initial edge roughness,
+and after PEB without a quencher confirm that the P>0.5 contour preserves line-space separation
+(interior gate),
+that LER_before > LER_after, and that CD_shift can be quantified.
 ```
 
-**이 목표는 σ=0, t=30, DH=0.8, kdep=0.5, Hmax=0.2 조건에서 달성됨** (§Stage 1 검증 결과 표 참조).
-σ=5/t=60 nominal 은 §Stage 1B 의 over-budget 스트레스 케이스로 분리됨.
+**This target was achieved at σ=0, t=30, DH=0.8, kdep=0.5, Hmax=0.2** (see the §Stage 1 verified-results table).
+The σ=5/t=60 nominal has been moved to the §Stage 1B over-budget stress case.
 
-이 결과가 나오기 전까지는 다음을 하지 않는다.
+Until this result is in hand, the following must not be done.
 
 ```text
 strong quencher
@@ -1451,7 +1452,7 @@ outputs:
 
 ---
 
-## 11. 추천 weak quencher config: `configs/v2_weak_quencher.yaml`
+## 11. Recommended weak quencher config: `configs/v2_weak_quencher.yaml`
 
 ```yaml
 run:
@@ -1475,7 +1476,7 @@ criteria:
 
 ---
 
-## 12. 추천 x-z config: `configs/v2_xz_standing_wave.yaml`
+## 12. Recommended x-z config: `configs/v2_xz_standing_wave.yaml`
 
 ```yaml
 run:
@@ -1527,37 +1528,37 @@ development:
 
 ---
 
-## 13. 최종 정리
+## 13. Final summary
 
-v2는 v1을 대체하지 않는다. v1은 물리항별 solver 검증용으로 유지한다.  
-v2는 High-NA EUV 조건에서 geometry, roughness, electron blur, film thickness, weak quencher를 추가한 공정 지향 실험이다.
+v2 does not replace v1. v1 is kept for per-term solver verification.
+v2 is a process-oriented experiment that adds geometry, roughness, electron blur, film thickness, and weak quencher under High-NA EUV conditions.
 
-가장 중요한 원칙:
+The most important principle:
 
 ```text
-한 번에 모든 물리를 켜지 않는다.
-geometry → blur → diffusion/deprotection → weak quencher → pitch/dose sweep → x-z standing wave 순서로 간다.
+Do not turn on all physics at once.
+Proceed in the order geometry → blur → diffusion/deprotection → weak quencher → pitch/dose sweep → x-z standing wave.
 ```
 
-v2의 첫 번째 완료 기준:
+v2 first-completion criterion:
 
 ```text
-24 nm pitch / 12.5 nm CD / clean geometry (σ=0) / no quencher 조건에서
-P>0.5 contour 가 line-space 분리를 유지하며 (interior gate),
-LER 감소와 CD shift 가 동시에 정량화되는 것.
+At 24 nm pitch / 12.5 nm CD / clean geometry (σ=0) / no quencher,
+the P>0.5 contour preserves line-space separation (interior gate),
+and LER reduction and CD shift can both be quantified.
 ```
 
-**Stage 1 status (calibration 후 확정):**
+**Stage 1 status (finalised after calibration):**
 
 ```text
-✅ 달성 — σ=0, t=30, DH=0.8, kdep=0.5, Hmax=0.2 (configs/v2_stage1_clean_geometry.yaml)
+✅ Achieved — σ=0, t=30, DH=0.8, kdep=0.5, Hmax=0.2 (configs/v2_stage1_clean_geometry.yaml)
    P_space_mean=0.31, P_line_mean=0.76, contrast=0.45
    CD: 12.46 → 15.01 nm (+2.55 nm)
    LER: 2.77 → 2.65 nm
-   모든 interior gate PASS
+   All interior gates PASS
 
-⚠ Calibration finding — σ=5/t=60 nominal 은 24 nm pitch 에서 over-budget.
-   이 nominal 은 Stage 1B 스트레스 케이스로 분리.
-   σ-호환 운용 범위 (kdep=0.5, Hmax=0.2 spec 내): σ ∈ [0, 3] nm.
-   σ ≥ 4 호환 budget 은 search space 확장 후 재검토 (Stage 1A.3).
+⚠ Calibration finding — the σ=5/t=60 nominal is over-budget at 24 nm pitch.
+   This nominal is moved to the Stage 1B stress case.
+   σ-compatible operating range (within kdep=0.5, Hmax=0.2 spec): σ ∈ [0, 3] nm.
+   The σ ≥ 4 compatible budget is revisited after the search space is expanded (Stage 1A.3).
 ```

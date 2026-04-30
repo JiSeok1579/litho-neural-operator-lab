@@ -1,12 +1,12 @@
 # PEB v2 calibration
 
-v2 first-pass closeout 후 외부 reference / 측정 데이터 와의 calibration 단계.
-chemistry / sweep 추가 전에 v2 가 합리적인 절대값을 만들어내는지 검증하고, 발견된 offset 을 분류해 적절한 parameter (Hmax, kdep, DH, σ, abs_len, dose) 를 보정한다.
+The calibration stage that follows v2 first-pass closeout, comparing against external reference / measured data.
+Before adding any new chemistry / sweep, verify that v2 produces reasonable absolute values, classify any offsets that are found, and adjust the appropriate parameters (Hmax, kdep, DH, σ, abs_len, dose) accordingly.
 
-## 정책 (2026-04-30 freeze)
+## Policy (2026-04-30 freeze)
 
 ```text
-external reference data 미입수.
+External reference data is not available.
 calibration_status: internal-consistency only.
 published_data_loaded: false.
 v2_OP_frozen: true.
@@ -15,73 +15,74 @@ frozen_nominal_OP (calibration_targets.yaml > frozen_nominal_OP):
   pitch=24, dose=40, σ=2, DH=0.5, time=30,
   kdep=0.5, Hmax=0.2, kloss=0.005, Q0=0.02, kq=1.0, DQ=0.0
 
-이후 모든 sweep 은 sensitivity / controllability / hypothesis 로만 표기.
-"calibration" 또는 "calibrated to real" 표현은 published_data_loaded=true 까지 금지.
+All later sweeps must be labelled sensitivity / controllability / hypothesis study only.
+The expressions "calibration" or "calibrated to real" are forbidden until published_data_loaded=true.
 ```
 
-## 목적 (Phase 1)
+## Purpose (Phase 1)
 
 ```text
-1. frozen v2 OP (pitch=24, dose=40, σ=2, t=30, DH=0.5, kdep=0.5, Hmax=0.2,
-   Q0=0.02, kq=1.0) 가 internal target 과 일치하는가? (= internal-consistency check)
+1. Does the frozen v2 OP (pitch=24, dose=40, σ=2, t=30, DH=0.5, kdep=0.5,
+   Hmax=0.2, Q0=0.02, kq=1.0) match the internal target? (= internal-consistency check)
      CD ≈ 15 nm
      LER ≈ 2.5 ~ 2.7 nm
-2. Stage 5 의 process window shape 가 internal target 과 일치하는가?
-3. offset 이 있다면 어느 메커니즘에서 발생하는가?
+2. Does the Stage 5 process-window shape match the internal target?
+3. If there is an offset, in which mechanism does it originate?
    - acid generation (Hmax)
    - reaction rate (kdep)
    - acid diffusion (DH)
    - electron blur (σ)
    - z absorption (abs_len)
 
-본 phase 의 답 모두 외부 reference 와 무관한 internal 값에 대한 답.
-external calibration 은 Gate A (FUTURE_WORK.md) 가 열린 후에만 가능.
+Every answer in this phase concerns internal values that are independent of any
+external reference.
+External calibration is only possible once Gate A (FUTURE_WORK.md) has opened.
 ```
 
-## 구조
+## Layout
 
 ```text
 calibration/
-  README.md                         # 이 파일
-  calibration_targets.yaml          # CD / LER / process-window 목표치 + tolerance + 출처
-  calibration_plan.md               # Phase 1-4 plan + 결정 트리
+  README.md                         # this file
+  calibration_targets.yaml          # CD / LER / process-window targets + tolerance + sources
+  calibration_plan.md               # Phase 1-4 plan + decision tree
   configs/
     cal01_hmax_kdep_dh.yaml         # Phase 1 base config
   experiments/
     cal01_hmax_kdep_dh/
       run_cal01.py                  # Phase 1 sweep runner
 
-  # outputs 는 v2 의 outputs/ 아래 cal01_* prefix 로 저장
+  # outputs are saved under v2's outputs/ tree with the cal01_* prefix
   outputs/figures/cal01_*           (in: reaction_diffusion_peb_v2_high_na/outputs/figures/)
   outputs/logs/cal01_*              (in: reaction_diffusion_peb_v2_high_na/outputs/logs/)
 ```
 
-## 실행
+## Run
 
 ```bash
 python -m reaction_diffusion_peb_v2_high_na.calibration.experiments.cal01_hmax_kdep_dh.run_cal01 \
     --config reaction_diffusion_peb_v2_high_na/calibration/configs/cal01_hmax_kdep_dh.yaml
 ```
 
-## Phase 별 게이트
+## Per-phase gates
 
 ```text
 Phase 1 (Hmax × kdep × DH):
-  통과 조건 = "best score < 0.1" 인 cell 이 1개 이상
-  실패 시 → Phase 2A (dose / σ / abs_len 확장)
+  pass condition = at least one cell with "best score < 0.1"
+  on failure → Phase 2A (extending dose / σ / abs_len)
 
-Phase 2 (process window 재검증):
-  Phase 1 의 best cell 로 Stage 5 의 pitch × dose grid 재실행
-  통과 조건 = pitch=20-32 의 robust_valid 영역이 일치 또는 더 넓어짐
+Phase 2 (process-window re-verification):
+  re-run the Stage 5 pitch × dose grid using the Phase 1 best cell
+  pass condition = robust_valid region at pitch=20-32 matches or widens
 
-Phase 3 (외부 reference 비교):
-  Phase 2 까지의 OP 와 published / measured CD / LER / process-window 비교
-  통과 조건 = systematic offset < tolerance
+Phase 3 (external-reference comparison):
+  compare the OP up through Phase 2 against published / measured CD / LER / process-window
+  pass condition = systematic offset < tolerance
 
-Phase 4 (deferred stages 진행):
-  Stage 3B, 5C, 6B 또는 새 chemistry. Phase 3 통과 후에만 시작.
+Phase 4 (start of deferred stages):
+  Stage 3B, 5C, 6B or new chemistry. Only starts after Phase 3 passes.
 ```
 
-## 산출물
+## Outputs
 
-각 Phase 의 결과는 `calibration_plan.md` 에 누적 기록 (one-document policy: phase 별 history + decision).
+The results of every Phase are accumulated in `calibration_plan.md` (one-document policy: per-phase history + decision).
