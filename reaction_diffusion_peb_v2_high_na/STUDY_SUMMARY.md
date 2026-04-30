@@ -446,3 +446,37 @@ all work is internal exploration.
 ```
 
 Details: `calibration/calibration_plan.md` and `calibration/calibration_targets.yaml`.
+
+---
+
+## v3 (screening) overlay — first-pass closed (2026-04-30)
+
+A separate submodule, [`reaction_diffusion_peb_v3_screening/`](../reaction_diffusion_peb_v3_screening/), sits **on top of** this frozen v2 nominal model. v3 is candidate screening + 6-class defect classification on the v2 nominal physics — **not** external calibration. v3 never modifies the v2 OP and `published_data_loaded` stays `false`.
+
+The v3 first-pass loop ran Stages 01 → 04D and is closed:
+
+```text
+01 label-schema validation      PASS  (all 6 labels reachable)
+02 Monte-Carlo dataset          PASS  (1 000-row Sobol seed)
+03 surrogate baseline           PASS  (RF classifier + regressor)
+04 active-learning iteration    PASS  (16 → 186 defects, 1 iter)
+04B failure-seeking expansion   PASS  (defects 186 → 1 928)
+04C roughness expansion         PASS  (roughness 3 → 321)
+04D operational-zone closeout   PASS  (5/5 hard gates)
+```
+
+Stage 04D operational-zone hard gates (held-out 80/20, seed=13):
+
+```text
+CD_locked operational MAE  ≤ 0.15 nm   PASS  (0.0696)
+LER_CD_locked operational  ≤ 0.03 nm   PASS  (0.0232)
+P_line_margin operational  ≤ 0.03      PASS  (0.0166)
+balanced accuracy          ≥ 0.93      PASS  (0.934)
+macro F1                   ≥ 0.93      PASS  (0.949)
+
+false_robust_valid_rate (informational)  0.020
+false_defect_rate       (informational)  0.000
+v2_OP_frozen / published_data_loaded     unchanged (true / false)
+```
+
+Pointers: [`reaction_diffusion_peb_v3_screening/README.md`](../reaction_diffusion_peb_v3_screening/README.md) for the full pipeline + per-stage results, and [`reaction_diffusion_peb_v3_screening/study_notes/03_v3_stage04d.md`](../reaction_diffusion_peb_v3_screening/study_notes/03_v3_stage04d.md) for the closeout narrative. Stage 05 (autoencoder / inverse fit) remains optional future work.
