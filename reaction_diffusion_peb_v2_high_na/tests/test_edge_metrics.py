@@ -1,8 +1,12 @@
 import numpy as np
 
 from reaction_diffusion_peb_v2_high_na.src.metrics_edge import (
+    CD_LOCK_HIGH,
+    CD_LOCK_LOW,
+    CD_LOCK_OK,
     compute_edge_band_powers,
     extract_edges,
+    find_cd_lock_threshold,
     stack_lr_edges,
 )
 
@@ -66,3 +70,44 @@ def test_stack_lr_edges_concatenates():
     stacked = stack_lr_edges(res)
     assert stacked.shape[0] == 2 * res.left_edges_nm.shape[0]
     assert stacked.shape[1] == res.left_edges_nm.shape[1]
+
+
+def test_cd_lock_finds_threshold_for_smooth_box():
+    """Smooth box with edges at ±cd/2: locking to a target CD inside the
+    achievable range should converge."""
+    # gentle sharpness so that CD(threshold) varies measurably across [0.2, 0.8]
+    field, x, y, centers, _, pitch = _make_smooth_lines(cd=12.0, sharpness=2.0)
+    # CD(P=0.8) ≈ 10.6, CD(P=0.5) = 12.0, CD(P=0.2) ≈ 13.4 → target 11.0 is reachable
+    P_locked, cd_locked, status = find_cd_lock_threshold(
+        field, x_nm=x, line_centers_nm=centers, pitch_nm=pitch,
+        cd_target_nm=11.0, cd_tol_nm=0.1,
+    )
+    assert status == CD_LOCK_OK, f"unexpected status {status}"
+    assert P_locked is not None and 0.2 < P_locked < 0.8
+    assert abs(cd_locked - 11.0) < 0.1
+
+
+def test_cd_lock_target_below_min_threshold_returns_high_bound():
+    """A very small target CD should not be reachable in [0.2, 0.8]: the
+    contour at P=0.8 is still wider than 1 nm in a smooth box."""
+    field, x, y, centers, _, pitch = _make_smooth_lines(cd=12.0, sharpness=5.0)
+    P_locked, cd_locked, status = find_cd_lock_threshold(
+        field, x_nm=x, line_centers_nm=centers, pitch_nm=pitch,
+        cd_target_nm=0.5, cd_tol_nm=0.1,
+    )
+    assert status == CD_LOCK_HIGH
+    assert P_locked == 0.8
+    assert cd_locked > 0.5
+
+
+def test_cd_lock_target_above_max_threshold_returns_low_bound():
+    """A very large target CD should not be reachable: contour at P=0.2 is
+    still narrower than ~half-pitch."""
+    field, x, y, centers, _, pitch = _make_smooth_lines(cd=8.0, sharpness=5.0)
+    P_locked, cd_locked, status = find_cd_lock_threshold(
+        field, x_nm=x, line_centers_nm=centers, pitch_nm=pitch,
+        cd_target_nm=20.0, cd_tol_nm=0.1,
+    )
+    assert status == CD_LOCK_LOW
+    assert P_locked == 0.2
+    assert cd_locked < 20.0

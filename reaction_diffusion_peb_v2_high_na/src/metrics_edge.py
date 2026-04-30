@@ -169,3 +169,74 @@ def compute_edge_band_powers(
 def stack_lr_edges(edge_result) -> np.ndarray:
     """Combine left and right edge tracks from an EdgeResult into one (2*n_lines, ny) array."""
     return np.concatenate([edge_result.left_edges_nm, edge_result.right_edges_nm], axis=0)
+
+
+CD_LOCK_OK = "ok"
+CD_LOCK_LOW = "unstable_low_bound"      # P_min still gives CD < cd_target
+CD_LOCK_HIGH = "unstable_high_bound"    # P_max still gives CD > cd_target
+CD_LOCK_NO_CROSSING = "unstable_no_crossing"
+CD_LOCK_NO_CONV = "unstable_no_converge"
+
+
+def find_cd_lock_threshold(
+    field: np.ndarray,
+    x_nm: np.ndarray,
+    line_centers_nm: np.ndarray,
+    pitch_nm: float,
+    cd_target_nm: float,
+    P_min: float = 0.2,
+    P_max: float = 0.8,
+    cd_tol_nm: float = 0.25,
+    max_iter: int = 50,
+) -> tuple[float | None, float, str]:
+    """Bisect P_threshold so that CD_overall_mean(threshold) ≈ cd_target_nm.
+
+    Assumes CD is monotonically decreasing in threshold (true for typical PEB
+    P fields with one local maximum per line).
+
+    Returns (P_locked, CD_locked, status). When status starts with
+    "unstable_", P_locked points at the side of the search interval that came
+    closest. CD_locked is the CD at that P_locked.
+    """
+    def cd_at(t: float) -> tuple[float, "EdgeResult"]:
+        e = extract_edges(field, x_nm, line_centers_nm, pitch_nm, t)
+        return e.cd_overall_mean_nm, e
+
+    # Walk endpoints inward in 0.05 steps if either initial bound has no
+    # extractable contour (common when peak P_line is below 0.8 or low-end
+    # threshold causes adjacent lines to merge into one contour).
+    P_lo_use = float(P_min)
+    P_hi_use = float(P_max)
+    cd_lo, _ = cd_at(P_lo_use)
+    while not np.isfinite(cd_lo) and P_lo_use < P_hi_use - 1e-3:
+        P_lo_use = round(P_lo_use + 0.05, 4)
+        cd_lo, _ = cd_at(P_lo_use)
+    cd_hi, _ = cd_at(P_hi_use)
+    while not np.isfinite(cd_hi) and P_hi_use > P_lo_use + 1e-3:
+        P_hi_use = round(P_hi_use - 0.05, 4)
+        cd_hi, _ = cd_at(P_hi_use)
+
+    if not (np.isfinite(cd_lo) and np.isfinite(cd_hi)) or P_hi_use - P_lo_use < 1e-3:
+        return None, float("nan"), CD_LOCK_NO_CROSSING
+    if cd_target_nm > cd_lo:
+        return float(P_lo_use), float(cd_lo), CD_LOCK_LOW
+    if cd_target_nm < cd_hi:
+        return float(P_hi_use), float(cd_hi), CD_LOCK_HIGH
+
+    lo, hi = P_lo_use, P_hi_use
+    cd_mid = float("nan")
+    mid = 0.5 * (lo + hi)
+    for _ in range(max_iter):
+        mid = 0.5 * (lo + hi)
+        cd_mid, _ = cd_at(mid)
+        if not np.isfinite(cd_mid):
+            return None, float("nan"), CD_LOCK_NO_CROSSING
+        if abs(cd_mid - cd_target_nm) < cd_tol_nm:
+            return float(mid), float(cd_mid), CD_LOCK_OK
+        if cd_mid > cd_target_nm:
+            lo = mid
+        else:
+            hi = mid
+        if hi - lo < 1e-4:
+            return float(mid), float(cd_mid), CD_LOCK_NO_CONV
+    return float(mid), float(cd_mid), CD_LOCK_NO_CONV
