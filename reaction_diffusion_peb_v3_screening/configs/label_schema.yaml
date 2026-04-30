@@ -1,0 +1,77 @@
+# v3 label schema for candidate screening / defect classification.
+# Precedence: top wins, ties broken left-to-right.
+labels:
+  - name: numerical_invalid
+    precedence: 0
+    criteria:
+      any_of:
+        - "not isfinite(P_max)"
+        - "not isfinite(P_min)"
+        - "not isfinite(LER_after_PEB_P_nm)"
+        - "H_min < -1e-6"
+        - "P_min < -1e-6"
+        - "P_max > 1.0 + 1e-6"
+        - "no_contour_extracted"
+
+  - name: merged
+    precedence: 1
+    criteria:
+      any_of:
+        - "P_space_center_mean >= 0.50"
+        - "area_frac >= 0.90"
+        - "CD_pitch_frac >= 0.85"
+
+  - name: under_exposed
+    precedence: 2
+    criteria:
+      all_of:
+        - "P_line_center_mean < 0.65"
+
+  - name: roughness_degraded
+    precedence: 3
+    criteria:
+      # Passes interior gate AND LER on the CD-locked contour exceeds the
+      # design baseline by more than `roughness_excess_nm` (default 1.5 nm).
+      all_of:
+        - "P_space_center_mean < 0.50"
+        - "P_line_center_mean > 0.65"
+        - "contrast > 0.15"
+        - "area_frac < 0.90"
+        - "CD_pitch_frac < 0.85"
+        - "LER_CD_locked_nm - LER_design_initial_nm > roughness_excess_nm"
+
+  - name: margin_risk
+    precedence: 4
+    criteria:
+      all_of:
+        - "P_space_center_mean < 0.50"
+        - "P_line_center_mean > 0.65"
+        - "contrast > 0.15"
+        - "area_frac < 0.90"
+        - "CD_pitch_frac < 0.85"
+        - "P_line_margin < 0.05"
+
+  - name: robust_valid
+    precedence: 5
+    criteria:
+      all_of:
+        - "P_space_center_mean < 0.50"
+        - "P_line_center_mean > 0.65"
+        - "contrast > 0.15"
+        - "area_frac < 0.90"
+        - "CD_pitch_frac < 0.85"
+        - "P_line_margin >= 0.05"
+
+defect_class_grouping:
+  normal:    [robust_valid]
+  marginal:  [margin_risk]
+  defect:    [under_exposed, merged, roughness_degraded, numerical_invalid]
+
+thresholds:
+  P_space_max:           0.50
+  P_line_min:            0.65
+  contrast_min:          0.15
+  area_frac_max:         0.90
+  CD_pitch_frac_max:     0.85
+  P_line_margin_robust:  0.05
+  roughness_excess_nm:   1.5

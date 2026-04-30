@@ -1,0 +1,12 @@
+{
+  "n_candidates_sampled": 10000,
+  "n_retained_after_prefilter": 3000,
+  "n_fd_runs": 1000,
+  "label_counts": {
+    "robust_valid": 915,
+    "merged": 8,
+    "margin_risk": 69,
+    "under_exposed": 8
+  },
+  "out_csv": "/home/Jiseok/litho-neural-operator-lab/reaction_diffusion_peb_v3_screening/outputs/labels/02_monte_carlo_dataset.csv"
+}

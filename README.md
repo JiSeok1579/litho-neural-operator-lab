@@ -77,6 +77,7 @@ numbers · how to run · takeaway).
 | 10 | Active learning | 💤 deferred | [PROGRESS.md §H](./PROGRESS.md) |
 | — | PEB submodule v1 (`reaction_diffusion_peb/`) — Phases 1-11 done | ✅ | [docs/peb_submodule](./docs/peb_submodule.md) |
 | — | PEB v2 High-NA (`reaction_diffusion_peb_v2_high_na/`) — Stages 1-6 + Phase 2B | ✅ first-pass | [STUDY_SUMMARY](./reaction_diffusion_peb_v2_high_na/STUDY_SUMMARY.md) |
+| — | PEB v3 Screening (`reaction_diffusion_peb_v3_screening/`) — Stages 01-04 | ✅ first-pass | [v3 README](./reaction_diffusion_peb_v3_screening/README.md) |
 
 ---
 
@@ -236,6 +237,45 @@ calibration_status:
 | [`outputs/figures/xz_companions/`](./reaction_diffusion_peb_v2_high_na/outputs/figures/xz_companions/) | single-line x-z (depth) cross-sections for 11 representative configurations |
 
 Outputs (figures, logs, contour maps for ~600 sweep cells across 8 stages + 3 calibration phases + xz companions) are committed under [`reaction_diffusion_peb_v2_high_na/outputs/`](./reaction_diffusion_peb_v2_high_na/outputs/).
+
+---
+
+## PEB v3 (screening) — first-pass
+
+A third submodule under [`reaction_diffusion_peb_v3_screening/`](./reaction_diffusion_peb_v3_screening/) sits **on top of** the frozen v2 nominal physics generator. It does **not** modify the v2 OP, the calibration policy, or any `calibration_status` flag.
+
+```text
+candidate_space.yaml  →  Sobol / LHS sampler  →  10 000 candidates
+                              ↓
+                       budget_prefilter (analytical filters)
+                              ↓
+                       retained ~3 000
+                              ↓
+                       fd_batch_runner (re-uses the v2 helper)
+                              ↓
+                       labeler  →  6 status classes
+                              ↓
+                       sklearn RF classifier  +  multi-output RF regressor
+                              ↓
+                       active_learning  →  re-target FD on uncertain candidates
+```
+
+The first end-to-end run produced:
+- 1 000 FD-labelled candidates (135 s, ~7.4 runs / s, 91.5 % `robust_valid`).
+- A regressor with MAE 0.14 nm on `CD_locked` (R² 0.99) and 0.02 nm on `LER_CD_locked` (R² 0.93).
+- An active-learning iteration that grew the defect-class minority by ~11× (16 → 186) using a single 316-FD acquisition step; `under_exposed` precision goes from 0 → 0.67 after retraining.
+
+PINN stays out of the v3 primary screening loop. v3 may use PINN later only inside Stage 05 (autoencoder / inverse-fitting) and only after Stage 02–04 are stable.
+
+This is **candidate screening / defect classification on the v2 nominal model**. It is **not** external calibration: the `calibration_status.published_data_loaded` flag stays `false` and v3 never overwrites v2's frozen OP.
+
+| Document | Purpose |
+|---|---|
+| [`reaction_diffusion_peb_v3_screening/README.md`](./reaction_diffusion_peb_v3_screening/README.md) | one-page entry, pipeline, label schema, first-pass results |
+| [`reaction_diffusion_peb_v3_screening/configs/`](./reaction_diffusion_peb_v3_screening/configs/) | label_schema, candidate_space, screening_baseline |
+| [`reaction_diffusion_peb_v3_screening/src/`](./reaction_diffusion_peb_v3_screening/src/) | sampler, prefilter, FD runner, labeler, surrogates, AL |
+| [`reaction_diffusion_peb_v3_screening/experiments/`](./reaction_diffusion_peb_v3_screening/experiments/) | runners for Stages 01-04 (and a placeholder 05) |
+| [`reaction_diffusion_peb_v3_screening/outputs/`](./reaction_diffusion_peb_v3_screening/outputs/) | candidate JSONL, label CSV, surrogate joblib, figures, logs |
 
 ---
 
