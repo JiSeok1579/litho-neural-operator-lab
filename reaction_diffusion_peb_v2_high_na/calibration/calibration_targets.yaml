@@ -8,6 +8,37 @@ reference:
   published_data_loaded: false      # set true when measured/published targets are imported
   last_updated: "2026-04-30"
 
+calibration_status:
+  level: "internal-consistency only"
+  note: |
+    The current targets are derived from v2's own first-pass observations,
+    so any pass / fail of the calibration sweeps is an internal-consistency
+    check, NOT a calibration to external reality. Do not claim the model is
+    "calibrated to real measurements" until `published_data_loaded` is true
+    and the targets here have been replaced with literature / measured
+    values.
+
+internal_best_score_candidate:
+  # Recorded for traceability; NOT adopted as the recommended OP. The
+  # recommended OP remains the v2 OP below (Hmax=0.20, kdep=0.50, DH=0.50).
+  source: "calibration Phase 1 (cal01_hmax_kdep_dh)"
+  Hmax_mol_dm3: 0.20
+  kdep_s_inv:   0.50
+  DH_nm2_s:     0.80
+  observed:
+    CD_fixed_nm:        15.05
+    LER_CD_locked_nm:    2.59
+    P_line_margin:       0.068
+    distance_to_target:  0.0054
+    status: robust_valid
+  rationale: |
+    Best score in Phase 1's 36-cell sweep. The DH=0.5 -> 0.8 change is a
+    small CD-bias correction relative to the v2 OP. Kept on record because
+    Stage 2's robust-window vs algorithmic-best trade-off has not been
+    rerun under the calibration framework — bumping DH may compress the
+    process window. Adopt only if Phase 2 (process-window re-validation)
+    confirms it does not narrow the workable dose range.
+
 targets:
   cd_nm:
     value: 15.0

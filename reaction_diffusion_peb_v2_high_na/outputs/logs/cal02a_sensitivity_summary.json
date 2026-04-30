@@ -1,0 +1,217 @@
+{
+  "anchor_xy": {
+    "CD_final_nm": 14.527181125473186,
+    "LER_CD_locked_nm": 2.4708961622430103,
+    "P_line_margin": 0.09550847259722162,
+    "area_frac": 0.6056597222222222,
+    "contrast": 0.4996126432254625,
+    "status": "robust_valid"
+  },
+  "anchor_xz": {
+    "H0_z_modulation_pct": 52.052567276169206,
+    "P_final_z_modulation_pct": 20.335369341802522,
+    "modulation_reduction_pct": 60.93301367075416,
+    "top_bottom_asymmetry": 0.18475911916243914,
+    "LER_CD_locked_nm": 2.3530463041509373,
+    "psd_mid_locked": 1.454384253404998
+  },
+  "sensitivity_xy": [
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "CD_final_nm",
+      "span_pct": 62.59275136124266
+    },
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "LER_CD_locked_nm",
+      "span_pct": 0.7823184529703969
+    },
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "P_line_margin",
+      "span_pct": 269.9622979193011
+    },
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "area_frac",
+      "span_pct": 62.38605744424698
+    },
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "contrast",
+      "span_pct": 17.277011562533374
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "CD_final_nm",
+      "span_pct": 18.159695599847314
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "LER_CD_locked_nm",
+      "span_pct": 2.1460623253687627
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "P_line_margin",
+      "span_pct": 17.841904308743306
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "area_frac",
+      "span_pct": 18.058820157083073
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "contrast",
+      "span_pct": 37.09475622205638
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "CD_final_nm",
+      "span_pct": 5.463321938464734
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "LER_CD_locked_nm",
+      "span_pct": 5.339993853638883
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "P_line_margin",
+      "span_pct": 50.81671262455163
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "area_frac",
+      "span_pct": 5.403313650174848
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "contrast",
+      "span_pct": 40.491779421339096
+    }
+  ],
+  "sensitivity_xz": [
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "H0_z_modulation_pct",
+      "span_pct": 43.67441907437731
+    },
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "P_final_z_modulation_pct",
+      "span_pct": 86.4496233548606
+    },
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "modulation_reduction_pct",
+      "span_pct": 25.911286040768108
+    },
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "top_bottom_asymmetry",
+      "span_pct": 76.37095897131293
+    },
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "LER_CD_locked_nm",
+      "span_pct": 17.432210352879338
+    },
+    {
+      "variable": "dose_mJ_cm2",
+      "metric": "psd_mid_locked",
+      "span_pct": 35.00641292743011
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "H0_z_modulation_pct",
+      "span_pct": 1.3823546489054952
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "P_final_z_modulation_pct",
+      "span_pct": 8.276903715849192
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "modulation_reduction_pct",
+      "span_pct": 4.393808832733625
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "top_bottom_asymmetry",
+      "span_pct": 7.466253840775835
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "LER_CD_locked_nm",
+      "span_pct": 69.2919661303392
+    },
+    {
+      "variable": "electron_blur_sigma_nm",
+      "metric": "psd_mid_locked",
+      "span_pct": 129.08492604613588
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "H0_z_modulation_pct",
+      "span_pct": 151.59749608731516
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "P_final_z_modulation_pct",
+      "span_pct": 220.7448372113555
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "modulation_reduction_pct",
+      "span_pct": 43.042486889272254
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "top_bottom_asymmetry",
+      "span_pct": 190.7815529177004
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "LER_CD_locked_nm",
+      "span_pct": 185.02114538860738
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "psd_mid_locked",
+      "span_pct": 484.2078031795866
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "H0_z_modulation_pct",
+      "span_pct": 0.0
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "P_final_z_modulation_pct",
+      "span_pct": 8.094451695061942
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "modulation_reduction_pct",
+      "span_pct": 5.189729092055449
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "top_bottom_asymmetry",
+      "span_pct": 7.267331734302136
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "LER_CD_locked_nm",
+      "span_pct": 26.57010353682087
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "psd_mid_locked",
+      "span_pct": 43.50351557576797
+    }
+  ]
+}
