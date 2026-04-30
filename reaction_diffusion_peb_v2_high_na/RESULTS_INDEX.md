@@ -85,6 +85,37 @@ x-z sweeps additionally report `H0_z_modulation_pct`,
 
 ---
 
+## Single-line x-z cross-sections (xz_companions)
+
+x-y sweep figures (Stage 1–5, calibration atlases) show top-down views of multiple lines. To see the **side-wall depth profile** of one resist line, the renderer in [`experiments/render_xz_companions/`](./experiments/render_xz_companions/) re-runs the chemistry with the x-z solver and crops the field to a single line (middle line ± pitch/2).
+
+For each representative configuration listed in [`configs/xz_companions.yaml`](./configs/xz_companions.yaml), the renderer saves four x-z panels: `I_xz.png`, `H0_xz.png`, `H_final_xz.png`, `P_final_xz.png`. The `P_final_xz.png` overlays the fixed-threshold (red) and CD-locked (white dashed) contours, with cyan dotted vertical lines marking the design line edges.
+
+| Tag | Folder | What it shows |
+|---|---|---|
+| `stage1_clean_baseline` | [`outputs/figures/xz_companions/stage1_clean_baseline/`](./outputs/figures/xz_companions/stage1_clean_baseline/) | Stage 1 clean geometry (σ=0, t=30) — clean line side-wall, no standing wave |
+| `stage1B_overbudget_sigma5_t60` | [`outputs/figures/xz_companions/stage1B_overbudget_sigma5_t60/`](./outputs/figures/xz_companions/stage1B_overbudget_sigma5_t60/) | Stage 1B over-budget (σ=5, t=60) — collapsed line: P uniform across the crop |
+| `stage4_balanced_v2_OP` | [`outputs/figures/xz_companions/stage4_balanced_v2_OP/`](./outputs/figures/xz_companions/stage4_balanced_v2_OP/) | Stage 4 / v2 OP balanced — clean side-wall taper |
+| `stage5_pitch24_dose40` | [`outputs/figures/xz_companions/stage5_pitch24_dose40/`](./outputs/figures/xz_companions/stage5_pitch24_dose40/) | Stage 5 recommended (pitch=24 dose=40 v2 OP) |
+| `stage5_pitch18_dose28p4` | [`outputs/figures/xz_companions/stage5_pitch18_dose28p4/`](./outputs/figures/xz_companions/stage5_pitch18_dose28p4/) | Stage 5 small-pitch challenge — line still resolved, narrow contour |
+| `stage5_pitch16_dose40_merged` | [`outputs/figures/xz_companions/stage5_pitch16_dose40_merged/`](./outputs/figures/xz_companions/stage5_pitch16_dose40_merged/) | Stage 5 closed window — P fills the full crop width (lines merged) |
+| `stage6_thick20_A0p10_v2_OP` | [`outputs/figures/xz_companions/stage6_thick20_A0p10_v2_OP/`](./outputs/figures/xz_companions/stage6_thick20_A0p10_v2_OP/) | Stage 6 standing wave — H0 shows horizontal stripes; P after PEB mostly smooth |
+| `stage6_thick20_A0p20_v2_OP` | [`outputs/figures/xz_companions/stage6_thick20_A0p20_v2_OP/`](./outputs/figures/xz_companions/stage6_thick20_A0p20_v2_OP/) | Stage 6 high-amplitude standing wave |
+| `stage6_thick30_A0p20_v2_OP` | [`outputs/figures/xz_companions/stage6_thick30_A0p20_v2_OP/`](./outputs/figures/xz_companions/stage6_thick30_A0p20_v2_OP/) | Stage 6 thick film — top/bottom asymmetry from absorption envelope |
+| `cal01_best_score` | [`outputs/figures/xz_companions/cal01_best_score/`](./outputs/figures/xz_companions/cal01_best_score/) | Calibration Phase 1 best score (Hmax=0.20, kdep=0.5, **DH=0.8**) — side-wall comparison vs v2 OP |
+| `cal05_smallpitch_best` | [`outputs/figures/xz_companions/cal05_smallpitch_best/`](./outputs/figures/xz_companions/cal05_smallpitch_best/) | Phase 2B Part C small-pitch best (pitch=20, σ=0, DH=0.3, weak quencher) |
+
+To regenerate:
+
+```bash
+python -m reaction_diffusion_peb_v2_high_na.experiments.render_xz_companions.run_render \
+    --config reaction_diffusion_peb_v2_high_na/configs/xz_companions.yaml
+```
+
+Add a new entry to `configs/xz_companions.yaml > cases` to render an additional configuration.
+
+---
+
 ## How to read a status heatmap
 
 Status colours used across pair-sweep heatmaps in the atlas:
