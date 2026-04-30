@@ -1,0 +1,74 @@
+# Calibration Phase 2A — sensitivity / controllability anchor config.
+# Runner overrides one variable at a time around this anchor.
+run:
+  name: cal02a_sensitivity
+  seed: 7
+
+geometry:
+  pattern: line_space
+  pitch_nm: 24.0
+  half_pitch_nm: 12.0
+  line_cd_nm: 12.5
+  grid_spacing_nm: 0.5
+  domain_x_nm: 120.0
+  domain_y_nm: 120.0
+  edge_roughness_enabled: true
+  edge_roughness_amp_nm: 1.0
+  edge_roughness_corr_nm: 5.0
+
+exposure:
+  wavelength_nm: 13.5
+  dose_mJ_cm2: 40.0
+  reference_dose_mJ_cm2: 40.0
+  dose_norm: 1.0
+  eta: 1.0
+  Hmax_mol_dm3: 0.20
+  electron_blur_enabled: true
+  electron_blur_sigma_nm: 2.0
+  target_NILS: 1.5
+
+peb:
+  time_s: 30.0
+  temperature_C: 100.0
+  DH_nm2_s: 0.50
+  kloss_s_inv: 0.005
+  kdep_s_inv: 0.50
+  dt_s: 0.5
+
+quencher:
+  enabled: true
+  Q0_mol_dm3: 0.02
+  DQ_nm2_s: 0.0
+  kq_s_inv: 1.0
+
+development:
+  method: threshold
+  P_threshold: 0.5
+
+# x-z anchor (Stage 6 주변).
+film:
+  thickness_anchor_nm: 20.0
+  dz_nm: 0.5
+
+standing_wave:
+  period_nm: 6.75
+  amplitude_anchor: 0.10
+  phase_rad: 0.0
+  absorption_length_anchor_nm: 30.0
+
+# OAT 스윕 변수 / 값.
+sweeps:
+  xy:
+    dose_mJ_cm2:           [21, 28.4, 40, 44.2, 59, 60]
+    electron_blur_sigma_nm: [0, 1, 2, 3]
+    DH_nm2_s:              [0.3, 0.5, 0.8]
+  xz:
+    dose_mJ_cm2:           [21, 28.4, 40, 44.2, 59, 60]
+    electron_blur_sigma_nm: [0, 1, 2, 3]
+    absorption_length_nm:  [15, 20, 30, 50, 100]
+    DH_nm2_s:              [0.3, 0.5, 0.8]
+
+outputs:
+  save_fields: false
+  save_figures: true
+  save_metrics_csv: true
