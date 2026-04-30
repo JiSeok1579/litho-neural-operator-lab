@@ -12,8 +12,10 @@ from reaction_diffusion_peb_v2_high_na.src.exposure_high_na import dill_acid_gen
 from reaction_diffusion_peb_v2_high_na.src.fd_solver_2d import solve_peb_2d
 from reaction_diffusion_peb_v2_high_na.src.geometry import line_space_intensity
 from reaction_diffusion_peb_v2_high_na.src.metrics_edge import (
+    CD_LOCK_OK,
     compute_edge_band_powers,
     extract_edges,
+    find_cd_lock_threshold,
     stack_lr_edges,
 )
 from reaction_diffusion_peb_v2_high_na.src.visualization import plot_contour_overlay, plot_field
@@ -152,7 +154,34 @@ def run_one_with_overrides(
     bp_design = compute_edge_band_powers(stack_lr_edges(design_edges), dy_nm=dy_nm)
     bp_eblur = compute_edge_band_powers(stack_lr_edges(initial_edges), dy_nm=dy_nm)
     bp_peb = compute_edge_band_powers(stack_lr_edges(final_edges), dy_nm=dy_nm)
-    psd_high_red = _pct(bp_design[2], bp_peb[2])  # design -> PEB high-band reduction
+    psd_high_red = _pct(bp_design[2], bp_peb[2])
+    psd_mid_red = _pct(bp_design[1], bp_peb[1])
+
+    # CD-locked LER (Stage 4B onward, default). Adds ~50 ms per run.
+    if metrics_finite and np.isfinite(cd_init) and cd_init > 0.0:
+        P_locked, cd_locked, cd_lock_status = find_cd_lock_threshold(
+            res.P, x_nm=grid.x_nm, line_centers_nm=grid.line_centers_nm,
+            pitch_nm=pitch, cd_target_nm=cd_init,
+        )
+    else:
+        P_locked, cd_locked, cd_lock_status = None, float("nan"), "unstable_no_crossing"
+
+    if cd_lock_status == CD_LOCK_OK and P_locked is not None:
+        edges_locked = extract_edges(res.P, grid.x_nm, grid.line_centers_nm, pitch, P_locked)
+        bp_locked = compute_edge_band_powers(stack_lr_edges(edges_locked), dy_nm=dy_nm)
+        ler_locked = float(edges_locked.ler_mean_nm)
+        psd_locked_low = float(bp_locked[0])
+        psd_locked_mid = float(bp_locked[1])
+        psd_locked_high = float(bp_locked[2])
+        total_red_locked = _pct(ler_design, ler_locked)
+        psd_mid_red_locked = _pct(bp_design[1], bp_locked[1])
+    else:
+        ler_locked = float("nan")
+        psd_locked_low = float("nan")
+        psd_locked_mid = float("nan")
+        psd_locked_high = float("nan")
+        total_red_locked = float("nan")
+        psd_mid_red_locked = float("nan")
 
     cond_space = P_space_center_mean < P_SPACE_MAX
     cond_line = P_line_center_mean > P_LINE_MIN
@@ -205,6 +234,17 @@ def run_one_with_overrides(
         "psd_PEB_mid": float(bp_peb[1]),
         "psd_PEB_high": float(bp_peb[2]),
         "psd_high_band_reduction_pct": psd_high_red,
+        "psd_mid_band_reduction_pct": psd_mid_red,
+        # CD-locked metrics (Stage 4B+ default).
+        "P_threshold_locked": P_locked,
+        "cd_lock_status": cd_lock_status,
+        "CD_locked_nm": cd_locked,
+        "LER_CD_locked_nm": ler_locked,
+        "total_LER_reduction_locked_pct": total_red_locked,
+        "psd_locked_low": psd_locked_low,
+        "psd_locked_mid": psd_locked_mid,
+        "psd_locked_high": psd_locked_high,
+        "psd_mid_band_reduction_locked_pct": psd_mid_red_locked,
         # quencher state for downstream comparison.
         "quencher_enabled": qcf_enabled_use,
         "Q0_mol_dm3": Q0_use,
