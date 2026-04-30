@@ -120,3 +120,52 @@ def edge_residual_psd(edge_y_nm: np.ndarray, dy_nm: float) -> tuple[np.ndarray, 
     psd = (np.abs(F) ** 2) * dy_nm / n
     freqs = np.fft.rfftfreq(n, d=dy_nm)
     return freqs, psd
+
+
+# Default frequency bands (nm^-1):
+#   low  [0,    0.05) -> wavelengths > 20 nm  (long-range wiggle)
+#   mid  [0.05, 0.20) -> wavelengths 5..20 nm (main edge-roughness corr regime)
+#   high [0.20, inf)  -> wavelengths < 5 nm   (sub-correlation noise)
+DEFAULT_PSD_BANDS = ((0.0, 0.05), (0.05, 0.20), (0.20, np.inf))
+
+
+def compute_edge_band_powers(
+    edges_nm: np.ndarray,
+    dy_nm: float,
+    bands: tuple[tuple[float, float], ...] = DEFAULT_PSD_BANDS,
+) -> np.ndarray:
+    """Mean PSD power per frequency band, averaged across all edge tracks.
+
+    edges_nm: (n_tracks, ny). NaN-aware (NaNs are filled with the per-track
+        finite mean; if the whole track is NaN it is skipped).
+    Returns: shape (len(bands),). Units: nm^2 / (nm^-1) -> nm^3 (so a sum
+        across all bands has units of (LER variance) * domain length, which
+        matches the Parseval normalisation in `edge_residual_psd`).
+    """
+    n_tracks, n = edges_nm.shape
+    band_powers = np.zeros(len(bands), dtype=np.float64)
+    used = 0
+    for li in range(n_tracks):
+        e = edges_nm[li]
+        finite = np.isfinite(e)
+        if not finite.any():
+            continue
+        if not finite.all():
+            mean_e = float(np.nanmean(e))
+            e = np.where(finite, e, mean_e)
+        resid = e - np.mean(e)
+        F = np.fft.rfft(resid)
+        psd = (np.abs(F) ** 2) * dy_nm / n
+        freqs = np.fft.rfftfreq(n, d=dy_nm)
+        for bi, (lo, hi) in enumerate(bands):
+            mask = (freqs >= lo) & (freqs < hi)
+            band_powers[bi] += float(psd[mask].sum())
+        used += 1
+    if used == 0:
+        return np.full(len(bands), np.nan)
+    return band_powers / used
+
+
+def stack_lr_edges(edge_result) -> np.ndarray:
+    """Combine left and right edge tracks from an EdgeResult into one (2*n_lines, ny) array."""
+    return np.concatenate([edge_result.left_edges_nm, edge_result.right_edges_nm], axis=0)

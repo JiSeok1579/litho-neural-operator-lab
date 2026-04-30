@@ -1,0 +1,58 @@
+# Stage 4 base config — weak quencher sweep at the Stage-2 robust OP only.
+# (Algorithmic-best OP is excluded from downstream stages: Stage 3 showed it
+# fails the strengthened P_line_margin gate at every sigma.)
+#
+# Sweep is driven by the runner script:
+#   sigma_nm   ∈ {0, 1, 2, 3}
+#   Q0_mol_dm3 ∈ {0.0 (baseline), 0.005, 0.01, 0.02, 0.03}
+#   kq_s_inv   ∈ {0.5, 1.0, 2.0}      (irrelevant when Q0=0)
+#   DQ         = 0
+run:
+  name: v2_stage4_weak_quencher
+  seed: 7
+
+geometry:
+  pattern: line_space
+  pitch_nm: 24.0
+  half_pitch_nm: 12.0
+  line_cd_nm: 12.5
+  grid_spacing_nm: 0.5
+  domain_x_nm: 120.0
+  domain_y_nm: 120.0
+  edge_roughness_enabled: true
+  edge_roughness_amp_nm: 1.0
+  edge_roughness_corr_nm: 5.0
+
+exposure:
+  wavelength_nm: 13.5
+  dose_mJ_cm2: 40.0
+  reference_dose_mJ_cm2: 40.0
+  dose_norm: 1.0
+  eta: 1.0
+  Hmax_mol_dm3: 0.2
+  electron_blur_enabled: true
+  electron_blur_sigma_nm: 0.0    # overridden by runner
+  target_NILS: 1.5
+
+peb:
+  time_s: 30.0
+  temperature_C: 100.0
+  DH_nm2_s: 0.5
+  kloss_s_inv: 0.005
+  kdep_s_inv: 0.5
+  dt_s: 0.5
+
+quencher:
+  enabled: false                 # baseline rows; runner overrides per-row
+  Q0_mol_dm3: 0.0
+  DQ_nm2_s: 0.0
+  kq_s_inv: 0.0
+
+development:
+  method: threshold
+  P_threshold: 0.5
+
+outputs:
+  save_fields: false
+  save_figures: false
+  save_metrics_csv: true

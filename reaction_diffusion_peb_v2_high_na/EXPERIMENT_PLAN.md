@@ -706,32 +706,127 @@ Stage 3 의 interior gate (P_line_margin 포함) 를 σ=5 와 σ=8 각각에서 
 
 ### 목적
 
-v1에서 너무 강했던 quencher를 약하게 재도입한다.  
-acid tail 감소와 CD shift 억제를 확인한다.
+v1 에서 너무 강했던 quencher 를 약하게 재도입한다. acid tail 감소와 CD shift 억제, 그리고 Stage 3 에서 발견한 σ-증가 시 PEB LER 악화 (high σ 에서 line widening → contour 가 design edge 에서 멀어져 LER 증가) 를 완화하는지 확인.
 
-### 설정
+### Operating point
+
+Stage 2 의 robust OP **만** 사용한다. Stage 3 에서 algorithmic-best OP 가 P_line_margin gate 를 모든 σ 에서 fail 하므로 downstream 에서 채택하지 않는다.
 
 ```yaml
-Q0_sweep_mol_dm3: [0.0, 0.01, 0.02, 0.03, 0.05]
-kq_sweep_safe_s_inv: [0.5, 1.0, 2.0, 5.0]
-DQ_nm2_s: 0.0
+DH_nm2_s    : 0.5
+time_s      : 30
+kdep_s_inv  : 0.5
+Hmax_mol_dm3: 0.2
+kloss_s_inv : 0.005
+pitch_nm    : 24
+line_cd_nm  : 12.5
 ```
 
-### 성공 기준
+### Sweep (revised)
+
+```yaml
+sigma_nm       : [0, 1, 2, 3]            # primary analysis: sigma=2
+Q0_mol_dm3     : [0.0, 0.005, 0.01, 0.02, 0.03]   # 0.0 = no-quencher baseline
+kq_s_inv       : [0.5, 1.0, 2.0]
+DQ_nm2_s       : 0.0
+quencher_enabled : Q0=0 → false, Q0>0 → true
+```
+
+총 4 × (1 + 4×3) = 52 runs.
+
+### Gate (Stage 3 그대로)
 
 ```text
-Q0=0.01, kq=1에서 P contour가 유지되어야 함
-Q0 또는 kq 증가 시 acid tail 감소
-적당한 quencher에서 CD shift 감소
-너무 강한 quencher에서는 Pmax와 area(P>0.5)가 감소
+P_space_center_mean < 0.50
+P_line_center_mean  > 0.65
+P_line_margin       >= 0.03
+contrast > 0.15
+area_frac < 0.90
+CD_final / pitch < 0.85
+CD_final, LER_after_PEB_P 가 finite
 ```
 
-### 실패 기준
+### Stage 4 비교 기준 (vs same-σ no-quencher baseline)
 
 ```text
-Q0=0.01, kq=1부터 P>0.5 contour가 사라지면
-Hmax/dose/kdep 중 하나가 너무 약하거나 Q0가 여전히 강한 것
+dCD_shift_nm      < 0     # quencher 가 line widening 을 줄임
+darea_frac        < 0     # quencher 가 over-deprotect area 를 줄임
+dtotal_LER_pp     >= -1.0 # total LER reduction 이 1pp 이상 떨어지면 안 됨
+P_line_margin     >= 0.05 # robust 후보의 추가 안전 margin
 ```
+
+위 조건을 모두 만족하는 row 를 robust candidate 로 표시한다.
+
+### 측정 (Stage 3 measurement convention 그대로 + PSD)
+
+```text
+LER_design_initial  / LER_after_eblur_H0  / LER_after_PEB_P
+electron_blur_LER_reduction_pct
+PEB_LER_reduction_pct
+total_LER_reduction_pct
+
+PSD bands (default):
+  low  : f ∈ [0,    0.05) nm^-1   (λ > 20 nm, long-range wiggle)
+  mid  : f ∈ [0.05, 0.20) nm^-1   (λ 5–20 nm, main correlation regime)
+  high : f ∈ [0.20, ∞)   nm^-1   (λ < 5 nm, sub-correlation noise)
+psd_high_band_reduction_pct = 100*(design_high - PEB_high)/design_high
+```
+
+### 검증된 결과
+
+config: `configs/v2_stage4_weak_quencher.yaml`
+
+**52 runs 모두 Stage-3 gate 통과.** σ=3, Q0=0.03, kq=2 한 row 만 robust margin 미달 (P_line_margin = 0.039 < 0.05).
+
+quencher 도입 효과 (vs σ-matched baseline):
+
+```text
+모든 σ 에서:
+  dCD_shift   < 0   (line widening 감소)
+  darea_frac  < 0   (over-deprotect 감소)
+  dtotal_LER ≥ 0   (LER reduction 가 baseline 보다 증가 또는 동등)
+
+특히 σ=3 (Stage 3 에서 PEB 가 LER 를 -22.5% 로 악화시켰던 case):
+  Q0=0.03, kq=1.0  →  total LER reduction = +6.64% (baseline -22.5%, dLER=+29.15pp)
+  Q0=0.02, kq=2.0  →  total LER reduction = +5.95% (dLER=+28.47pp)
+  → quencher 가 line widening 을 막아 contour 가 design edge 가까이 유지되며
+    LER 측정이 정상화됨.
+
+σ=2 (primary analysis) 의 dtotal_LER_pp heatmap (Q0 행, kq 열):
+              kq=0.5  kq=1.0  kq=2.0
+  Q0=0.030    +4.90   +6.47   +7.64
+  Q0=0.020    +3.74   +5.21   +6.44
+  Q0=0.010    +2.18   +3.24   +4.23
+  Q0=0.005    +1.18   +1.84   +2.49
+```
+
+PSD 분석:
+- 모든 row 에서 `psd_high_band_reduction_pct ≈ 99–100%` — high-frequency edge noise 는 baseline 에서도 PEB 로 거의 완전히 제거됨.
+- LER 변화의 차이는 low/mid band (long-range wiggle, main corr regime) 에서 발생.
+- 즉 quencher 의 효과는 high-freq 노이즈가 아닌 mid-freq 의 line wiggle 을 줄이는 데서 온다.
+
+추천 σ=2 robust candidate:
+
+```text
+Q0=0.02, kq=1.0  (균형형)   : dCD=-1.76, darea=-0.073, dLER=+5.21pp, margin=0.096
+Q0=0.03, kq=2.0  (max LER 감소): dCD=-3.54, darea=-0.147, dLER=+7.64pp, margin=0.053
+```
+
+세부 분석은 `study_notes/04_stage4_weak_quencher.md` 참조.
+
+### 실패 기준 (원래 plan 의 정의 유지)
+
+```text
+Q0=0.01, kq=1 부터 P>0.5 contour 가 사라지면
+Hmax/dose/kdep 중 하나가 너무 약하거나 Q0 가 여전히 강한 것
+→ 본 sweep 에서는 발생하지 않음 (모든 row P contour 정상).
+```
+
+### Stage 4B (deferred — CD-locked LER)
+
+Stage 3/4 의 LER 비교는 fixed P_threshold=0.5 contour 에서 측정하므로, σ 또는 quencher 가 CD 를 바꾸면 contour 위치가 함께 이동해 LER 측정 위치가 달라진다. 이를 보정하기 위한 **CD-locked LER** (각 row 의 P_threshold 를 자동 조정해 CD_final = CD_initial 로 맞추고 LER 비교) 는 Stage 4 (fixed-threshold) 완료 후 별도 stage 로 진행.
+
+trigger: Stage 5 (process window) 또는 외부 reference 비교에서 σ/quencher-induced CD shift 가 LER 비교를 오염시키는 경우.
 
 ---
 
