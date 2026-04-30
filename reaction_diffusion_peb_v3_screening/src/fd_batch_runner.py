@@ -13,7 +13,7 @@ from reaction_diffusion_peb_v2_high_na.experiments.run_sigma_sweep_helpers impor
     run_one_with_overrides,
 )
 
-from .labeler import LabelThresholds, label_one
+from .labeler import LabelThresholds, label_one, roughness_triggers
 
 
 def _candidate_to_cfg(candidate: dict) -> dict:
@@ -96,6 +96,8 @@ def run_one_candidate(candidate: dict, thresholds: LabelThresholds) -> dict:
 
     label = label_one(r, t=thresholds)
     flat["label"] = label
+    fired = roughness_triggers(r, thresholds)
+    flat["roughness_trigger"] = "+".join(fired) if fired else ""
     return flat
 
 

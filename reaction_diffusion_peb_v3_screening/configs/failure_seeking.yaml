@@ -29,9 +29,23 @@ target_margin_risk:
     perturb_keys: [dose_mJ_cm2, Q0_mol_dm3, DH_nm2_s, sigma_nm, time_s, Hmax_mol_dm3, kdep_s_inv]
 
 target_roughness_degraded:
-  description: "small pitch + heavy e-blur — sidewall LER excess"
+  description: "small pitch + heavy e-blur — sidewall LER excess (legacy)"
   parameters:
     pitch_nm:       {choice: [18, 20]}
     sigma_nm:       {low: 1.5, high: 3.0}
     DH_nm2_s:       {low: 0.6, high: 0.8}
     time_s:         {low: 35.0, high: 45.0}
+
+target_roughness_degraded_v2:
+  description: "Stage 04C focused sweep — explicit value lists per spec"
+  parameters:
+    pitch_nm:        {choice: [18, 20, 24]}
+    line_cd_ratio:   {choice: [0.50, 0.55, 0.60, 0.65]}
+    dose_mJ_cm2:     {values: [28.4, 40.0, 44.2]}
+    sigma_nm:        {values: [1.5, 2.0, 2.5, 3.0]}
+    DH_nm2_s:        {values: [0.5, 0.8, 1.0]}
+    time_s:          {values: [30.0, 45.0]}
+    Q0_mol_dm3:      {values: [0.0, 0.005, 0.01, 0.02]}
+    kq_s_inv:        {values: [0.5, 1.0]}
+  prefilter_bypass: true   # Stage 04C: prefilter is intentionally skipped
+                           # for this target so near-failure cases survive.

@@ -1,5 +1,12 @@
 # v3 label schema for candidate screening / defect classification.
 # Precedence: top wins, ties broken left-to-right.
+#
+# Stage 04C update:
+#   - precedence reorder: under_exposed now wins over merged
+#     (the failed-to-form lines diagnosis is more fundamental than
+#     the lines-merged diagnosis when both signals fire).
+#   - roughness_degraded gets three OR triggers (LER absolute, LER
+#     relative excess vs design, PSD mid-band increase).
 labels:
   - name: numerical_invalid
     precedence: 0
@@ -13,32 +20,36 @@ labels:
         - "P_max > 1.0 + 1e-6"
         - "no_contour_extracted"
 
-  - name: merged
+  - name: under_exposed
     precedence: 1
+    criteria:
+      all_of:
+        - "P_line_center_mean < 0.65"
+
+  - name: merged
+    precedence: 2
     criteria:
       any_of:
         - "P_space_center_mean >= 0.50"
         - "area_frac >= 0.90"
         - "CD_pitch_frac >= 0.85"
 
-  - name: under_exposed
-    precedence: 2
-    criteria:
-      all_of:
-        - "P_line_center_mean < 0.65"
-
   - name: roughness_degraded
     precedence: 3
     criteria:
-      # Passes interior gate AND LER on the CD-locked contour exceeds the
-      # design baseline by more than `roughness_excess_nm` (default 1.5 nm).
+      # Cell must already pass bounds + interior gate (i.e. is NOT
+      # numerical_invalid, under_exposed, or merged), and any of the
+      # three OR triggers must fire.
       all_of:
         - "P_space_center_mean < 0.50"
-        - "P_line_center_mean > 0.65"
-        - "contrast > 0.15"
+        - "P_line_center_mean >= 0.65"
         - "area_frac < 0.90"
         - "CD_pitch_frac < 0.85"
-        - "LER_CD_locked_nm - LER_design_initial_nm > roughness_excess_nm"
+        - "contrast > 0.15"
+      any_of:
+        - "LER_CD_locked_nm > ler_locked_max_nm"
+        - "(LER_CD_locked_nm - LER_design_initial_nm) / LER_design_initial_nm * 100 > ler_locked_design_excess_pct"
+        - "(psd_locked_mid - psd_design_mid) / psd_design_mid * 100 > psd_mid_band_locked_increase_pct"
 
   - name: margin_risk
     precedence: 4
@@ -46,9 +57,9 @@ labels:
       all_of:
         - "P_space_center_mean < 0.50"
         - "P_line_center_mean > 0.65"
-        - "contrast > 0.15"
         - "area_frac < 0.90"
         - "CD_pitch_frac < 0.85"
+        - "contrast > 0.15"
         - "P_line_margin < 0.05"
 
   - name: robust_valid
@@ -57,9 +68,9 @@ labels:
       all_of:
         - "P_space_center_mean < 0.50"
         - "P_line_center_mean > 0.65"
-        - "contrast > 0.15"
         - "area_frac < 0.90"
         - "CD_pitch_frac < 0.85"
+        - "contrast > 0.15"
         - "P_line_margin >= 0.05"
 
 defect_class_grouping:
@@ -68,10 +79,14 @@ defect_class_grouping:
   defect:    [under_exposed, merged, roughness_degraded, numerical_invalid]
 
 thresholds:
-  P_space_max:           0.50
-  P_line_min:            0.65
-  contrast_min:          0.15
-  area_frac_max:         0.90
-  CD_pitch_frac_max:     0.85
-  P_line_margin_robust:  0.05
-  roughness_excess_nm:   1.5
+  P_space_max:                          0.50
+  P_line_min:                           0.65
+  contrast_min:                         0.15
+  area_frac_max:                        0.90
+  CD_pitch_frac_max:                    0.85
+  P_line_margin_robust:                 0.05
+  ler_locked_max_nm:                    3.0    # roughness trigger 1: absolute LER cap
+  ler_locked_design_excess_pct:         5.0    # roughness trigger 2: LER excess vs design (%)
+  psd_mid_band_locked_increase_pct:     20.0   # roughness trigger 3: PSD mid-band increase (%)
+  # legacy threshold, unused after Stage 04C — kept for backward-compat reads
+  roughness_excess_nm:                  1.5
