@@ -1,0 +1,53 @@
+# Stage 2 base config — DH x time sweep on the Stage-1 clean geometry baseline.
+#
+# Holds geometry / exposure / chemistry fixed at Stage-1 values; the sweep
+# script overrides DH_nm2_s and time_s per run.
+run:
+  name: v2_stage2_dh_time
+  seed: 7
+
+geometry:
+  pattern: line_space
+  pitch_nm: 24.0
+  half_pitch_nm: 12.0
+  line_cd_nm: 12.5
+  grid_spacing_nm: 0.5
+  domain_x_nm: 120.0
+  domain_y_nm: 120.0
+  edge_roughness_enabled: true
+  edge_roughness_amp_nm: 1.0
+  edge_roughness_corr_nm: 5.0
+
+exposure:
+  wavelength_nm: 13.5
+  dose_mJ_cm2: 40.0
+  reference_dose_mJ_cm2: 40.0
+  dose_norm: 1.0
+  eta: 1.0
+  Hmax_mol_dm3: 0.2
+  electron_blur_enabled: false
+  electron_blur_sigma_nm: 0.0
+  target_NILS: 1.5
+
+peb:
+  time_s: 30.0
+  temperature_C: 100.0
+  DH_nm2_s: 0.8
+  kloss_s_inv: 0.005
+  kdep_s_inv: 0.5
+  dt_s: 0.5
+
+quencher:
+  enabled: false
+  Q0_mol_dm3: 0.0
+  DQ_nm2_s: 0.0
+  kq_s_inv: 0.0
+
+development:
+  method: threshold
+  P_threshold: 0.5
+
+outputs:
+  save_fields: false
+  save_figures: true
+  save_metrics_csv: true

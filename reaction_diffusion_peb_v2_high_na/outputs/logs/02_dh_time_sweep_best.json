@@ -1,0 +1,15 @@
+{
+  "DH_nm2_s": 0.8,
+  "time_s": 20.0,
+  "P_space_center_mean": 0.16189607584530294,
+  "P_line_center_mean": 0.6533603181106774,
+  "contrast": 0.49146424226537444,
+  "area_frac": 0.470625,
+  "CD_initial_nm": 12.458333333333332,
+  "CD_final_nm": 11.282798463714304,
+  "CD_shift_nm": -1.1755348696190282,
+  "CD_pitch_frac": 0.4701166026547627,
+  "LER_initial_nm": 2.77190169436708,
+  "LER_final_nm": 2.5055015996212453,
+  "LER_reduction_pct": 9.610733861420831
+}
