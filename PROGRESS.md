@@ -29,22 +29,22 @@
 
 **What**
 - Python 3.12 venv at `./.venv/`
-- PyTorch (CUDA build) plus the standard scientific stack: numpy / scipy /
+- PyTorch plus the standard scientific stack: numpy / scipy /
   matplotlib / h5py / pandas / hydra-core / omegaconf / tqdm / pytest /
   jupyterlab.
 
 **How**
 - `python3 -m venv .venv` → install PyTorch from the wheel index that
-  matches the local GPU's compute capability → `pip install -r
-  requirements.txt`.
-- GPU sanity: `torch.cuda.is_available() == True`, then a 2048×2048 fp32
-  matmul + complex64 FFT2 + autograd round-trip all pass on device.
+  matches the local environment → `pip install -r requirements.txt`.
+- Sanity check: a 2048×2048 fp32 matmul + complex64 FFT2 + autograd
+  round-trip all pass.
 
 **Why**
-- An older PyTorch wheel can ship without kernels for the latest GPU
-  compute capabilities, which surfaces at runtime as
-  `no kernel image is available for execution`. Picking the matching cuXX
-  wheel resolves this without code changes.
+- An older PyTorch wheel can ship without kernels for the local
+  environment, which surfaces at runtime as
+  `no kernel image is available for execution`. Picking the wheel
+  that matches the local environment resolves this without code
+  changes.
 
 **Next**
 - Begin Phase 1 with `src/common/grid.py` and `src/common/fft_utils.py`.
@@ -413,8 +413,8 @@ Signal sanity:
   0.15, attenuating high-frequency content by ``exp(-0.15 * |f|^2)``).
 - theta means are centered on the midpoints of their sampling ranges
   with reasonable variance — no sampler is biased.
-- Data generation was IO-bound and finished in 3.6 s (train) + 0.8 s
-  (test) on a CUDA GPU.
+- Data generation was IO-bound; the train + test split finished in a
+  small number of seconds.
 
 **Next**
 - Phase 8: train an FNO 2D and (optionally) a DeepONet on the saved
@@ -484,7 +484,8 @@ Signal sanity:
   loss is set to zero so this sampling is only a fallback / sanity
   guard.
 - LR schedule: Adam at `1e-3`, step-decay by `0.5` every 4000 iters.
-  10000 total iters takes ~80 seconds on a CUDA GPU.
+  10 000 total iters complete in well under a couple of minutes in a
+  typical setup.
 
 **Why**
 - The Phase-6 pipeline reuses Phase-5 FD and FFT solvers verbatim, so
@@ -729,7 +730,7 @@ Physics confirmed:
   the imaging engine.
 - Building the Hopkins integral as a batched FFT (instead of a Python
   loop) keeps the cost flat: even with 332 source points (annular)
-  the demo runs sub-second on a modern CUDA GPU.
+  the demo finishes in well under a second.
 - `circular_pupil_at` lives in `pupil.py` rather than
   `partial_coherence.py` so other phases (e.g. tilted single-plane-wave
   studies) can reuse it without importing the partial-coherence
@@ -1278,8 +1279,8 @@ from scratch.
 
 > One line each, dated. The point is to remember **why** later.
 
-- **2026-04-29** Picked a PyTorch wheel that ships kernels for the local
-  GPU's compute capability. Stable build, so no nightly-pinning risk.
+- **2026-04-29** Picked a stable PyTorch wheel that matches the local
+  environment. No nightly-pinning risk.
 - **2026-04-29** src layout with empty `__init__.py` files — lets us switch
   to editable install (`pip install -e .`) at any time.
 - **2026-04-29** All docs and code comments in English; only the source study
@@ -1316,7 +1317,7 @@ from scratch.
 - **2026-04-29** Hopkins integral evaluated as a batched FFT over a
   `(K, N, N)` pupil stack rather than a Python loop. With ~300 source
   points (annular) on n=256 the loop cost is dominated by FFT and the
-  whole demo finishes in under a second on a modern CUDA GPU.
+  whole demo finishes in well under a second.
 - **2026-04-29** Diffusion exposed via two parameterizations: the raw
   ``(D, t)`` pair and the more useful ``L = sqrt(2 D t)``. Sweeps in
   Phase 5 / 6 / 9 use ``L`` because the geometric scale is the only
@@ -1414,8 +1415,9 @@ from scratch.
   dataset (no training yet, just the data pipeline).
 - **2026-04-29** Phase 7 done (synthetic 3D-mask correction dataset).
   116 tests green. 800 train + 200 test samples generated at n=128 in
-  4.4 s on GPU. The correction is substantial (|Delta T| / |T_thin| ~
-  77 %), so the dataset has real geometry for an FNO to fit. Resume
+  a few seconds. The correction is substantial
+  (|Delta T| / |T_thin| ~ 77 %), so the dataset has real geometry for
+  an FNO to fit. Resume
   with Phase 8: train FNO 2D (and optional DeepONet) on the saved
   NPZs; report spectrum MSE, complex relative error, and downstream
   aerial-image MSE.

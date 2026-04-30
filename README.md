@@ -309,7 +309,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip wheel setuptools
 
-# 2. PyTorch — pick the CUDA index that matches your driver / hardware.
+# 2. PyTorch — install the wheel that matches your environment.
 #    See https://pytorch.org/get-started/locally/ for the right index URL.
 pip install torch torchvision
 
@@ -317,7 +317,7 @@ pip install torch torchvision
 pip install -r requirements.txt
 
 # 4. sanity check
-python -c "import torch; print(torch.__version__, torch.cuda.is_available()); \
+python -c "import torch; print(torch.__version__); \
 x = torch.randn(1024, 1024); print((x @ x).mean().item())"
 
 # 5. run the test suite
@@ -340,9 +340,9 @@ pytest tests/ -q
   (e.g. `phase2_aerial_NA_sweep.png`).
 - Experiment configuration goes into `configs/*.yaml`, never
   hard-coded.
-- For a typical 16 GB-class GPU, grid 256² × FNO width 64 ×
-  Fourier modes 16 is a safe upper bound. Beyond that, switch to
-  mixed precision (`bf16`).
+- If memory becomes a constraint at large grids, wide FNOs, or many
+  Fourier modes, switch to mixed precision (`bf16`) before adding
+  more configuration knobs.
 
 ---
 
