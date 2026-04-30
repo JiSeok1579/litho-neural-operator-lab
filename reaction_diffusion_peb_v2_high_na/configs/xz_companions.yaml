@@ -1,0 +1,243 @@
+# Representative configurations to render as single-line x-z cross-sections.
+#
+# Each entry runs the x-z PEB solver with the listed chemistry, then crops
+# the result to a single line (centred on the middle line) ±pitch/2 in x.
+# Default film/standing-wave defaults apply unless overridden.
+defaults:
+  film_thickness_nm: 20.0
+  dz_nm: 0.5
+  standing_wave_period_nm: 6.75
+  standing_wave_amplitude: 0.0      # off by default; Stage-6 entries override
+  standing_wave_phase_rad: 0.0
+  absorption_length_nm: 30.0
+  P_threshold: 0.5
+
+cases:
+  - tag: stage1_clean_baseline
+    description: "Stage 1 clean geometry baseline (σ=0, t=30, no quencher)"
+    pitch_nm: 24
+    line_cd_nm: 12.5
+    domain_x_nm: 120
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 40
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 0.0
+    DH_nm2_s: 0.8           # Stage 1 baseline used DH=0.8 (the clean-geometry baseline)
+    time_s: 30
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: false
+    Q0_mol_dm3: 0.0
+    kq_s_inv: 0.0
+    DQ_nm2_s: 0.0
+
+  - tag: stage1B_overbudget_sigma5_t60
+    description: "Stage 1B over-budget reference (σ=5, t=60 → lines collapse)"
+    pitch_nm: 24
+    line_cd_nm: 12.5
+    domain_x_nm: 120
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 40
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 5.0
+    DH_nm2_s: 0.8
+    time_s: 60
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: false
+    Q0_mol_dm3: 0.0
+    kq_s_inv: 0.0
+    DQ_nm2_s: 0.0
+
+  - tag: stage4_balanced_v2_OP
+    description: "Stage 4 / v2 OP balanced (σ=2, Q0=0.02, kq=1.0, DH=0.5, t=30) — recommended OP"
+    pitch_nm: 24
+    line_cd_nm: 12.5
+    domain_x_nm: 120
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 40
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 2.0
+    DH_nm2_s: 0.5
+    time_s: 30
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: true
+    Q0_mol_dm3: 0.02
+    kq_s_inv: 1.0
+    DQ_nm2_s: 0.0
+
+  - tag: stage5_pitch24_dose40
+    description: "Stage 5 recommended (pitch=24, dose=40, v2 OP chemistry)"
+    pitch_nm: 24
+    line_cd_nm: 12.5
+    domain_x_nm: 120
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 40
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 2.0
+    DH_nm2_s: 0.5
+    time_s: 30
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: true
+    Q0_mol_dm3: 0.02
+    kq_s_inv: 1.0
+    DQ_nm2_s: 0.0
+
+  - tag: stage5_pitch18_dose28p4
+    description: "Stage 5 small-pitch recommended (pitch=18, dose=28.4, v2 OP chemistry; valid only)"
+    pitch_nm: 18
+    line_cd_nm: 12.5
+    domain_x_nm: 90
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 28.4
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 2.0
+    DH_nm2_s: 0.5
+    time_s: 30
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: true
+    Q0_mol_dm3: 0.02
+    kq_s_inv: 1.0
+    DQ_nm2_s: 0.0
+
+  - tag: stage5_pitch16_dose40_merged
+    description: "Stage 5 pitch=16 process-window-closed reference (lines merge)"
+    pitch_nm: 16
+    line_cd_nm: 12.5
+    domain_x_nm: 80
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 40
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 2.0
+    DH_nm2_s: 0.5
+    time_s: 30
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: true
+    Q0_mol_dm3: 0.02
+    kq_s_inv: 1.0
+    DQ_nm2_s: 0.0
+
+  - tag: stage6_thick20_A0p10_v2_OP
+    description: "Stage 6 standing-wave demo (thick=20, A=0.10, v2 OP chemistry)"
+    pitch_nm: 24
+    line_cd_nm: 12.5
+    domain_x_nm: 120
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 40
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 2.0
+    DH_nm2_s: 0.5
+    time_s: 30
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: true
+    Q0_mol_dm3: 0.02
+    kq_s_inv: 1.0
+    DQ_nm2_s: 0.0
+    film_thickness_nm: 20.0
+    standing_wave_amplitude: 0.10
+    absorption_length_nm: 30.0
+
+  - tag: stage6_thick20_A0p20_v2_OP
+    description: "Stage 6 strong standing wave (thick=20, A=0.20, v2 OP chemistry)"
+    pitch_nm: 24
+    line_cd_nm: 12.5
+    domain_x_nm: 120
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 40
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 2.0
+    DH_nm2_s: 0.5
+    time_s: 30
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: true
+    Q0_mol_dm3: 0.02
+    kq_s_inv: 1.0
+    DQ_nm2_s: 0.0
+    film_thickness_nm: 20.0
+    standing_wave_amplitude: 0.20
+    absorption_length_nm: 30.0
+
+  - tag: stage6_thick30_A0p20_v2_OP
+    description: "Stage 6 thick film (thick=30, A=0.20, v2 OP chemistry)"
+    pitch_nm: 24
+    line_cd_nm: 12.5
+    domain_x_nm: 120
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 40
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 2.0
+    DH_nm2_s: 0.5
+    time_s: 30
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: true
+    Q0_mol_dm3: 0.02
+    kq_s_inv: 1.0
+    DQ_nm2_s: 0.0
+    film_thickness_nm: 30.0
+    standing_wave_amplitude: 0.20
+    absorption_length_nm: 30.0
+
+  - tag: cal01_best_score
+    description: "Calibration Phase 1 best score (Hmax=0.20, kdep=0.5, DH=0.8 — internal_best_score_candidate)"
+    pitch_nm: 24
+    line_cd_nm: 12.5
+    domain_x_nm: 120
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 40
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 2.0
+    DH_nm2_s: 0.8
+    time_s: 30
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: true
+    Q0_mol_dm3: 0.02
+    kq_s_inv: 1.0
+    DQ_nm2_s: 0.0
+
+  - tag: cal05_smallpitch_best
+    description: "Phase 2B Part C small-pitch best (pitch=20, σ=0, DH=0.3, t=30, weak quencher)"
+    pitch_nm: 20
+    line_cd_nm: 12.5
+    domain_x_nm: 100
+    grid_spacing_nm: 0.5
+    dose_mJ_cm2: 40
+    reference_dose_mJ_cm2: 40
+    eta: 1.0
+    Hmax_mol_dm3: 0.20
+    sigma_nm: 0.0
+    DH_nm2_s: 0.3
+    time_s: 30
+    kdep_s_inv: 0.5
+    kloss_s_inv: 0.005
+    quencher_enabled: true
+    Q0_mol_dm3: 0.01
+    kq_s_inv: 1.0
+    DQ_nm2_s: 0.0
