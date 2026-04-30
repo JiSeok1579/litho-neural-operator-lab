@@ -37,6 +37,12 @@ tqdm>=4.66
 jupyterlab>=4.0
 ipykernel>=6.29
 
+# --- v3 screening surrogates -----------------------------------------------
+# Random-Forest classifier / regressor for v3 candidate screening +
+# joblib for model checkpoints.
+scikit-learn>=1.5
+joblib>=1.4
+
 # --- testing ---------------------------------------------------------------
 pytest>=8.0
 
