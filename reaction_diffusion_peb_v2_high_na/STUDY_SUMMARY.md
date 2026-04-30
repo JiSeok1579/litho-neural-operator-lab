@@ -7,6 +7,36 @@ High-NA EUV PEB v2 simulation work, Stage 1 ~ Stage 6 completed.
 
 ---
 
+## Claims boundary (read before citing any number)
+
+```text
+✓ The model is internally consistent and physically plausible.
+  - All sweeps respect the documented bounds (H ≥ 0, 0 ≤ P ≤ 1).
+  - All trends (PEB smoothing thin > thick, σ ↓ → wider small-pitch
+    window, dose ↑ → process-window CD shift, etc.) match the
+    qualitative expectations of the equations and BCs implemented.
+  - The Phase 2B sensitivity atlas provides a controllability map ready
+    to drive future calibration once external data lands.
+
+✗ The model is NOT externally calibrated.
+  - The internal calibration targets (CD ≈ 15 nm, LER ≈ 2.6 nm) are
+    derived from v2's own first-pass observations.
+  - calibration_status.published_data_loaded is FALSE.
+  - calibration_status.v2_OP_frozen is TRUE — see calibration/calibration_targets.yaml.
+
+✗ Quantitative agreement with High-NA EUV experiments is NOT claimed.
+  - No published or measured CD / LER / process-window values have
+    been loaded into calibration_targets.yaml.
+  - All sweeps post-freeze are labelled sensitivity / controllability /
+    hypothesis study, never "calibration" or "calibrated to real".
+
+To convert this into externally-calibrated work, follow `FUTURE_WORK.md`
+Gate A (load measured / published references → re-run Phase 1 / 2A / 2B
+→ only then refer to "external calibration").
+```
+
+---
+
 ## Status
 
 | Stage | 핵심 결과 | Note |

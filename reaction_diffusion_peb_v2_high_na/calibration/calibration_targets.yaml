@@ -116,6 +116,8 @@ targets:
       calibration; recomputed automatically by the calibration runners.
 
 operating_point:
+  # DEPRECATED. Kept for backward-compat with legacy callers. The single
+  # source of truth is `frozen_nominal_OP` above. Values must stay identical.
   pitch_nm: 24
   line_cd_nm: 12.5
   dose_mJ_cm2: 40
@@ -138,11 +140,15 @@ operating_point:
 
 scoring:
   distance_to_target:
-    formula: "sqrt( ((CD_locked - cd_target)/cd_target)^2 + ((LER_locked - ler_target)/ler_target)^2 )"
+    formula: "sqrt( ((CD_fixed - cd_target)/cd_target)^2 + ((LER_locked - ler_target)/ler_target)^2 )"
     cd_target_nm: 15.0
     ler_target_nm: 2.6
     pass_threshold: 0.10
     rationale: |
-      Normalised L2 distance in (CD, LER) plane. pass_threshold = 0.10
-      → on average 10% off either metric. The L2 norm balances CD and
-      LER with similar weight; targets are chosen to match v2 first-pass.
+      Normalised L2 distance in (CD, LER) plane. CD axis uses fixed-threshold
+      CD (= the developed-pattern CD that measurement reports). LER axis uses
+      CD-locked LER (intrinsic roughness, free of contour-displacement bias).
+      pass_threshold = 0.10 → on average 10 % off either metric.
+      Targets are derived from v2 first-pass observed values; they are
+      internal-consistency anchors, NOT external calibration values until
+      `calibration_status.published_data_loaded` is true.

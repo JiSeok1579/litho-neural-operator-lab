@@ -75,7 +75,47 @@ numbers · how to run · takeaway).
 | 8 | FNO 2D correction surrogate | ✅ | [docs/phase8](./docs/phase8_fno_surrogate.md) |
 | 9 | Closed-loop surrogate-assisted inverse design | ✅ | [docs/phase9](./docs/phase9_closed_loop_surrogate.md) |
 | 10 | Active learning | 💤 deferred | [PROGRESS.md §H](./PROGRESS.md) |
-| — | PEB submodule (`reaction_diffusion_peb/`) — Phases 1-6 done, 7-11 planned | in progress | [docs/peb_submodule](./docs/peb_submodule.md) |
+| — | PEB submodule v1 (`reaction_diffusion_peb/`) — Phases 1-11 done | ✅ | [docs/peb_submodule](./docs/peb_submodule.md) |
+| — | PEB v2 High-NA (`reaction_diffusion_peb_v2_high_na/`) — Stages 1-6 + Phase 2B | ✅ first-pass | [STUDY_SUMMARY](./reaction_diffusion_peb_v2_high_na/STUDY_SUMMARY.md) |
+
+---
+
+## PEB v2 (High-NA EUV PEB) — first-pass closeout
+
+A second PEB submodule under [`reaction_diffusion_peb_v2_high_na/`](./reaction_diffusion_peb_v2_high_na/) reframes the v1 sandbox as a **High-NA EUV line/space process simulator**. It adds:
+
+- pitch / line-CD / edge-roughness geometry,
+- Dill-style acid generation with electron blur,
+- operator-split spectral PEB solver (x-y) and a Neumann-z mirror-FFT solver (x-z),
+- weak-quencher chemistry,
+- CD-locked LER and PSD band metrics.
+
+**Status**: first-pass complete. The recommended operating point is **frozen** as the internally-consistent v2 nominal OP. **The model is NOT externally calibrated** — `calibration_status.published_data_loaded` is false, and all sweeps are labelled sensitivity / controllability / hypothesis studies.
+
+| Document | Purpose |
+|---|---|
+| [`STUDY_SUMMARY.md`](./reaction_diffusion_peb_v2_high_na/STUDY_SUMMARY.md) | first-pass closeout, status table, per-stage findings, frozen OP, claims boundary |
+| [`README.md`](./reaction_diffusion_peb_v2_high_na/README.md) | one-page entry, frozen OP table, completed / deferred stages |
+| [`RESULTS_INDEX.md`](./reaction_diffusion_peb_v2_high_na/RESULTS_INDEX.md) | per-stage table → folder, CSV, figure dir, one-line conclusion |
+| [`FUTURE_WORK.md`](./reaction_diffusion_peb_v2_high_na/FUTURE_WORK.md) | gated future work (external calibration / physics extension / small pitch / reference search) |
+| [`EXPERIMENT_PLAN.md`](./reaction_diffusion_peb_v2_high_na/EXPERIMENT_PLAN.md) | full per-stage spec + verified results |
+| [`calibration/calibration_targets.yaml`](./reaction_diffusion_peb_v2_high_na/calibration/calibration_targets.yaml) | frozen OP + internal targets + `published_data_loaded` flag |
+| [`calibration/calibration_plan.md`](./reaction_diffusion_peb_v2_high_na/calibration/calibration_plan.md) | calibration phase log (Phase 1, 2A, 2B all internal-only) |
+| [`study_notes/`](./reaction_diffusion_peb_v2_high_na/study_notes) | per-stage journals (problems / decisions / results) |
+
+Headline (frozen OP, internal-consistent):
+
+```text
+pitch=24, line_cd=12.5, dose=40 mJ/cm², σ=2 nm,
+DH=0.5, time=30 s, kdep=0.5, Hmax=0.2, kloss=0.005,
+quencher Q0=0.02, kq=1.0, DQ=0.0
+→ CD_fixed ≈ 14.5–15 nm, LER_locked ≈ 2.5 nm,
+  process window pitch ≥ 24 wide; pitch=16 closed at this chemistry.
+```
+
+This number is consistent with v2's own first-pass observations only. Quantitative agreement with experimental High-NA EUV measurements is not claimed.
+
+Outputs (figures, logs, contour maps for ~600 sweep cells across 7 stages + 3 calibration phases) are committed under [`reaction_diffusion_peb_v2_high_na/outputs/`](./reaction_diffusion_peb_v2_high_na/outputs/).
 
 ---
 
