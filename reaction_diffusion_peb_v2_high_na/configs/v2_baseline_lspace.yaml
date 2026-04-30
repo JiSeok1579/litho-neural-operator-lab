@@ -1,0 +1,60 @@
+# OVER-BUDGET STRESS CASE — DO NOT use as the Stage-1 baseline.
+#
+# At pitch=24 nm with kdep=0.5, DH=0.8, t=60, the combination
+#   electron_blur_sigma_nm=5.0 + time_s=60
+# floods the entire domain (interior P_space_mean > 0.65, area_frac → 1.0,
+# CD_final ≈ pitch). The line-space pattern collapses into a continuous slab.
+# This config is retained as an over-budget stress reference. The clean
+# Stage-1 geometry baseline lives in configs/v2_stage1_clean_geometry.yaml.
+run:
+  name: v2_overbudget_sigma5_t60_stress
+  seed: 7
+
+geometry:
+  pattern: line_space
+  pitch_nm: 24.0
+  half_pitch_nm: 12.0
+  line_cd_nm: 12.5
+  grid_spacing_nm: 0.5
+  # Domain set to integer multiple of pitch (5 * 24 = 120) so the FFT periodic
+  # seam matches the physical pattern period — avoids the wider-space artifact
+  # at the right edge that otherwise misleads the acceptance gate.
+  domain_x_nm: 120.0
+  domain_y_nm: 120.0
+  edge_roughness_enabled: true
+  edge_roughness_amp_nm: 1.0
+  edge_roughness_corr_nm: 5.0
+
+exposure:
+  wavelength_nm: 13.5
+  dose_mJ_cm2: 40.0
+  reference_dose_mJ_cm2: 40.0
+  dose_norm: 1.0
+  eta: 1.0
+  Hmax_mol_dm3: 0.2
+  electron_blur_enabled: true
+  electron_blur_sigma_nm: 5.0
+  target_NILS: 1.5
+
+peb:
+  time_s: 60.0
+  temperature_C: 100.0
+  DH_nm2_s: 0.8
+  kloss_s_inv: 0.005
+  kdep_s_inv: 0.5
+  dt_s: 0.5
+
+quencher:
+  enabled: false
+  Q0_mol_dm3: 0.0
+  DQ_nm2_s: 0.0
+  kq_s_inv: 0.0
+
+development:
+  method: threshold
+  P_threshold: 0.5
+
+outputs:
+  save_fields: true
+  save_figures: true
+  save_metrics_csv: true
