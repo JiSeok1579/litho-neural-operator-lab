@@ -1,0 +1,145 @@
+{
+  "n_runs": 144,
+  "anchor_at_20_0p10_30_0p5": {
+    "thickness_nm": 20.0,
+    "amplitude": 0.1,
+    "absorption_length_nm": 30.0,
+    "DH_nm2_s": 0.5,
+    "H0_z_modulation_pct": 52.052567276169206,
+    "H0_z_modulation_sw_only_pct": 7.123101520079899,
+    "P_final_z_modulation_pct": 20.335369341802522,
+    "modulation_reduction_pct": 60.93301367075416,
+    "top_bottom_asymmetry": 0.18475911916243914,
+    "sidewall_x_displacement_std_nm": 2.3530463041509373,
+    "psd_mid_band_locked": 1.454384253404998,
+    "P_threshold_locked": 0.49687499999999996,
+    "CD_locked_nm": 12.374269436925326,
+    "cd_lock_status": "ok",
+    "H_min": 0.018730956476488456,
+    "P_min": 0.17477674021453102,
+    "P_max": 0.7337162568888294,
+    "bounds_ok": true
+  },
+  "sensitivity_full_grid": [
+    {
+      "variable": "thickness_nm",
+      "metric": "H0_z_modulation_sw_only_pct",
+      "span_pct_full_grid": 379.81687407911926
+    },
+    {
+      "variable": "thickness_nm",
+      "metric": "P_final_z_modulation_pct",
+      "span_pct_full_grid": 470.0230742799723
+    },
+    {
+      "variable": "thickness_nm",
+      "metric": "modulation_reduction_pct",
+      "span_pct_full_grid": 92.12823610859667
+    },
+    {
+      "variable": "thickness_nm",
+      "metric": "top_bottom_asymmetry",
+      "span_pct_full_grid": 345.1147924488028
+    },
+    {
+      "variable": "thickness_nm",
+      "metric": "sidewall_x_displacement_std_nm",
+      "span_pct_full_grid": 245.09119749638464
+    },
+    {
+      "variable": "thickness_nm",
+      "metric": "psd_mid_band_locked",
+      "span_pct_full_grid": 755.6847491421375
+    },
+    {
+      "variable": "amplitude",
+      "metric": "H0_z_modulation_sw_only_pct",
+      "span_pct_full_grid": 379.81687407911926
+    },
+    {
+      "variable": "amplitude",
+      "metric": "P_final_z_modulation_pct",
+      "span_pct_full_grid": 470.0230742799723
+    },
+    {
+      "variable": "amplitude",
+      "metric": "modulation_reduction_pct",
+      "span_pct_full_grid": 92.12823610859667
+    },
+    {
+      "variable": "amplitude",
+      "metric": "top_bottom_asymmetry",
+      "span_pct_full_grid": 345.1147924488028
+    },
+    {
+      "variable": "amplitude",
+      "metric": "sidewall_x_displacement_std_nm",
+      "span_pct_full_grid": 245.09119749638464
+    },
+    {
+      "variable": "amplitude",
+      "metric": "psd_mid_band_locked",
+      "span_pct_full_grid": 755.6847491421375
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "H0_z_modulation_sw_only_pct",
+      "span_pct_full_grid": 379.81687407911926
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "P_final_z_modulation_pct",
+      "span_pct_full_grid": 470.0230742799723
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "modulation_reduction_pct",
+      "span_pct_full_grid": 92.12823610859667
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "top_bottom_asymmetry",
+      "span_pct_full_grid": 345.1147924488028
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "sidewall_x_displacement_std_nm",
+      "span_pct_full_grid": 245.09119749638464
+    },
+    {
+      "variable": "absorption_length_nm",
+      "metric": "psd_mid_band_locked",
+      "span_pct_full_grid": 755.6847491421375
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "H0_z_modulation_sw_only_pct",
+      "span_pct_full_grid": 379.81687407911926
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "P_final_z_modulation_pct",
+      "span_pct_full_grid": 470.0230742799723
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "modulation_reduction_pct",
+      "span_pct_full_grid": 92.12823610859667
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "top_bottom_asymmetry",
+      "span_pct_full_grid": 345.1147924488028
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "sidewall_x_displacement_std_nm",
+      "span_pct_full_grid": 245.09119749638464
+    },
+    {
+      "variable": "DH_nm2_s",
+      "metric": "psd_mid_band_locked",
+      "span_pct_full_grid": 755.6847491421375
+    }
+  ]
+}

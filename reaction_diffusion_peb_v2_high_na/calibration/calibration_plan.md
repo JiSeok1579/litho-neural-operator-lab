@@ -1,15 +1,33 @@
 # PEB v2 calibration plan
 
+## v2 OP freeze (2026-04-30)
+
+```text
+external reference data 미입수.
+v2 first-pass OP 를 internal-consistent nominal OP 로 freeze:
+  pitch=24, dose=40, sigma=2, DH=0.5, time=30,
+  kdep=0.5, Hmax=0.2, kloss=0.005, Q0=0.02, kq=1.0, DQ=0.0
+
+calibration_status: internal-consistency only.
+published_data_loaded: false.
+v2_OP_frozen: true.
+
+이후 모든 runs 는 다음 중 하나로 label:
+  - sensitivity study
+  - controllability study
+  - hypothesis test
+"calibration" 또는 "calibrated to real" 표현은 published_data_loaded=true 까지 금지.
+```
+
 ## Strategy
 
 ```text
-v2 first-pass OP 가 만들어내는 절대값 (CD, LER, process window) 이
-external reference 또는 published high-NA EUV 와 일치하는지 검증하고,
-일치하지 않으면 어느 chemistry knob (Hmax / kdep / DH / σ / dose / abs_len)
-에서 offset 이 발생하는지 분류하여 보정한다.
+external reference 가 없는 상태에서 chemistry knob 의 dynamic range 와
+sensitivity 를 미리 정량화해, 외부 데이터가 도입되었을 때 어느 knob 으로
+어디까지 보정 가능한지 사전 매핑.
 ```
 
-`calibration_targets.yaml` 가 정량적 목표를, 본 문서가 phase 별 진행 / 결정 / 결과를 누적 기록한다.
+`calibration_targets.yaml` 가 정량적 목표 + frozen OP 를, 본 문서가 phase 별 진행 / 결정 / 결과를 누적 기록한다.
 
 ---
 
@@ -324,6 +342,188 @@ controllability map 작성 완료. 외부 reference 데이터가 들어오면:
 (β) deferred Stage 진행 (Stage 3B / 5C / 6B 또는 새 chemistry) — calibration 보류
 
 지금 단계: (α) 가 prerequisite. 외부 데이터 대기 중에는 (β) 또는 다른 task 결정.
+```
+
+---
+
+## Phase 2B — sensitivity atlas (sensitivity / controllability / hypothesis study)
+
+NOT a calibration. v2 OP frozen. Atlas = nominal OP 주변 dynamic range / sensitivity 매핑.
+
+### Part A — x-y atlas
+
+```yaml
+anchor: frozen v2 OP (pitch=24, dose=40, sigma=2, DH=0.5, time=30,
+                       Q0=0.02, kq=1.0, Hmax=0.2, kdep=0.5)
+
+OAT sweeps:
+  dose_mJ_cm2: [21, 28.4, 40, 44.2, 59, 60]
+  sigma_nm:    [0, 1, 2, 3]
+  DH_nm2_s:    [0.3, 0.5, 0.8]
+  time_s:      [20, 30, 45]
+  Q0_mol_dm3:  [0.0, 0.005, 0.01, 0.02, 0.03]
+
+pair sweeps:
+  dose × sigma : 6 × 4 = 24
+  DH   × time  : 3 × 3 = 9
+  sigma × Q0   : 4 × 5 = 20
+  pitch × dose : 6 × 6 = 36   (pitch ∈ {16,18,20,24,28,32})
+  pitch × Q0   : 6 × 5 = 30
+```
+
+### Part B — x-z atlas (4D grid)
+
+```yaml
+chemistry frozen at v2 OP.
+period_nm = 6.75 (Stage 6).
+
+grid:
+  film_thickness_nm:    [15, 20, 30]
+  standing_wave_amplitude: [0.0, 0.05, 0.10, 0.20]
+  absorption_length_nm: [15, 30, 60, 100]
+  DH_nm2_s:             [0.3, 0.5, 0.8]
+=> 3 × 4 × 4 × 3 = 144 runs.
+```
+
+### Part C — Stage 5C small-pitch follow-up
+
+Hypothesis: weak quencher 약화 또는 sigma↓ 가 pitch ∈ {18, 20} 의 process window 를 회복시키는가? (Stage 5 + Stage 4B 의 follow-up)
+
+```yaml
+pitch_nm:    [18, 20]
+dose_mJ_cm2: [21, 28.4, 40]
+sigma_nm:    [0, 1, 2]
+quencher:    {off, weak (Q0=0.01, kq=1.0)}
+DH_nm2_s:    [0.3, 0.5]
+time_s:      [20, 30]
+=> 2 × 3 × 3 × 2 × 2 × 2 = 144 runs.
+```
+
+Stage 6B (full 3D) 는 외부 데이터 또는 구체적 interaction hypothesis 가 등장하기 전까지 deferred.
+
+### 2B.X 결과 (executed)
+
+#### Part A — x-y atlas (141 rows total)
+
+OAT 와 5 pair sweeps 모두 실행. 도메인 자동 정렬 (pitch×5) 정상 작동, 모든 row CSV / heatmap 저장.
+
+**OAT 핵심 trend (anchor: CD_fix=14.53, LER_lock=2.47, margin=0.10, robust_valid)**:
+
+```text
+dose 21..60        : CD_fix 8.1 → 17.2 (CD 가 가장 dose-sensitive)
+                     LER 변동 ≤ 1 % (정확히 Phase 2A 와 일치)
+                     dose=21 only → under_exposed
+sigma 0..3         : CD 13.0 → 15.7, margin 0.10 ± 0.02 (robust 영역 유지)
+DH 0.3..0.8        : LER 2.46 → 2.59 (DH 가 LER 의 fine knob)
+time 20..45        : LER 2.40 → 2.55 (Stage 2 와 일치)
+                     time=45 부터 dose=40, σ=2 영역에서 merging 위험
+Q0 0..0.03         : margin +0.142 → +0.061 (Q0 증가 → margin 압박)
+                     Stage 4 의 dCD_shift 단조 감소 효과 재확인
+```
+
+**Pair sweep 핵심 (status heatmap 위주 요약)**:
+
+```text
+dose × sigma  : dose↑, σ↓ 영역 robust_valid 우세. dose=21 column 전체 under_exposed.
+DH × time     : DH=0.3, t=20 → under_exposed; DH=0.8, t=45 → merged.
+                중간 영역 (DH=0.5, t=30) robust_valid 정확히 anchor 위치.
+sigma × Q0    : Q0 증가 시 margin 단조 감소; σ=3, Q0=0.03 부터 margin < 0.05 한계.
+pitch × dose  : Stage 5 결과 재현. pitch=16 closed, pitch ≥ 24 wide window.
+pitch × Q0    : pitch=18, 20 에서 quencher 가 robust_valid 영역을 좁힘 (Stage 5 control 과 일치).
+```
+
+#### Part B — x-z atlas (144 rows, 4D grid 전수)
+
+bounds_ok 144/144. anchor (thick=20, A=0.10, abs_len=30, DH=0.5).
+
+**Sensitivity (full-grid relative span vs anchor metric)**:
+
+```text
+metric                            thickness   amplitude   abs_len   DH
+H0_z_modulation_sw_only_pct       (정의상 0)   monotone↑   strong   ~0
+P_final_z_modulation_pct          large       monotone↑   strong   small
+modulation_reduction_pct          thin>thick  ↓ at A↑     mid     small
+top_bottom_asymmetry              ↑ thick     small       strong↓  small
+sidewall_x_displacement_std       ↑ thick     small       strong↓  ↑ DH
+psd_mid_band_locked               ↑ thick     small       strong↓  ↑ DH
+```
+
+abs_len 이 모든 z-metric 에서 dominant knob 임을 144-cell 전수 데이터로 재확인 (Phase 2A 의 OAT 와 일치).
+
+#### Part C — Stage 5C small-pitch hypothesis (144 runs)
+
+**Hypothesis**: σ↓ 또는 quencher 약화 가 pitch ∈ {18, 20} 의 process window 를 회복?
+
+**Status counts per (pitch, σ, quencher)** (각 cell = 12 runs over dose × DH × time):
+
+```text
+  pitch  σ   q_mode    robust  valid  under  merged
+    18   0   off          3      3      5      1
+    18   0   weak         2      3      6      1
+    18   1   off          1      3      5      3
+    18   1   weak         1      3      6      2
+    18   2   off          0      3      5      4
+    18   2   weak         1      2      6      3
+    20   0   off          4      3      5      0
+    20   0   weak         3      3      6      0
+    20   1   off          4      3      5      0
+    20   1   weak         3      3      6      0
+    20   2   off          2      3      5      2
+    20   2   weak         2      3      6      1
+```
+
+**핵심 finding**:
+
+```text
+σ↓ 가 small-pitch process window 회복의 dominant knob.
+  pitch=18, σ=0: 3 robust (vs σ=2: 0-1 robust)  → ★ σ 변경이 결정적
+  pitch=20, σ=0,1: 4 robust   (vs σ=2: 2 robust)
+
+quencher 약화 효과는 작거나 부정적.
+  대부분 (pitch, σ) 조합에서 weak quencher → robust 수 -1 (Stage 5 의 quencher 가
+  small-pitch tolerance 를 좁힌다는 finding 재확인).
+
+Best per pitch:
+  pitch=18: dose=28.4, σ=0, DH=0.3, t=30, weak  → robust_valid, CD_shift=+0.25, LER_lock=3.05
+  pitch=20: dose=28.4, σ=0, DH=0.3, t=30, weak  → robust_valid, CD_shift=-0.23, LER_lock=2.69
+  → 둘 다 σ=0, dose=28.4, DH=0.3 (소량의 chemistry, large-pitch 와 다른 OP)
+```
+
+#### 2B 종합 결론
+
+```text
+1. v2 권장 OP (pitch=24, dose=40, σ=2, DH=0.5, time=30, Q0=0.02, kq=1.0) 는
+   internal-consistent 하며 Phase 2B atlas 의 anchor 로 적합.
+   여전히 freeze 상태. external reference 미입수.
+
+2. 외부 데이터가 들어오면 보정 가능한 knob 정량적 매핑 완료:
+   - x-y CD bias       → dose (1차)
+   - x-y LER bias      → DH (fine), σ (secondary)
+   - x-y margin / area → dose, Q0
+   - x-z standing wave → absorption_length (압도적 dominant)
+   - x-z top/bot asym  → absorption_length
+
+3. Stage 5C hypothesis 확인:
+   pitch ∈ {18, 20} 에 적용할 별도 OP 가 존재 (σ=0, dose=28.4, DH=0.3, t=30,
+   quencher weak). v2 OP 와는 다른 chemistry / domain. 다음 작업이 small-pitch
+   에 의존한다면 이 OP 를 hypothesis-verified candidate 로 사용 가능.
+   여전히 internal-only.
+
+4. Stage 6B (full 3D x-y-z) 는 보류 그대로. external reference 또는 구체적
+   y-roughness × z-modulation interaction hypothesis 등장 후에만 시작.
+```
+
+#### 다음 단계 결정
+
+```text
+RECOMMEND: 외부 reference 데이터 입수 대기.
+
+옵션 (그동안):
+  - 추가 hypothesis sweep (특정 pair / triple 의 detailed 분석)
+  - Stage 3B / 5C / 6B 보류 유지
+  - 현 상태로 freeze 종결 후 다른 task / 다른 v3 plan 으로 이동
+
+calibration_status 는 internal-consistency only 그대로.
 ```
 
 ---

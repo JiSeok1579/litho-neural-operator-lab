@@ -1,0 +1,134 @@
+{
+  "18_0_False": {
+    "counts": {
+      "unstable": 0,
+      "merged": 1,
+      "under_exposed": 5,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 3
+    },
+    "total": 12
+  },
+  "18_0_weak": {
+    "counts": {
+      "unstable": 0,
+      "merged": 1,
+      "under_exposed": 6,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 2
+    },
+    "total": 12
+  },
+  "18_1_False": {
+    "counts": {
+      "unstable": 0,
+      "merged": 3,
+      "under_exposed": 5,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 1
+    },
+    "total": 12
+  },
+  "18_1_weak": {
+    "counts": {
+      "unstable": 0,
+      "merged": 2,
+      "under_exposed": 6,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 1
+    },
+    "total": 12
+  },
+  "18_2_False": {
+    "counts": {
+      "unstable": 0,
+      "merged": 4,
+      "under_exposed": 5,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 0
+    },
+    "total": 12
+  },
+  "18_2_weak": {
+    "counts": {
+      "unstable": 0,
+      "merged": 3,
+      "under_exposed": 6,
+      "low_contrast": 0,
+      "valid": 2,
+      "robust_valid": 1
+    },
+    "total": 12
+  },
+  "20_0_False": {
+    "counts": {
+      "unstable": 0,
+      "merged": 0,
+      "under_exposed": 5,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 4
+    },
+    "total": 12
+  },
+  "20_0_weak": {
+    "counts": {
+      "unstable": 0,
+      "merged": 0,
+      "under_exposed": 6,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 3
+    },
+    "total": 12
+  },
+  "20_1_False": {
+    "counts": {
+      "unstable": 0,
+      "merged": 0,
+      "under_exposed": 5,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 4
+    },
+    "total": 12
+  },
+  "20_1_weak": {
+    "counts": {
+      "unstable": 0,
+      "merged": 0,
+      "under_exposed": 6,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 3
+    },
+    "total": 12
+  },
+  "20_2_False": {
+    "counts": {
+      "unstable": 0,
+      "merged": 2,
+      "under_exposed": 5,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 2
+    },
+    "total": 12
+  },
+  "20_2_weak": {
+    "counts": {
+      "unstable": 0,
+      "merged": 1,
+      "under_exposed": 6,
+      "low_contrast": 0,
+      "valid": 3,
+      "robust_valid": 2
+    },
+    "total": 12
+  }
+}
