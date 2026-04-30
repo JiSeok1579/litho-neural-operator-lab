@@ -1,11 +1,11 @@
 # ============================================================================
 # litho-neural-operator-lab :: requirements
 # ----------------------------------------------------------------------------
-# Python 3.10+. PyTorch is required; pick the CUDA wheel that matches your
-# driver / GPU compute capability. See https://pytorch.org/get-started/locally/
-# for the appropriate index URL. If a "no kernel image" error surfaces at
-# runtime, the installed wheel was built for an older compute capability —
-# install a newer cuXX wheel.
+# Python 3.10+. PyTorch is required; install the wheel that matches your
+# environment. See https://pytorch.org/get-started/locally/ for the
+# appropriate index URL. If a "no kernel image" error surfaces at
+# runtime, the installed wheel was built for an older runtime — install
+# a newer wheel that matches the local environment.
 #
 # Install order:
 #   python3 -m venv .venv && source .venv/bin/activate
@@ -17,7 +17,7 @@
 # --- core numerical / DL ---------------------------------------------------
 numpy>=1.26
 scipy>=1.13
-torch>=2.7            # picks up most recent compute-capability targets
+torch>=2.7
 torchvision>=0.22
 
 # --- visualization ---------------------------------------------------------

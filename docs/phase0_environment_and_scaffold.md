@@ -24,10 +24,10 @@ down the documentation conventions that every later phase will reuse.
 ## Verified
 
 - `pip install -r requirements.txt` resolves clean.
-- `torch.cuda.is_available()` returns True when a CUDA build matches
-  the local GPU.
+- `torch` imports cleanly and the runtime is whichever wheel was
+  installed for the local environment.
 - 2048² fp32 matmul, complex64 FFT2, and an autograd round-trip all
-  succeed on the GPU.
+  succeed.
 
 ## Key takeaway
 
