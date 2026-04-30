@@ -18,3 +18,4 @@ Phase 별 학습 기록. 각 phase 가 끝날 때마다 노트를 추가하고 m
 - [02_stage2_dh_time_sweep.md](02_stage2_dh_time_sweep.md) — Stage 2: DH × time 25-grid sweep 과 best operating point 선택
 - [03_stage3_electron_blur.md](03_stage3_electron_blur.md) — Stage 3: σ 분리 + 3-stage LER 측정 규약 + plan §Stage 3B 신설
 - [04_stage4_weak_quencher.md](04_stage4_weak_quencher.md) — Stage 4: weak quencher 52-run sweep, σ=3 LER 회복 검증, PSD band metric 도입, Stage 4B (CD-locked LER) 보류
+- [05_stage5_pitch_dose.md](05_stage5_pitch_dose.md) — Stage 5: pitch × dose 36+72 runs, process window shape, pitch=16 closed 발견, quencher 의 small-pitch trade-off
