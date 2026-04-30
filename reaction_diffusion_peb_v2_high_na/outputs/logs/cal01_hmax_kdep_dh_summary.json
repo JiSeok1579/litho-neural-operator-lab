@@ -1,0 +1,22 @@
+{
+  "targets": {
+    "cd_nm": 15.0,
+    "ler_nm": 2.6,
+    "pass_threshold": 0.1
+  },
+  "gate": "PASS",
+  "n_runs": 36,
+  "n_selectable": 24,
+  "best": {
+    "Hmax": 0.2,
+    "kdep": 0.5,
+    "DH": 0.8,
+    "status": "robust_valid",
+    "CD_locked_nm": 12.300156063116582,
+    "LER_CD_locked_nm": 2.5885506034555616,
+    "distance_to_target": 0.005427068668215337,
+    "P_line_margin": 0.06784011563100167,
+    "area_frac": 0.62671875,
+    "psd_locked_mid": 0.7869027398071504
+  }
+}
