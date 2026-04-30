@@ -558,8 +558,8 @@ PEB diffusion length가 roughness와 CD shift에 주는 영향을 분리한다.
 ### Sweep
 
 ```yaml
-DH_sweep_nm2_s: [0.3, 0.8, 1.5]
-time_sweep: [30, 45, 60, 75, 90]
+DH_sweep_nm2_s: [0.3, 0.5, 0.8, 1.0, 1.5]    # 실제 수행: 5점 (원안의 3점 + 0.5/1.0 추가)
+time_sweep:     [15, 20, 30, 45, 60]          # 실제 수행: lower 절반 추가
 ```
 
 ### 봐야 할 경향
@@ -571,6 +571,31 @@ PEB time 증가 → LER 감소
 PEB time 증가 → CD shift 증가
 너무 큰 DH/time → line edge blur 과도
 ```
+
+### 검증된 결과
+
+config: `configs/v2_stage2_dh_time.yaml` (Stage 1 baseline 그대로 + sweep 변수만 override)
+
+```text
+LER reduction (%) — DH (rows) × time (cols), ✓ = interior gate pass
+
+                15         20         30         45         60
+  DH=0.30:    6.55✗     6.63✓     8.04✓     6.96✓   -14.34✓
+  DH=0.50:    9.00✗     8.80✓     8.69✓   -17.04✓    45.55✗
+  DH=0.80:   10.06✗     9.61✓     4.25✓     8.28✗   100.00✗
+  DH=1.00:    8.62✗     8.84✗    -1.98✓    62.62✗   100.00✗
+  DH=1.50:   -4.48✗     3.98✗   -38.01✓   100.00✗   100.00✗
+
+✗ 영역의 LER% 는 신뢰 불가 (lines merged → edge extract NaN/0).
+✗에서의 100% 는 artifact, ✓ 영역에서만 의미 있음.
+```
+
+알고리즘 best (max LER% s.t. CD_shift ≤ 3, CD/p < 0.85, area_frac < 0.9):
+**DH=0.8 nm²/s, t=20 s** — LER 9.61% 감소, CD_shift = −1.18 nm, P_line=0.65 (margin 0.003).
+
+실용 권장 (P_line margin 큰 후보): **DH=0.5, t=20** (LER 8.80%, P_line=0.68) 또는 **DH=0.5, t=30** (LER 8.69%, P_line=0.79).
+
+세부 분석은 `study_notes/02_stage2_dh_time_sweep.md` 참조.
 
 ---
 
