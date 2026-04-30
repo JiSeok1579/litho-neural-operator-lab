@@ -1,23 +1,23 @@
 # Study Notes — High-NA EUV PEB v2
 
-Phase 별 학습 기록. 각 phase 가 끝날 때마다 노트를 추가하고 main 으로 머지한다.
+Per-phase learning records. A note is added at the end of each phase and merged into main.
 
-각 노트는 다음을 담는다.
+Each note captures:
 
-- 목적: 이 phase 에서 무엇을 답하려 했는가
-- 진행 단계: 실제로 수행한 단계
-- 발생한 문제: 무엇이 막혔는가, 왜 막혔는가
-- 해결 방법: 어떻게 풀었는가, 왜 그 방법을 골랐는가
-- 의사결정 로그: 두 갈래에서 무엇을 골랐는가, 그 이유
-- 검증된 결과: 숫자로 남은 결과
-- 후속 작업: 다음 phase 에서 받아야 할 숙제
+- Goal: what question this phase tried to answer
+- Steps taken: what was actually done
+- Problems encountered: what got stuck, why
+- Resolutions: how it was unblocked, why that approach was chosen
+- Decision log: at each fork in the road, which branch was taken and why
+- Verified results: numbers left behind
+- Follow-up work: homework to be picked up by the next phase
 
-## 목록
+## Index
 
-- [01_stage1_clean_geometry.md](01_stage1_clean_geometry.md) — Stage 1 + Stage 1A: clean geometry baseline 과 σ-호환 budget calibration
-- [02_stage2_dh_time_sweep.md](02_stage2_dh_time_sweep.md) — Stage 2: DH × time 25-grid sweep 과 best operating point 선택
-- [03_stage3_electron_blur.md](03_stage3_electron_blur.md) — Stage 3: σ 분리 + 3-stage LER 측정 규약 + plan §Stage 3B 신설
-- [04_stage4_weak_quencher.md](04_stage4_weak_quencher.md) — Stage 4: weak quencher 52-run sweep, σ=3 LER 회복 검증, PSD band metric 도입, Stage 4B (CD-locked LER) 보류
-- [05_stage5_pitch_dose.md](05_stage5_pitch_dose.md) — Stage 5: pitch × dose 36+72 runs, process window shape, pitch=16 closed 발견, quencher 의 small-pitch trade-off
-- [06_stage4B_cd_locked.md](06_stage4B_cd_locked.md) — Stage 4B: CD-locked LER + Stage 5B pitch-dependent quencher mini-sweep, displacement artifact 1 case 식별, pitch ≤ 20 real LER degradation 진단, σ=2 + quencher OP 의 적용 범위 = pitch ≥ 24
-- [07_stage6_xz_standing_wave.md](07_stage6_xz_standing_wave.md) — Stage 6: x-z PEB solver (Neumann-z mirror FFT), 3 thickness × 4 amplitude sweep, PEB standing-wave 흡수율 thin>thick, helper 에 CD-locked + PSD mid-band 통합
+- [01_stage1_clean_geometry.md](01_stage1_clean_geometry.md) — Stage 1 + Stage 1A: clean-geometry baseline and σ-compatible budget calibration
+- [02_stage2_dh_time_sweep.md](02_stage2_dh_time_sweep.md) — Stage 2: DH × time 25-grid sweep and best-operating-point selection
+- [03_stage3_electron_blur.md](03_stage3_electron_blur.md) — Stage 3: σ isolation + 3-stage LER measurement convention + plan §Stage 3B added
+- [04_stage4_weak_quencher.md](04_stage4_weak_quencher.md) — Stage 4: weak-quencher 52-run sweep, σ=3 LER recovery verified, PSD band metric introduced, Stage 4B (CD-locked LER) deferred
+- [05_stage5_pitch_dose.md](05_stage5_pitch_dose.md) — Stage 5: pitch × dose 36+72 runs, process-window shape, pitch=16 closed finding, quencher's small-pitch trade-off
+- [06_stage4B_cd_locked.md](06_stage4B_cd_locked.md) — Stage 4B: CD-locked LER + Stage 5B pitch-dependent quencher mini-sweep, 1 displacement-artefact case identified, real LER degradation diagnosed at pitch ≤ 20, σ=2 + quencher OP applies only at pitch ≥ 24
+- [07_stage6_xz_standing_wave.md](07_stage6_xz_standing_wave.md) — Stage 6: x-z PEB solver (Neumann-z mirror FFT), 3 thickness × 4 amplitude sweep, PEB standing-wave absorption thin>thick, helper integrated with CD-locked + PSD mid-band

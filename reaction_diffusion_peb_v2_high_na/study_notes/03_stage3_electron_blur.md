@@ -1,70 +1,70 @@
-# Phase 3 — Stage 3: electron blur 분리 + 측정 규약 재정의
+# Phase 3 — Stage 3: electron-blur isolation + redefined measurement convention
 
-## 0. 한 줄 요약
+## 0. TL;DR
 
-LER 측정을 design / e-blur / PEB 세 단계로 분리하고, σ ∈ {0,1,2,3} 을 두 Stage-2 OP 에서 돌렸다. **robust OP (DH=0.5, t=30)** 가 Stage-3 강화 게이트를 4개 σ 전부 통과, **algorithmic-best OP (DH=0.8, t=20)** 는 4개 σ 전부 실패 (P_line_margin < 0.03). σ 가 커질수록 electron blur 의 LER 감소는 단조 증가 (+0% → +11%) 하지만 PEB 의 LER 감소는 단조 감소하다 음으로 (+8.7% → −37.7%) 떨어져 total 도 σ=0 에서 최대 (+8.7%). σ=5/8 는 plan §Stage 3B 로 분리.
-
----
-
-## 1. 목적
-
-- Plan §5 Stage 3: electron blur smoothing 효과를 PEB acid diffusion smoothing 효과와 정량적으로 분리.
-- 두 가지 정량 질문에 답한다.
-  - electron blur σ 가 커지면 H0 단계에서 LER 가 얼마나 줄어드는가?
-  - 그 위에 PEB 가 얹히면 추가 LER 감소가 얼마인가?
-- 동시에 Stage 1/2 에서 발견한 measurement convention 의 σ-의존성 문제를 정리.
+Split the LER measurement into three stages — design / e-blur / PEB — and ran σ ∈ {0,1,2,3} at the two Stage-2 OPs. The **robust OP (DH=0.5, t=30)** passed the Stage-3 strengthened gate at all four σ; the **algorithmic-best OP (DH=0.8, t=20)** failed at all four σ (P_line_margin < 0.03). As σ grows the LER reduction from electron blur is monotonically increasing (+0% → +11%), but the LER reduction from PEB decreases monotonically and goes negative (+8.7% → −37.7%), so the total is largest at σ=0 (+8.7%). σ=5/8 is split out as plan §Stage 3B.
 
 ---
 
-## 2. 진행 단계
+## 1. Goal
 
-1. **plan revision** (option b): plan §5 Stage 3 sweep 을 `[0,2,5,8]` → `[0,1,2,3]` 으로 축소. σ=5,8 은 24 nm pitch / kdep=0.5 / Hmax≤0.2 spec 과 호환 budget 없음을 Stage 1A 에서 확인했기 때문. 호환 budget 탐색은 plan §Stage 3B (future) 로 분리.
-2. **measurement convention 재정의**: `run_sigma_sweep_helpers.py` 의 `run_one_with_overrides` 에 세 단계 LER 측정 추가.
-   - `LER_design_initial_nm`     ← `extract_edges(I, threshold=0.5)`      (σ 독립)
+- Plan §5 Stage 3: separate the smoothing effect of electron blur from that of PEB acid diffusion, quantitatively.
+- Answer two quantitative questions.
+  - As electron-blur σ grows, how much does the LER drop already at the H0 stage?
+  - On top of that, how much additional LER reduction does PEB add?
+- At the same time, clean up the σ-dependence of the measurement convention found in Stages 1/2.
+
+---
+
+## 2. Steps taken
+
+1. **Plan revision** (option b): shrink the Stage 3 sweep from `[0,2,5,8]` → `[0,1,2,3]`. Stage 1A confirmed there is no compatible budget for σ=5,8 within the 24 nm pitch / kdep=0.5 / Hmax≤0.2 spec; the search for a compatible budget is split into plan §Stage 3B (future).
+2. **Redefined measurement convention**: added three-stage LER measurement to `run_one_with_overrides` in `run_sigma_sweep_helpers.py`.
+   - `LER_design_initial_nm`     ← `extract_edges(I, threshold=0.5)`      (σ-independent)
    - `LER_after_eblur_H0_nm`     ← `extract_edges(I_blurred, 0.5)`
    - `LER_after_PEB_P_nm`        ← `extract_edges(P, 0.5)`
-   - 세 reduction percentage 도 함께 출력.
-3. **gate 강화**: `P_line_margin = P_line_center_mean − 0.65` 항상 출력. Stage 3 sweep script 는 기존 interior gate 에 더해 `P_line_margin >= 0.03` 을 요구 (sweep script 안에서만 적용, helper 의 `passed` 는 그대로).
-4. **sweep**: 두 OP × σ 4 점 = 8 runs.
+   - The three reduction percentages are reported as well.
+3. **Strengthened gate**: always emit `P_line_margin = P_line_center_mean − 0.65`. The Stage 3 sweep script requires `P_line_margin >= 0.03` on top of the existing interior gate (the constraint is applied only inside the sweep script; the helper's `passed` is unchanged).
+4. **Sweep**: 2 OPs × 4 σ points = 8 runs.
    - robust OP             : DH=0.5, t=30
    - algorithmic-best OP   : DH=0.8, t=20
-5. **결과 분석 + figures + CSV/JSON 저장**.
+5. **Result analysis + figures + CSV/JSON saved**.
 
 ---
 
-## 3. 발생한 문제와 해결 방법
+## 3. Problems encountered and resolutions
 
-### 문제 1 — `_stage3_passed` 컬럼명 / `passed` 컬럼명 불일치 → CSV writer 오류
+### Problem 1 — `_stage3_passed` vs `passed` column-name mismatch → CSV writer error
 
-**증상**: 첫 실행에서
+**Symptom**: The first run died with
 
 ```text
 ValueError: dict contains fields not in fieldnames: 'passed'
 ```
 
-**원인**: CSV `fieldnames` 에 `_stage3_passed` 를 넣었지만 row dict 에서 `pop("_stage3_passed")` 후 `row["passed"]` 로 다시 넣어서 키 이름이 어긋남.
+**Cause**: `_stage3_passed` was placed in the CSV `fieldnames`, but the row dict did `pop("_stage3_passed")` and then re-inserted as `row["passed"]`, so the keys disagreed.
 
-**해결**: `src_keys` (read 용) 와 `out_keys` (write 용 = `src_keys + ["passed", "fail_reason"]`) 를 분리하고, row 빌드 시 명시적으로 `row["passed"] = r["_stage3_passed"]` 로 대입. JSON dump 도 같은 방식으로 정리.
+**Resolution**: Separate `src_keys` (for reading) and `out_keys` (for writing = `src_keys + ["passed", "fail_reason"]`). At row build time, assign explicitly: `row["passed"] = r["_stage3_passed"]`. The JSON dump was reorganized the same way.
 
-**교훈**: dict→csv 매핑은 build 시점에 바로 final-name 으로 채우는 게 안전. pop+rename 은 fieldnames 와 동기화해야 함.
-
----
-
-### 문제 2 — algorithmic-best OP 가 σ=0 에서 이미 P_line_margin 게이트 fail
-
-**증상**: DH=0.8, t=20 의 σ=0 에서 `P_line=0.6534, margin=0.003 < 0.03` → fail. σ=1,2,3 모두 fail.
-
-**원인**: Stage 2 의 algorithmic best 자체가 P_line 게이트 boundary (0.65) 에 0.003 margin 으로 안착했기 때문 (Stage 2 선정 criterion 에 margin 조건이 없었음). σ 가 커지면 line center 평균이 약간씩 더 떨어지는 경향이 있어 margin 이 더 줄거나 음으로 됨 (σ=3 에서 P_line=0.641 < 0.65).
-
-**해결**: 이는 Stage-3 gate 강화의 의도된 결과. 사용자가 명시한 `P_line_margin >= 0.03` 조건이 Stage-2 boundary OP 를 정확히 걸러낸다.
-
-**의사결정**: algorithmic-best OP 는 Stage 3 의 σ 스윕에 부적합하다고 결론. 이후 stage 부터 Stage 2 result 를 인용할 때는 robust OP 를 default 로 사용한다.
+**Lesson**: For dict→csv mappings, fill the final-name keys at build time. Pop+rename schemes have to be kept in sync with fieldnames.
 
 ---
 
-### 문제 3 — σ 가 커지면 PEB 의 LER 감소가 음수로 떨어진다
+### Problem 2 — The algorithmic-best OP fails the P_line_margin gate already at σ=0
 
-**증상**: robust OP 에서
+**Symptom**: At DH=0.8, t=20 with σ=0, `P_line=0.6534, margin=0.003 < 0.03` → fail. σ=1, 2, 3 also fail.
+
+**Cause**: The Stage 2 algorithmic best already sat right on the P_line gate boundary (0.65) with margin 0.003 (the Stage 2 selection rule had no margin condition). As σ grows the line-centre mean drops slightly more, so the margin tightens further or goes negative (at σ=3, P_line=0.641 < 0.65).
+
+**Resolution**: This is the intended outcome of strengthening the Stage-3 gate. The user-specified `P_line_margin >= 0.03` correctly filters out the Stage-2 boundary OP.
+
+**Decision**: Conclude that the algorithmic-best OP is unfit for the Stage 3 σ sweep. From this point on, when later stages cite Stage 2 results, the robust OP is the default.
+
+---
+
+### Problem 3 — As σ grows, the PEB LER reduction goes negative
+
+**Symptom**: At the robust OP
 
 ```text
 σ=0: PEB_LER_reduction = +8.7%
@@ -73,26 +73,26 @@ ValueError: dict contains fields not in fieldnames: 'passed'
 σ=3: PEB_LER_reduction = -37.7%
 ```
 
-PEB 가 *LER 를 늘리는* 결과. plan §8 의 정상 경향 ("PEB time 증가 → LER 감소") 과 어긋남.
+PEB *increases* LER. This contradicts the expected trend in plan §8 ("longer PEB time → smaller LER").
 
-**원인 분석**:
+**Cause analysis**:
 
-- electron blur 가 커지면 `I_blurred` edge 가 매끈해지고 `LER_after_eblur_H0` 가 작게 잡힘 (σ=0:2.77 → σ=3:2.47).
-- PEB 후에는 acid 가 line 밖으로 더 퍼져 line 이 widening 되며 contour 위치가 design edge 로부터 더 멀어진다 (σ=3 에서 CD_shift=+5.85, CD/p=0.76).
-- 새 contour 위치는 acid 가 모인 ridge 가 아니라, 광범위 diffusion 의 외곽이라 local 노이즈가 상대적으로 크다.
-- 그 결과 PEB 후 contour 의 std (= LER) 가 e-blur 후 보다 커진다.
+- A larger electron blur smooths the `I_blurred` edge, so `LER_after_eblur_H0` drops (σ=0:2.77 → σ=3:2.47).
+- After PEB, acid spreads further outside the line, the line widens, and the contour ends up further from the design edge (σ=3 has CD_shift=+5.85, CD/p=0.76).
+- The new contour is no longer on the acid-ridge but on the outer edge of broad diffusion, so the local noise is relatively larger.
+- The std of the post-PEB contour (= LER) therefore exceeds the post-e-blur LER.
 
-즉 σ 가 큰 영역에서는 PEB 가 "acid diffusion" 보다는 "line widening" 을 주로 하고 있어 LER 측정 위치가 바뀐 것.
+In other words, in the high-σ regime PEB does mostly "line widening" rather than "acid diffusion smoothing," so the LER measurement is taken at a different position.
 
-**해결**: 데이터 자체는 정상. 정성적 해석을 study note 에 명시하고, total LER reduction (design → PEB) 을 비교의 reference 로 사용. total 은 σ=0 에서 최대 (+8.7%).
+**Resolution**: The data itself is correct. The qualitative interpretation is captured in the study note, and total LER reduction (design → PEB) is used as the comparison reference. Total is maximized at σ=0 (+8.7%).
 
-**교훈**: LER 절대값 비교는 contour 가 같은 위치에 있을 때만 의미가 있다. σ 가 다르면 contour 위치 (CD) 가 다르므로 `LER_after_PEB_P` 단독 비교는 misleading. 다음 stage 부터는 같은 CD 에서 비교하거나 PSD-domain 으로 분석하는 것이 옳다.
+**Lesson**: Comparing absolute LER values is meaningful only when the contours sit at the same position. With different σ the contour position (CD) differs, so comparing `LER_after_PEB_P` alone is misleading. From the next stage we should compare at equal CD, or work in the PSD domain.
 
 ---
 
-### 부수 문제 — σ=2,3 에서 `electron_blur_LER_reduction_pct` 가 σ=1 대비 비선형으로 큼
+### Side problem — σ=2,3 show a non-linear bump in `electron_blur_LER_reduction_pct` relative to σ=1
 
-**증상**:
+**Symptom**:
 
 ```text
 σ=1: e-blur reduction = +2.2%
@@ -100,31 +100,31 @@ PEB 가 *LER 를 늘리는* 결과. plan §8 의 정상 경향 ("PEB time 증가
 σ=3: e-blur reduction = +11.1%
 ```
 
-monotonic 증가는 맞지만 σ 와 LER 감소가 정비례하지 않음.
+Monotonically increasing, but σ and LER reduction are not proportional.
 
-**원인**: edge roughness 의 PSD 가 σ 의 Gaussian 필터에 다르게 반응. 짧은 correlation length (5 nm) noise 는 σ ≥ 5 nm 에서 거의 다 사라지지만 σ=1,2 에서는 일부만 감쇠. PSD 분석을 하면 명확해질 것.
+**Cause**: The PSD of the edge roughness reacts non-linearly to a Gaussian filter of width σ. Short-correlation-length (5 nm) noise is essentially erased at σ ≥ 5 nm but only partially attenuated at σ=1,2. PSD analysis would make this explicit.
 
-**향후 작업**: plan §6.4 의 edge PSD metric 구현 후 σ-dependent 감쇠 곡선 그리기.
+**Future work**: After implementing the edge PSD metric in plan §6.4, draw the σ-dependent attenuation curve.
 
 ---
 
-## 4. 의사결정 로그
+## 4. Decision log
 
-| 결정 | 채택 | 이유 |
+| Decision | Adopted | Reason |
 |---|---|---|
-| Stage 3 σ 범위 | [0,2,5,8] → [0,1,2,3] | σ=5,8 호환 budget 없음 (Stage 1A). σ=1 추가로 0–3 범위 더 조밀하게. |
-| σ=5/8 처리 | plan §Stage 3B (future / optional) 로 분리 | dose, kdep, Hmax 확장 search 가 필요. 지금 시작하면 24 runs+. trigger 조건 명시 후 보류. |
-| measurement convention | 3-stage LER 측정 (design / e-blur / PEB) | σ 의존성 제거. 3-stage 분리 표기로 효과 분해 가능. |
-| `LER_design_initial` 의 threshold | binary I @ 0.5 | binary 에서는 0.5 가 자연스러운 edge. σ 와 무관. |
-| Stage-3 gate strengthening 적용 범위 | sweep script 안에서만 (helper 의 `passed` 는 변경 X) | Stage 1/2 backward compatibility. helper 는 reusable component 로 유지. |
-| algorithmic-best OP 의 처리 | Stage 3 부적합으로 결론, 이후 stage 부터 robust OP 를 default | 모든 σ 에서 P_line_margin fail. 향후 stage 의 OP 로 쓰지 않음. |
-| total_LER_reduction 의 reference baseline | `LER_design_initial` (σ-독립) | σ 별로 비교 가능한 유일한 base. |
+| Stage 3 σ range | [0,2,5,8] → [0,1,2,3] | No compatible budget for σ=5,8 (Stage 1A). Adding σ=1 makes the [0,3] range denser. |
+| σ=5/8 handling | Split into plan §Stage 3B (future / optional) | Requires extending the dose, kdep, Hmax search. Starting now would add 24+ runs; defer with explicit trigger conditions. |
+| Measurement convention | 3-stage LER measurement (design / e-blur / PEB) | Removes σ dependence and lets us decompose the effects. |
+| Threshold for `LER_design_initial` | binary I @ 0.5 | 0.5 is the natural edge for a binary mask. σ-independent. |
+| Scope of the Stage-3 strengthened gate | Only inside the sweep script (helper's `passed` unchanged) | Stage 1/2 backward compatibility. The helper stays a reusable component. |
+| Algorithmic-best OP handling | Concluded unfit for Stage 3; from now on the robust OP is the default | Fails P_line_margin at every σ. Not used as the OP for downstream stages. |
+| Reference baseline for total_LER_reduction | `LER_design_initial` (σ-independent) | Only base that can be compared across σ. |
 
 ---
 
-## 5. 검증된 결과
+## 5. Verified results
 
-### Robust OP (DH=0.5, t=30) — 모든 σ Stage-3 gate 통과
+### Robust OP (DH=0.5, t=30) — passes the Stage-3 gate at every σ
 
 | σ (nm) | P_space | P_line | margin | CD_shift | LER_design | LER_eblur | LER_PEB | e-blur% | PEB% | total% | passed |
 |--------|---------|--------|--------|----------|------------|-----------|---------|---------|------|--------|--------|
@@ -133,7 +133,7 @@ monotonic 증가는 맞지만 σ 와 LER 감소가 정비례하지 않음.
 | 2      | 0.311   | 0.790  | 0.140  | +3.83    | 2.772      | 2.604     | 2.673   | +6.1    | -2.7 | +3.6     | ✓ |
 | 3      | 0.398   | 0.780  | 0.130  | +5.85    | 2.772      | 2.465     | 3.396   | +11.1   | -37.7 | -22.5   | ✓ |
 
-### Algorithmic-best OP (DH=0.8, t=20) — 모든 σ fail (Stage-3 strengthened gate)
+### Algorithmic-best OP (DH=0.8, t=20) — fails at every σ (Stage-3 strengthened gate)
 
 | σ (nm) | P_line | margin | passed | reason |
 |--------|--------|--------|--------|--------|
@@ -142,48 +142,48 @@ monotonic 증가는 맞지만 σ 와 LER 감소가 정비례하지 않음.
 | 2      | 0.651  | 0.001  | ✗      | margin < 0.03 |
 | 3      | 0.641  | -0.009 | ✗      | P_line < 0.65 |
 
-### 정성적 경향 (plan §8 와의 비교)
+### Qualitative trends (vs. plan §8)
 
 | plan §8 expected | observed (robust OP) |
 |---|---|
-| σ 증가 → I_blurred edge 더 smooth | yes — `LER_after_eblur_H0` 단조 감소 (2.77 → 2.47) |
-| σ 증가 → PEB 후 추가 smoothing | **no** — `LER_after_PEB_P` 가 σ ≥ 2 부터 증가. 이유는 "PEB 가 line widening 위주로 작용하고 contour 가 design edge 에서 멀어짐". |
-| total LER 은 σ=0 에서 최대 | yes — total +8.7% 이 가장 큼 |
-| σ 증가 → CD shift 증가 | yes — +1.79 → +5.85 |
+| σ up → I_blurred edge smoother | yes — `LER_after_eblur_H0` decreases monotonically (2.77 → 2.47) |
+| σ up → additional smoothing after PEB | **no** — `LER_after_PEB_P` rises from σ ≥ 2. The reason is "PEB acts mostly as line widening and the contour drifts away from the design edge." |
+| total LER is largest at σ=0 | yes — total +8.7% is the maximum |
+| σ up → CD shift up | yes — +1.79 → +5.85 |
 
-### 핵심 finding
+### Key finding
 
-**σ=0 의 PEB-only smoothing 이 σ=3 의 e-blur+PEB 합계보다 효과 더 크다.** 즉 24 nm pitch 와 같은 좁은 pitch 에서는 electron blur 가 클수록 PEB 가 LER 를 추가로 줄이기 어렵다. 이는 e-blur 와 PEB 가 *서로 보완하지 않고* 일부 *경쟁* 한다는 것을 시사.
-
----
-
-## 6. 후속 작업
-
-- **Stage 4 (weak quencher)**: robust OP (DH=0.5, t=30, σ=0) 를 default 로 시작. quencher 가 acid tail 을 줄여 σ-스윕에서 PEB 의 LER 증가 문제를 완화할 수 있는지 확인.
-- **edge PSD** (plan §6.4): σ 별 attenuation curve 을 frequency 영역에서 그려, σ 가 어떤 spatial frequency 의 noise 를 제거하는지 정량.
-- **Stage 3B** (optional): trigger 조건이 만족되면 `(dose × kdep × Hmax × σ ∈ {5,8} × t × DH)` factorial sampling. 지금 당장은 보류.
-- **CD-locked LER 비교** (Stage 4 또는 Stage 5 에서): σ 별로 contour 가 다른 CD 위치에 있는 문제 해결을 위해 `P_threshold` 를 CD-equalize 하도록 자동 조정하는 옵션 도입.
-- **algorithmic-best OP 의 처리**: 이후 stage 인용 시 robust OP 를 default 로. algorithmic-best 는 "P_line margin 부족" 이라는 lesson 으로만 인용.
+**The PEB-only smoothing at σ=0 outperforms the combined e-blur + PEB at σ=3.** That is, at narrow pitches such as 24 nm, increasing electron blur makes it harder for PEB to add LER reduction. e-blur and PEB are *not complementary* in this regime — they actually *compete* in part.
 
 ---
 
-## 7. 산출물
+## 6. Follow-up work
+
+- **Stage 4 (weak quencher)**: start from the robust OP (DH=0.5, t=30, σ=0) as the default. Check whether quencher cuts the acid tail enough to cure the σ-sweep PEB-LER-rise problem.
+- **Edge PSD** (plan §6.4): plot σ-dependent attenuation curves in the frequency domain to quantify which spatial frequencies σ removes.
+- **Stage 3B** (optional): if the trigger is met, run a `(dose × kdep × Hmax × σ ∈ {5,8} × t × DH)` factorial sample. On hold for now.
+- **CD-locked LER comparison** (in Stage 4 or Stage 5): introduce an option to auto-tune `P_threshold` to equalize CD across σ, fixing the "different CD positions" issue.
+- **Algorithmic-best OP**: when later stages cite a Stage 2 result, default to the robust OP. The algorithmic best is cited only as a "P_line margin too small" lesson.
+
+---
+
+## 7. Artefacts
 
 ```text
 configs/v2_stage3_electron_blur.yaml
 experiments/03_electron_blur/
   __init__.py
   run_eblur_sweep.py
-experiments/run_sigma_sweep_helpers.py     # 3-stage LER 측정 추가
+experiments/run_sigma_sweep_helpers.py     # 3-stage LER measurement added
 outputs/
   figures/03_electron_blur/                # 8 P maps + 8 contour overlays
   logs/03_electron_blur.csv                # full metric rows
   logs/03_electron_blur_summary.csv        # core columns + reasons
   logs/03_electron_blur_summary.json       # JSON twin
-study_notes/03_stage3_electron_blur.md     # 본 노트
+study_notes/03_stage3_electron_blur.md     # this note
 EXPERIMENT_PLAN.md
   §5 Stage 3 sweep [0,2,5,8] → [0,1,2,3]
-  §5 Stage 3 measurement convention 재정의 (3-stage LER)
-  §5 Stage 3 gate 강화 (P_line_margin >= 0.03)
-  §5 Stage 3B (future) 신설
+  §5 Stage 3 measurement convention redefined (3-stage LER)
+  §5 Stage 3 gate strengthened (P_line_margin >= 0.03)
+  §5 Stage 3B (future) added
 ```

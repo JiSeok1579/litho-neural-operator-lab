@@ -1,9 +1,9 @@
 # PEB v2 — first-pass study summary
 
-High-NA EUV PEB v2 simulation work, Stage 1 ~ Stage 6 completed.
-원본 plan (`EXPERIMENT_PLAN.md`) 의 design intent + 실제 검증된 결과를 한곳에 정리.
+High-NA EUV PEB v2 simulation work — Stage 1 through Stage 6 are complete.
+This document gathers the design intent of [`EXPERIMENT_PLAN.md`](./EXPERIMENT_PLAN.md) and the verified results in one place.
 
-상세 phase 별 분석은 `study_notes/0[1-7]_*.md` 참조.
+For the per-stage detailed analysis see `study_notes/0[1-7]_*.md`.
 
 ---
 
@@ -39,48 +39,48 @@ Gate A (load measured / published references → re-run Phase 1 / 2A / 2B
 
 ## Status
 
-| Stage | 핵심 결과 | Note |
+| Stage | Headline outcome | Note |
 |---|---|---|
-| **1**   | clean geometry baseline 통과 | σ=0, t=30, DH=0.8 |
-| **1A**  | σ ∈ [0, 3] 호환 (kdep=0.5, Hmax≤0.2) | σ=4,5 는 budget 부족 |
-| **1B**  | σ=5/t=60 = lines merge (over-budget reference) | plan 원본 nominal 폐기 |
-| **2**   | best OP DH=0.8 t=20 (margin 0.003) → robust alt DH=0.5 t=30 권장 | algorithmic best 와 robust alt 의 trade-off |
-| **3**   | σ ∈ {0,1,2,3} 분리 가능. σ 증가 → e-blur 1차 LER 감소, PEB 2차 효과는 σ≥2 부터 음수 | "displacement artifact" 가설 제안 |
-| **3B**  | σ=5/8 호환 budget search → 보류 | search space 확장 필요 |
-| **4**   | weak quencher 52 runs 모두 gate 통과; balanced OP Q0=0.02, kq=1 | σ=3 LER 회복 +29 pp |
-| **4B**  | **CD-locked LER 도구화**; pitch ≤ 20 의 LER 악화는 real (artifact 아님) | 3 결정 라벨로 디버깅 |
-| **5**   | process window 36+72 runs; pitch=16 closed, pitch ≥ 24 wide window | 추천 dose=40 모든 pitch≥20 |
-| **5C**  | σ=0 small-pitch follow-up → 보류 | |
-| **6**   | x-z standing wave 12 runs; PEB 가 z-mod 흡수 (thin 79% > thick 60%) | Neumann-z mirror FFT |
-| **6B**  | full 3D x-y-z → 보류 | compute cost 큼 |
+| **1**   | clean geometry baseline passes | σ=0, t=30, DH=0.8 |
+| **1A**  | σ ∈ [0, 3] usable at kdep=0.5, Hmax≤0.2 | σ=4, 5 are budget-incompatible |
+| **1B**  | σ=5 / t=60 = lines merge (over-budget reference) | original plan nominal demoted |
+| **2**   | algorithmic best DH=0.8 / t=20 (margin 0.003) → robust alt DH=0.5 / t=30 chosen | margin vs LER trade-off |
+| **3**   | σ ∈ {0, 1, 2, 3} cleanly separable; σ ↑ → e-blur LER ↓ but PEB-LER goes negative at σ ≥ 2 | "displacement artifact" hypothesis raised |
+| **3B**  | σ=5 / 8 budget search → deferred | requires search-space expansion |
+| **4**   | weak quencher: 52 / 52 cells pass the gate; balanced OP Q0=0.02, kq=1 | σ=3 LER recovery +29 pp |
+| **4B**  | **CD-locked LER tool added**; pitch ≤ 20 LER worsening is real, not artifact | three-label diagnosis |
+| **5**   | process window 36 + 72 runs; pitch=16 closed, pitch ≥ 24 wide window | recommended dose=40 for every workable pitch ≥ 20 |
+| **5C**  | σ=0 small-pitch follow-up | partially addressed in Phase 2B Part C; further work deferred |
+| **6**   | x-z standing wave 12 runs; PEB absorbs z-modulation (thin 79 % > thick 60 %) | Neumann-z mirror FFT |
+| **6B**  | full 3D x-y-z | deferred (compute cost) |
 
 ---
 
-## Per-stage 핵심 finding
+## Per-stage findings
 
-### Stage 1 — Clean geometry baseline
+### Stage 1 — clean geometry baseline
 
-**조건**: σ=0, t=30, DH=0.8, kdep=0.5, Hmax=0.2, no quencher, pitch=24, CD=12.5.
+**Conditions**: σ=0, t=30, DH=0.8, kdep=0.5, Hmax=0.2, no quencher, pitch=24 nm, CD=12.5 nm.
 
-**결과**:
+**Result**:
 ```text
 P_space_center_mean = 0.31     P_line_center_mean  = 0.76
 contrast            = 0.45     area_frac           = 0.625
 CD: 12.46 → 15.01 nm  (CD_shift = +2.55)
-LER: 2.77 → 2.65 nm  (-4.3 %)
+LER: 2.77 → 2.65 nm   (-4.3 %)
 ```
 
-**Key insight**: plan 원본 nominal (σ=5, t=60) 은 24 nm pitch / 12.5 nm CD 와 호환 불가. domain 을 pitch 정수배 (120 = 5×24) 로 정렬해야 FFT seam artifact 회피. interior gate (P_space_center, P_line_center, contrast, area, CD/pitch) 로 false-pass 차단.
+**Key insight**: the original plan's nominal (σ=5, t=60) is incompatible with the 24 nm pitch / 12.5 nm CD geometry. The domain has to be aligned to an integer multiple of pitch (120 = 5 × 24) to avoid an FFT seam artifact. False-pass cases at the boundary are ruled out by the interior gate (P_space_center, P_line_center, contrast, area, CD/pitch).
 
-config: `configs/v2_stage1_clean_geometry.yaml`. 노트: `study_notes/01_stage1_clean_geometry.md`.
+config: `configs/v2_stage1_clean_geometry.yaml`. Notes: `study_notes/01_stage1_clean_geometry.md`.
 
 ---
 
 ### Stage 2 — DH × time process window
 
-**조건**: 25-grid (DH ∈ {0.3, 0.5, 0.8, 1.0, 1.5} × time ∈ {15, 20, 30, 45, 60}). 다른 변수 Stage 1 fixed.
+**Conditions**: 25-cell grid (DH ∈ {0.3, 0.5, 0.8, 1.0, 1.5} × time ∈ {15, 20, 30, 45, 60}). All other variables fixed at the Stage-1 baseline.
 
-**결과**: 9/25 cells interior gate 통과. 대각선 process window 형태.
+**Result**: 9 / 25 cells pass the interior gate, forming a diagonal process window.
 
 ```text
 LER reduction (%):              t=15      20     30     45     60
@@ -91,31 +91,31 @@ LER reduction (%):              t=15      20     30     45     60
                   DH=1.50:   −4.48✗   3.98✗ −38.01✓ 100.00✗ 100.00✗
 ```
 
-**알고리즘 best**: DH=0.8, t=20 (LER −9.6 %, margin 0.003 — boundary).
-**Robust alt 2**: DH=0.5, t=30 (LER +8.69 %, margin 0.142). **이 OP 가 Stage 3+ 의 default 가 됨**.
+**Algorithmic best**: DH=0.8, t=20 (LER −9.6 %, but margin 0.003 — boundary).
+**Robust alternative**: DH=0.5, t=30 (LER +8.69 %, margin 0.142). **This OP becomes the default for Stage 3 onward.**
 
-**Key insight**: selection criterion 에 P_line_margin clause 가 없어 algorithmic best 가 boundary 에 안착. 후속 stage 에서 P_line_margin ≥ 0.05 추가 (Stage 3 부터).
+**Key insight**: the selection criterion lacks a P_line_margin clause, so the algorithmic best lands on the boundary. From Stage 3 onward we add `P_line_margin ≥ 0.05`.
 
-config: `configs/v2_stage2_dh_time.yaml`. 노트: `study_notes/02_stage2_dh_time_sweep.md`.
+config: `configs/v2_stage2_dh_time.yaml`. Notes: `study_notes/02_stage2_dh_time_sweep.md`.
 
 ---
 
-### Stage 3 — Electron blur separation
+### Stage 3 — electron blur separation
 
-**조건**: σ ∈ {0, 1, 2, 3} 두 OP × 4 σ = 8 runs. plan 의 [0, 2, 5, 8] 에서 σ=5,8 demote (Stage 1A 호환 불가).
+**Conditions**: σ ∈ {0, 1, 2, 3} on two operating points × 4 σ = 8 runs. The plan's original [0, 2, 5, 8] sweep is reduced because σ=5, 8 are not budget-compatible (Stage 1A finding).
 
-**측정 규약 재정의**:
+**Measurement convention** (redefined here):
 
 ```text
-LER_design_initial    = binary I @ 0.5 (σ-독립 baseline)
-LER_after_eblur_H0    = I_blurred @ 0.5
-LER_after_PEB_P       = P @ 0.5
+LER_design_initial    = LER on binary I @ 0.5     (σ-independent baseline)
+LER_after_eblur_H0    = LER on I_blurred @ 0.5
+LER_after_PEB_P       = LER on P @ 0.5
 electron_blur_LER_reduction_pct  = 100 * (design - eblur)/design
 PEB_LER_reduction_pct            = 100 * (eblur - PEB)/eblur
 total_LER_reduction_pct          = 100 * (design - PEB)/design
 ```
 
-**결과 (robust OP DH=0.5, t=30)**:
+**Result (robust OP DH=0.5, t=30)**:
 
 | σ | total LER % | e-blur % | PEB % | CD_shift |
 |---|---|---|---|---|
@@ -124,19 +124,19 @@ total_LER_reduction_pct          = 100 * (design - PEB)/design
 | 2 | +3.6 | +6.1 | −2.7 | +3.83 |
 | 3 | −22.5 | +11.1 | −37.7 | +5.85 |
 
-algorithmic-best OP (DH=0.8, t=20) 는 σ 모두 P_line_margin ≥ 0.03 fail → downstream 에서 demote.
+The algorithmic-best OP (DH=0.8, t=20) fails `P_line_margin ≥ 0.03` for every σ → demoted from downstream use.
 
-**Key insight**: e-blur 와 PEB 가 보완이 아닌 *경쟁* — σ↑ 에서 line widening → contour displacement → PEB-LER 음수 (Stage 4B 에서 진단). 새 P_line_margin ≥ 0.03 게이트 도입.
+**Key insight**: e-blur and PEB do not stack — they *compete*. As σ rises the line widens, the contour drifts off the design edge, and PEB-LER turns negative. The next stage (4B) confirms this is partly contour displacement, not a PEB physics failure. From here on we use the `P_line_margin ≥ 0.03` gate.
 
-config: `configs/v2_stage3_electron_blur.yaml`. 노트: `study_notes/03_stage3_electron_blur.md`.
+config: `configs/v2_stage3_electron_blur.yaml`. Notes: `study_notes/03_stage3_electron_blur.md`.
 
 ---
 
-### Stage 4 — Weak quencher
+### Stage 4 — weak quencher
 
-**조건**: 52 runs at robust OP × σ ∈ {0,1,2,3} × (Q0=0 baseline + Q0 ∈ {0.005, 0.01, 0.02, 0.03} × kq ∈ {0.5, 1.0, 2.0}).
+**Conditions**: 52 runs at the robust OP × σ ∈ {0, 1, 2, 3} × (Q0=0 baseline + Q0 ∈ {0.005, 0.01, 0.02, 0.03} × kq ∈ {0.5, 1.0, 2.0}).
 
-**결과**: 52/52 Stage-3 gate 통과, 51/52 Stage-4 robust criterion 통과.
+**Result**: 52 / 52 pass the Stage-3 gate; 51 / 52 satisfy the Stage-4 robust criterion.
 
 ```text
 σ=2 dtotal_LER_pp (vs σ-matched baseline):
@@ -149,17 +149,17 @@ config: `configs/v2_stage3_electron_blur.yaml`. 노트: `study_notes/03_stage3_e
 
 **Balanced OP**: σ=2, Q0=0.02, kq=1.0 → dCD=−1.76, darea=−0.073, dLER=+5.21 pp, margin=0.096.
 
-**σ=3 LER 회복**: baseline total_LER = −22.5 % → Q0=0.03/kq=1 → +6.6 % (dLER = +29.15 pp).
+**σ=3 LER recovery**: baseline total_LER = −22.5 % → adding Q0=0.03 / kq=1 lifts it to +6.6 % (dLER = +29.15 pp).
 
-**Key insight**: PSD high-band 는 baseline 에서도 99.9% 제거됨 → quencher 차이는 mid-band 에서 발생. Stage 3 의 PEB-LER 음수 가설이 부분 검증 (Stage 4B 에서 완전 검증).
+**Key insight**: the PSD high-band is already ~99.9 % suppressed by PEB even without quencher, so quencher's effect is almost entirely in the mid-band. The Stage 3 "PEB-LER negative" hypothesis is partly verified (full diagnosis lands in Stage 4B).
 
-config: `configs/v2_stage4_weak_quencher.yaml`. 노트: `study_notes/04_stage4_weak_quencher.md`.
+config: `configs/v2_stage4_weak_quencher.yaml`. Notes: `study_notes/04_stage4_weak_quencher.md`.
 
 ---
 
-### Stage 5 — Pitch × dose process window
+### Stage 5 — pitch × dose process window
 
-**조건**: 108 runs (primary + 2 controls). 6 pitch × 6 dose. domain_x_nm = pitch × 5.
+**Conditions**: 108 runs (primary + 2 controls). 6 pitches × 6 doses. `domain_x_nm = pitch × 5` to keep the FFT seam aligned.
 
 **Status heatmap (primary OP)**:
 
@@ -173,23 +173,23 @@ config: `configs/v2_stage4_weak_quencher.yaml`. 노트: `study_notes/04_stage4_w
   pitch=16          unde   merg   merg   merg   merg   merg
 ```
 
-**추천 dose**: pitch ≥ 20 모두 dose=40. pitch=16 process window closed (line_cd=12.5 / pitch=16 duty 0.78 + diffusion 5.5 nm).
+**Recommended dose**: dose=40 for every workable pitch ≥ 20. The pitch=16 process window is closed at the v2 chemistry (line_cd=12.5 / pitch=16 → duty 0.78 + diffusion length 5.5 nm > inter-line space).
 
-**Control 비교**: σ=0 no-quencher 가 가장 넓은 window. quencher 추가가 small pitch tolerance 를 줄임.
+**Control comparison**: σ=0 with quencher off has the widest window. Adding quencher actually narrows the small-pitch tolerance.
 
-**Key insight**: Stage 4 의 LER benefit 은 large pitch (≥24) 에 편중. pitch ≤ 20 의 LER 악화는 contour displacement artifact 가 일부 (Stage 4B 에서 분리).
+**Key insight**: the Stage 4 LER benefit lives at the large-pitch end. Some of the small-pitch (≤20) "LER worsening" is contour displacement (separated by Stage 4B); the rest is real degradation.
 
-config: `configs/v2_stage5_pitch_dose.yaml`. 노트: `study_notes/05_stage5_pitch_dose.md`.
+config: `configs/v2_stage5_pitch_dose.yaml`. Notes: `study_notes/05_stage5_pitch_dose.md`.
 
 ---
 
 ### Stage 4B — CD-locked LER
 
-**Trigger**: Stage 5 에서 pitch ≤ 20 의 negative LER reduction 이 displacement artifact 인지 real degradation 인지 분리 필요.
+**Trigger**: Stage 5's negative LER reduction at pitch ≤ 20 needs to be split into "displacement artifact" vs "real roughness degradation".
 
-**도구**: `find_cd_lock_threshold` — bisect P ∈ [0.2, 0.8] (adaptive endpoint narrowing) 으로 CD_overall ≈ design CD 로 contour 위치 고정.
+**Tool**: `find_cd_lock_threshold` — bisect P ∈ [0.2, 0.8] (with adaptive endpoint narrowing) to lock the contour to the design CD before measuring LER.
 
-**Block A 결정 (12 cells)**:
+**Block A decisions (12 cells)**:
 
 | OP | pitch | dose | label |
 |---|---|---|---|
@@ -206,65 +206,65 @@ config: `configs/v2_stage5_pitch_dose.yaml`. 노트: `study_notes/05_stage5_pitc
 | ctrl σ0 | 24 | 28.4 | OK |
 | ctrl σ0 | 24 | 40   | OK |
 
-**Block B (mini-sweep)**: pitch ∈ {18, 20} 에서 quencher 약화 (Q0 ≤ 0.005, kq ≤ 0.5) 가 LER_locked 회복 못 함. pitch=18 에서는 0.11 nm 만 회복 (design 까지 +1.3 nm).
+**Block B (mini-sweep)**: at pitch ∈ {18, 20}, weakening the quencher (Q0 ≤ 0.005, kq ≤ 0.5) does **not** recover LER_locked. The best small-pitch case shrinks LER by only 0.11 nm (still ≈ 1.3 nm above design).
 
-**Key insight**: pitch ≤ 20 의 LER 악화는 real. Stage 4 balanced OP 는 pitch ≥ 24 에서만 robust. **CD-locked LER 는 helper 의 default 로 통합** (Stage 6 부터 모든 sweep 의 표준 컬럼).
+**Key insight**: pitch ≤ 20 LER worsening is real. The Stage-4 balanced OP is robust at pitch ≥ 24 only. **CD-locked LER is integrated as the helper default from Stage 6 onward** so every later sweep emits both fixed and locked metrics.
 
-config: `configs/v2_stage4b_cd_locked.yaml`. 노트: `study_notes/06_stage4B_cd_locked.md`.
+config: `configs/v2_stage4b_cd_locked.yaml`. Notes: `study_notes/06_stage4B_cd_locked.md`.
 
 ---
 
 ### Stage 6 — x-z standing wave
 
-**조건**: 12 runs. thickness ∈ {15, 20, 30} nm × amplitude ∈ {0, 0.05, 0.10, 0.20}. period=6.75 nm, abs_len=30 nm. Neumann-z BC via even-mirror FFT.
+**Conditions**: 12 runs. thickness ∈ {15, 20, 30} nm × amplitude ∈ {0, 0.05, 0.10, 0.20}. period=6.75 nm, abs_len=30 nm. Neumann-z BC enforced via even-mirror FFT.
 
-**결과 (12/12 PASS)**:
+**Result (12 / 12 PASS)**:
 
 ```text
 PEB modulation reduction:
-  thick=15: 79 %   (가장 효과적)
+  thick=15: 79 %   (most effective)
   thick=20: 68 %
-  thick=30: 60 %   (diffusion length 5.5 < thickness)
+  thick=30: 60 %   (diffusion length 5.5 nm < thickness)
 
-H0_z_modulation_sw_only_pct (absorption 제외):
+H0_z_modulation_sw_only_pct (excluding the absorption envelope):
               A=0.05   A=0.10   A=0.20
   thick=15    +2.70    +5.26   +15.56
   thick=20    +1.04    +7.12   +20.27
   thick=30    +6.51   +12.93   +25.54
 
-Side-wall LER (CD-locked, z as track):
+Side-wall LER (CD-locked, z as the track axis):
   thick=15: 1.32 nm
-  thick=20: 2.32-2.40 nm
-  thick=30: 3.80-3.87 nm
+  thick=20: 2.32–2.40 nm
+  thick=30: 3.80–3.87 nm
 
-Top/bottom asymmetry: 0.10 → 0.18 → 0.32 (absorption envelope)
+Top/bottom asymmetry: 0.10 → 0.18 → 0.32 (driven by absorption envelope)
 ```
 
-**Key insight**: PEB 가 standing wave (period 6.75 nm) z-modulation 을 거의 완전히 흡수. P_final 의 잔여 sw < 1 %. thick film 은 absorption envelope 의 효과가 압도적. summary plot: `outputs/figures/06_xz_standing_wave/summary/`.
+**Key insight**: PEB nearly fully absorbs the period-6.75-nm standing wave. The residual sw component on P is < 1 %. In thick films the absorption envelope dominates the remaining z-modulation. Summary plots: `outputs/figures/06_xz_standing_wave/summary/`.
 
-config: `configs/v2_stage6_xz_standing_wave.yaml`. 노트: `study_notes/07_stage6_xz_standing_wave.md`.
+config: `configs/v2_stage6_xz_standing_wave.yaml`. Notes: `study_notes/07_stage6_xz_standing_wave.md`.
 
 ---
 
-## 권장 v2 operating point
+## Recommended v2 operating point
 
-이전 stage 들에서 검증된 **robust 영역의 표준 OP**:
+The robust standard OP validated across the previous stages:
 
 ```yaml
 geometry:
-  pitch_nm:        24                    # process window 의 안정 영역 (Stage 5)
+  pitch_nm:        24                    # Stage 5 robust window centre
   line_cd_nm:      12.5
   grid_spacing_nm: 0.5
-  domain_x_nm:     120                   # pitch * 5 (FFT-seam-safe, Stage 1A)
-  domain_y_nm:     120                   # 일관된 LER y-sample 수
-  edge_roughness:  amp=1.0, corr=5.0     # 합리적 design noise
+  domain_x_nm:     120                   # = pitch * 5 (Stage 1A FFT-seam-safe)
+  domain_y_nm:     120                   # constant LER y-sample count
+  edge_roughness:  amp=1.0, corr=5.0     # reasonable design noise
 
 exposure:
-  dose_mJ_cm2:           40              # Stage 5 모든 pitch≥20 추천 dose
+  dose_mJ_cm2:           40              # Stage 5 recommended dose for pitch ≥ 20
   reference_dose_mJ_cm2: 40
   Hmax_mol_dm3:          0.2
   eta:                   1.0
-  electron_blur_sigma_nm: 2              # Stage 1A σ-호환 범위 [0,3] 의 중앙
+  electron_blur_sigma_nm: 2              # midpoint of the σ-compatible range [0, 3] (Stage 1A)
   electron_blur_enabled: true
 
 peb:
@@ -280,75 +280,80 @@ quencher:
   DQ_nm2_s:    0.0
 
 development:
-  P_threshold: 0.5                       # CD-locked variant 도 helper 가 자동 계산
+  P_threshold: 0.5                       # the helper also computes the CD-locked variant
 ```
 
-**검증된 영역**:
-- pitch=24 nm, dose 28.4 ~ 60 mJ/cm² 모두 robust_valid (Stage 5)
-- x-z standing wave amplitude up to 0.20 까지 PEB 가 흡수 (Stage 6)
-- 측정 metric: LER_CD_locked, PSD mid-band reduction 모두 standard column
+**Validated zone**:
+- pitch=24 nm, every dose 28.4–60 mJ/cm² is robust_valid (Stage 5).
+- x-z standing wave amplitudes up to 0.20 are absorbed by PEB (Stage 6).
+- standard metrics include `LER_CD_locked` and `psd_mid_band_reduction`.
 
-**적용 범위 밖**:
-- pitch ≤ 20: real LER degradation (Stage 4B). σ=0 또는 line_cd 비례 축소 필요 (별도 stage).
-- σ ≥ 4: budget 호환 안 됨 (Stage 1A). dose / kdep / Hmax 확장 필요 (Stage 3B).
-- thick film > 30 nm: PEB modulation reduction < 60% 예상 (Stage 6 trend).
+**Out-of-zone**:
+- pitch ≤ 20: real LER degradation (Stage 4B). Either lower σ to 0 or scale `line_cd` proportionally — both belong in a separate stage.
+- σ ≥ 4: budget incompatible (Stage 1A). Needs dose / kdep / Hmax extension (Stage 3B).
+- film thickness > 30 nm: PEB modulation reduction extrapolates below 60 % (Stage 6 trend).
 
 ---
 
 ## Next milestone — calibration against external reference
 
-physics 추가 / 새 stage 시작 전, 현재 결과를 **literature 또는 측정 데이터** 와 비교해 calibration 하는 것이 다음 단계.
+Before adding new physics or starting another stage, the next substantive step is to compare the current results to **literature or measurement data**.
 
-### 비교 대상
-
-```text
-1. 24 nm pitch / 12.5 nm CD / 40 mJ/cm² dose 의 published 측정값:
-   - CD_final ≈ 15 nm (Stage 1) 가 실제와 일치하는가?
-   - LER ≈ 2.5-2.7 nm 가 reasonable 한가?
-   - PEB time, temperature 와의 dependence 가 plan §4 와 일치하는가?
-
-2. process window shape:
-   - Stage 5 의 status map 이 published high-NA process window 와 일치하는가?
-   - small-pitch closure 위치가 measured 와 일치하는가?
-
-3. standing wave amplitude reduction:
-   - Stage 6 의 thin/thick 차이가 measured top-coat 효과와 일치하는가?
-```
-
-### 발견 가능한 calibration offset
+### Comparison targets
 
 ```text
-- kdep, Hmax: H 와 P 의 절대값 scaling. 측정 LER 과의 비교로 ±factor 조정.
-- dose 정의: dose_norm 의 reference (40 mJ/cm²) 가 실제 EUV reference 와 일치하는지.
-- DH (acid diffusion): temperature 별 Arrhenius 와 외부 데이터 비교.
-- quencher kq: Q 의 reaction rate 가 reasonable 한지.
+1. Published measurements at 24 nm pitch / 12.5 nm CD / 40 mJ/cm² dose:
+   - Does CD_final ≈ 15 nm (Stage 1) match the measured value?
+   - Is LER ≈ 2.5–2.7 nm a reasonable absolute number?
+   - Does the dependence on PEB time / temperature match plan §4?
+
+2. Process-window shape:
+   - Does the Stage 5 status map agree with a published high-NA process window?
+   - Does the small-pitch closure happen at the right pitch?
+
+3. Standing-wave amplitude reduction:
+   - Does the Stage 6 thin-vs-thick trend match measured top-coat / barrier
+     experiments?
 ```
 
-### 우선순위
+### Where each calibration knob would land
 
 ```text
-1. CD calibration  →  dose / Hmax 보정 (factor 1±0.X)
-2. LER calibration →  initial roughness amp 와 corr length 보정
-3. process window calibration → kdep / quencher 의 scaling
-4. standing wave calibration → absorption_length_nm 보정 (현재 30 nm 임의값)
+- kdep, Hmax: absolute scaling of H and P. Adjust by a multiplicative
+  factor against measured LER.
+- dose definition: confirm that dose_norm's 40 mJ/cm² reference matches
+  the EUV reference dose used in measurements.
+- DH (acid diffusion): compare temperature-dependent DH against Arrhenius
+  data.
+- quencher kq: validate that Q's reaction rate sits in a reasonable
+  range for the resist family.
 ```
 
-이 calibration 이 끝난 후에야 다음 항목으로:
+### Priority
+
+```text
+1. CD calibration  →  dose / Hmax adjustment (factor 1±0.X)
+2. LER calibration →  initial roughness amp + correlation length
+3. Process window  →  kdep / quencher scaling
+4. Standing wave   →  absorption_length_nm (currently 30 nm, picked by hand)
+```
+
+Only after this calibration loop closes can we move to:
 
 ```text
 - Stage 6B (full 3D x-y-z)
-- Stage 3B (σ=5,8 호환 budget search 확장)
+- Stage 3B (σ=5, 8 budget search expanded)
 - Stage 5C (σ=0 small-pitch process window)
-- Stage 1A.3 (kdep, dose 확장으로 σ=5/8 budget 재시도)
-- 새 chemistry (예: PAG profile, real Dill model)
+- Stage 1A.3 (kdep, dose extension to retry σ=5/8 budget)
+- New chemistry (e.g., PAG profile, full Dill model)
 ```
 
 ---
 
-## 산출물 인덱스
+## Artefact index
 
 ```text
-configs/                                # 7 stage configs
+configs/                                # 8 stage / phase configs
   v2_stage1_clean_geometry.yaml          (Stage 1 baseline)
   v2_baseline_lspace.yaml                (Stage 1B over-budget reference)
   v2_stage2_dh_time.yaml                 (Stage 2)
@@ -357,6 +362,7 @@ configs/                                # 7 stage configs
   v2_stage4b_cd_locked.yaml              (Stage 4B)
   v2_stage5_pitch_dose.yaml              (Stage 5)
   v2_stage6_xz_standing_wave.yaml        (Stage 6)
+  xz_companions.yaml                     (single-line x-z renders)
 
 src/
   geometry.py, roughness.py              (line/space + edge roughness)
@@ -364,7 +370,7 @@ src/
   exposure_high_na.py                    (Dill + 1D builders + x-z exposure)
   fd_solver_2d.py                        (x-y solver)
   fd_solver_xz.py                        (x-z solver, Neumann-z mirror)
-  metrics_edge.py                        (LER/LWR/CD + CD-lock + PSD bands)
+  metrics_edge.py                        (LER / LWR / CD + CD-lock + PSD bands)
   visualization.py                       (plot helpers)
 
 experiments/
@@ -376,16 +382,28 @@ experiments/
   04b_cd_locked/                         (Stage 4B + Stage 5B mini-sweep)
   05_pitch_dose/                         (Stage 5)
   06_xz_standing_wave/                   (Stage 6)
+  render_xz_companions/                  (xz cross-section presentation)
 
-tests/                                   (27/27 passing)
+calibration/
+  configs/cal01_hmax_kdep_dh.yaml        (Phase 1)
+  configs/cal02a_sensitivity.yaml        (Phase 2A)
+  configs/cal03_atlas_xy.yaml            (Phase 2B Part A)
+  configs/cal04_atlas_xz.yaml            (Phase 2B Part B)
+  configs/cal05_smallpitch.yaml          (Phase 2B Part C)
+  experiments/cal01_*..cal05_*           (Phase 1 / 2A / 2B runners)
+  calibration_targets.yaml               (frozen OP, internal targets, status flags)
+  calibration_plan.md                    (per-phase log + decisions)
+  README.md                              (calibration intent + how to run)
+
+tests/                                   (32 / 32 passing)
 
 outputs/
-  figures/                               (180+ figures across 7 sweeps)
-  logs/                                  (CSV + JSON summaries)
-  fields/                                (npz field snapshots, Stage 1)
+  figures/                               (~600 figures across 8 stages + 3 phases + xz companions)
+  logs/                                  (CSV + JSON summaries per sweep)
+  fields/                                (Stage 1 npz field snapshots)
 
 study_notes/
-  README.md  (index)
+  README.md                              (index)
   01_stage1_clean_geometry.md
   02_stage2_dh_time_sweep.md
   03_stage3_electron_blur.md
@@ -395,32 +413,36 @@ study_notes/
   07_stage6_xz_standing_wave.md
 
 EXPERIMENT_PLAN.md                       (status header + per-stage spec & results)
-STUDY_SUMMARY.md                         (this file — first-pass closeout)
+RESULTS_INDEX.md                         (per-stage table → folder / CSV / figure dir / 1-line conclusion)
+FUTURE_WORK.md                           (gated future work)
+README.md                                (one-page entry)
+STUDY_SUMMARY.md                         (this file)
 ```
 
 ---
 
-## v2 first-pass 종료 선언
+## v2 first-pass closeout
 
-7 stages (1 / 1A / 1B / 2 / 3 / 4 / 4B / 5 / 6) 모두 완료, 모든 stage 의 study notes 와 PR (#29 ~ #35) 머지 완료, 검증된 robust OP 식별.
+Stages 1, 1A, 1B, 2, 3, 4, 4B, 5, 6 are all complete; every stage has a study note and a merged PR (#29 – #41); the robust OP is identified and frozen.
 
-## Calibration policy (2026-04-30 freeze)
+## Calibration policy (frozen 2026-04-30)
 
 ```text
-external reference data 미입수.
-v2 OP 는 internal-consistent nominal OP 로 freeze.
+External reference data is not loaded.
+The v2 OP is frozen as the internally-consistent nominal OP.
 calibration_status         = internal-consistency only
 published_data_loaded      = false
 v2_OP_frozen               = true
 
-이후 모든 sweep / 실험은 다음 중 하나로만 label:
+Every later sweep / experiment must be labelled as one of:
   - sensitivity study
   - controllability study
   - hypothesis test
 
-"calibration" 또는 "calibrated to real" 표현은 외부 measurement / literature
-데이터가 calibration_targets.yaml 에 등록된 후 (published_data_loaded=true) 에만
-허용. 그 전까지의 모든 작업은 internal exploration.
+The labels "calibration" and "calibrated to real" are only allowed once
+external measurement / literature data has been added to
+calibration_targets.yaml (i.e. published_data_loaded=true). Until then,
+all work is internal exploration.
 ```
 
-세부는 `calibration/calibration_plan.md` 와 `calibration/calibration_targets.yaml` 참조.
+Details: `calibration/calibration_plan.md` and `calibration/calibration_targets.yaml`.

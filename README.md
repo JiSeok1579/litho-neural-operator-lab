@@ -80,42 +80,162 @@ numbers · how to run · takeaway).
 
 ---
 
-## PEB v2 (High-NA EUV PEB) — first-pass closeout
+## Two PEB submodules — why we split v1 and v2
 
-A second PEB submodule under [`reaction_diffusion_peb_v2_high_na/`](./reaction_diffusion_peb_v2_high_na/) reframes the v1 sandbox as a **High-NA EUV line/space process simulator**. It adds:
+> **This is a study repository.** Nothing here is calibrated to a real
+> resist / scanner / dose. All numbers should be read as
+> **internally-consistent** model output, not measurement predictions.
 
-- pitch / line-CD / edge-roughness geometry,
-- Dill-style acid generation with electron blur,
-- operator-split spectral PEB solver (x-y) and a Neumann-z mirror-FFT solver (x-z),
-- weak-quencher chemistry,
-- CD-locked LER and PSD band metrics.
+### v1 — `reaction_diffusion_peb/`  (PEB physics sandbox)
 
-**Status**: first-pass complete. The recommended operating point is **frozen** as the internally-consistent v2 nominal OP. **The model is NOT externally calibrated** — `calibration_status.published_data_loaded` is false, and all sweeps are labelled sensitivity / controllability / hypothesis studies.
+The original PEB submodule was a **physics sandbox**. Its question was
+"can each PEB term be solved correctly in isolation?"
+
+```text
+exposure → diffusion (FD/FFT/PINN) → loss → deprotection → quencher
+        → mass budget → Petersen → stochastic layers
+                                                   → FNO surrogate
+```
+
+What v1 actually models:
+
+- 2D x-y reaction-diffusion with Gaussian "toy" exposure maps,
+- normalised dose only (no real `mJ/cm²`),
+- a battery of solvers per term: FD, FFT, PINN, plus an FNO surrogate,
+- 11 phases (1-11), 215 dedicated tests.
+
+Where v1 stopped being enough:
+
+- the geometry is a Gaussian / simple line-space — **no pitch, no CD, no
+  edge roughness**;
+- there is no z-direction, so **film thickness, standing wave,
+  top/bottom asymmetry** cannot be studied;
+- exposure is `dose=1.0` normalised, so a real `mJ/cm²` answer cannot be
+  produced;
+- the strong-quencher regime explored late in v1
+  (`Q0=0.1, kq≥5, kdep=0.05`) collapses the `P > 0.5` contour, i.e. the
+  model leaves the regime where any line-space pattern survives;
+- PINN and FNO accuracy were measured against the same toy problem and
+  are not reliable on real line / space.
+
+### v2 — `reaction_diffusion_peb_v2_high_na/`  (High-NA EUV process model)
+
+v2 keeps v1 untouched and re-poses the question as "**given a High-NA
+EUV line/space target, what does the resist contour look like, and which
+chemistry knob moves which metric?**"
+
+What v2 adds on top of the v1 ideas:
+
+| Concern in v1 | v2 fix |
+|---|---|
+| Gaussian exposure | line/space pattern with `pitch`, `line_cd`, edge roughness |
+| Normalised dose | real `dose_mJ_cm²` + `dose_norm` separation, Dill-style acid generation |
+| 2D x-y only | x-y solver + new x-z solver with Neumann-z mirror FFT |
+| No electron blur | 1D / 2D Gaussian electron blur with σ as a calibration knob |
+| Strong quencher collapse | weak-quencher regime (`Q0 ≤ 0.03`, `kq ≤ 5`) explored first |
+| PINN / FNO as primary solver | **only FD / FFT** in v2 (PINN/FNO blocked until external calibration lands) |
+| LER measured at fixed `P=0.5` | **CD-locked LER** — bisect the threshold to design CD before measuring roughness |
+| No process-window concept | `unstable / merged / under_exposed / valid / robust_valid` 5-class status used as a gate |
+
+### Why split rather than retrofit v1
+
+```text
+1. v1 is a working sandbox; we did not want to risk breaking 215 PEB tests.
+2. v2 needs different physics regimes (weak quencher, real dose, x-z
+   geometry) that would have required invasive changes.
+3. v2 explicitly pursues a process-oriented operating point. v1 chases
+   per-term solver fidelity. They have different success criteria.
+4. The split lets us state a clear claims boundary: v1 results are about
+   the equations; v2 results are about a frozen "v2 nominal OP" — and
+   neither is calibrated to a real resist.
+```
+
+### v2 stages, what we ran
+
+```text
+Stage 1   clean geometry baseline               sigma=0, t=30
+Stage 1A  sigma-compatible budget calibration   sigma in [0,3] usable at kdep=0.5 / Hmax<=0.2
+Stage 1B  over-budget reference                 sigma=5 / t=60 lines collapse
+Stage 2   DH × time process window              25 cells, robust DH=0.5 / t=30 chosen
+Stage 3   electron blur separation              3-stage LER (design / e-blur / PEB)
+Stage 4   weak quencher                         52 cells, balanced OP Q0=0.02 / kq=1
+Stage 4B  CD-locked LER + small-pitch follow-up displacement-artifact vs real degradation
+Stage 5   pitch × dose process window           108 cells, pitch=16 closed, pitch>=24 wide
+Stage 6   x-z standing wave                     12 cells, PEB absorbs 79..60 % thin → thick
+```
+
+Plus a calibration phase that is **internal-only**:
+
+```text
+Cal Phase 1   Hmax × kdep × DH internal-consistency check
+Cal Phase 2A  one-at-a-time controllability sweep
+Cal Phase 2B  full atlas: x-y (141) + x-z (144) + small-pitch hypothesis (144)
+```
+
+### Headline findings
+
+```text
+1. Stage 4 / v2 OP balanced (sigma=2, Q0=0.02, kq=1, DH=0.5, t=30) is the
+   internally-consistent process-window centre at pitch=24.
+   CD_fixed ≈ 14.5–15 nm, CD-locked LER ≈ 2.5 nm, robust margin ~ 0.10.
+
+2. The plan's original nominal (sigma=5, t=60) is incompatible with
+   24 nm pitch — it always merges lines. We kept it as a stress
+   reference, not a baseline.
+
+3. The pitch=16 process window is closed at the v2 chemistry.
+   pitch>=24 has a wide robust window over dose 28-60 mJ/cm²; the
+   recommended dose ends up at 40 mJ/cm² for every workable pitch.
+
+4. PEB diffusion absorbs the standing wave: ~79 % at thickness=15 nm,
+   ~60 % at thickness=30 nm. Top/bottom asymmetry is set by the
+   absorption envelope, not by the PEB equations.
+
+5. Dropping sigma from 2 to 0 is the dominant knob that re-opens the
+   small-pitch (18–20 nm) process window. Quencher tuning has a small
+   or even negative effect at small pitch.
+
+6. Among all knobs, absorption_length is the dominant lever for any
+   z-direction metric (modulation, top/bottom asymmetry, side-wall
+   side-wall LER, PSD mid-band) — change it and almost every z-metric
+   moves > 100 % across the swept range.
+```
+
+### Calibration policy (read before citing absolute numbers)
+
+```text
+calibration_status:
+  level                  : "internal-consistency only"
+  published_data_loaded  : false
+  v2_OP_frozen           : true
+  v2_OP_freeze_date      : "2026-04-30"
+```
+
+- v2 OP is **frozen** until external (published or measured) CD / LER /
+  process-window targets are loaded into
+  [`calibration/calibration_targets.yaml`](./reaction_diffusion_peb_v2_high_na/calibration/calibration_targets.yaml).
+- All future runs before that flip must be labelled
+  **sensitivity**, **controllability**, or **hypothesis** study, never
+  "calibration" or "calibrated to real".
+- The procedure for opening that flip is documented in
+  [`FUTURE_WORK.md`](./reaction_diffusion_peb_v2_high_na/FUTURE_WORK.md)
+  Gate A.
+
+### Where to read more (v2)
 
 | Document | Purpose |
 |---|---|
-| [`STUDY_SUMMARY.md`](./reaction_diffusion_peb_v2_high_na/STUDY_SUMMARY.md) | first-pass closeout, status table, per-stage findings, frozen OP, claims boundary |
 | [`README.md`](./reaction_diffusion_peb_v2_high_na/README.md) | one-page entry, frozen OP table, completed / deferred stages |
+| [`STUDY_SUMMARY.md`](./reaction_diffusion_peb_v2_high_na/STUDY_SUMMARY.md) | first-pass closeout narrative, per-stage findings, claims boundary |
 | [`RESULTS_INDEX.md`](./reaction_diffusion_peb_v2_high_na/RESULTS_INDEX.md) | per-stage table → folder, CSV, figure dir, one-line conclusion |
-| [`FUTURE_WORK.md`](./reaction_diffusion_peb_v2_high_na/FUTURE_WORK.md) | gated future work (external calibration / physics extension / small pitch / reference search) |
+| [`FUTURE_WORK.md`](./reaction_diffusion_peb_v2_high_na/FUTURE_WORK.md) | gated future work (A external calibration / B physics / C small-pitch / D ref-search) |
 | [`EXPERIMENT_PLAN.md`](./reaction_diffusion_peb_v2_high_na/EXPERIMENT_PLAN.md) | full per-stage spec + verified results |
-| [`calibration/calibration_targets.yaml`](./reaction_diffusion_peb_v2_high_na/calibration/calibration_targets.yaml) | frozen OP + internal targets + `published_data_loaded` flag |
-| [`calibration/calibration_plan.md`](./reaction_diffusion_peb_v2_high_na/calibration/calibration_plan.md) | calibration phase log (Phase 1, 2A, 2B all internal-only) |
-| [`study_notes/`](./reaction_diffusion_peb_v2_high_na/study_notes) | per-stage journals (problems / decisions / results) |
+| [`calibration/calibration_targets.yaml`](./reaction_diffusion_peb_v2_high_na/calibration/calibration_targets.yaml) | frozen OP, internal targets, `published_data_loaded` flag |
+| [`calibration/calibration_plan.md`](./reaction_diffusion_peb_v2_high_na/calibration/calibration_plan.md) | per-phase log (Phase 1, 2A, 2B all internal-only) |
+| [`study_notes/`](./reaction_diffusion_peb_v2_high_na/study_notes) | per-stage journals (problem → decision → result → next) |
+| [`outputs/figures/xz_companions/`](./reaction_diffusion_peb_v2_high_na/outputs/figures/xz_companions/) | single-line x-z (depth) cross-sections for 11 representative configurations |
 
-Headline (frozen OP, internal-consistent):
-
-```text
-pitch=24, line_cd=12.5, dose=40 mJ/cm², σ=2 nm,
-DH=0.5, time=30 s, kdep=0.5, Hmax=0.2, kloss=0.005,
-quencher Q0=0.02, kq=1.0, DQ=0.0
-→ CD_fixed ≈ 14.5–15 nm, LER_locked ≈ 2.5 nm,
-  process window pitch ≥ 24 wide; pitch=16 closed at this chemistry.
-```
-
-This number is consistent with v2's own first-pass observations only. Quantitative agreement with experimental High-NA EUV measurements is not claimed.
-
-Outputs (figures, logs, contour maps for ~600 sweep cells across 7 stages + 3 calibration phases) are committed under [`reaction_diffusion_peb_v2_high_na/outputs/`](./reaction_diffusion_peb_v2_high_na/outputs/).
+Outputs (figures, logs, contour maps for ~600 sweep cells across 8 stages + 3 calibration phases + xz companions) are committed under [`reaction_diffusion_peb_v2_high_na/outputs/`](./reaction_diffusion_peb_v2_high_na/outputs/).
 
 ---
 

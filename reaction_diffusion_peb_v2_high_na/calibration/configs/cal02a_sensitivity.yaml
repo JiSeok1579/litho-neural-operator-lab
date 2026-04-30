@@ -45,7 +45,7 @@ development:
   method: threshold
   P_threshold: 0.5
 
-# x-z anchor (Stage 6 주변).
+# x-z anchor (around the Stage 6 reference point).
 film:
   thickness_anchor_nm: 20.0
   dz_nm: 0.5
@@ -56,7 +56,7 @@ standing_wave:
   phase_rad: 0.0
   absorption_length_anchor_nm: 30.0
 
-# OAT 스윕 변수 / 값.
+# OAT sweep variables / values.
 sweeps:
   xy:
     dose_mJ_cm2:           [21, 28.4, 40, 44.2, 59, 60]
