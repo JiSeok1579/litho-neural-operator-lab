@@ -3,20 +3,39 @@
 v2 first-pass closeout 후 외부 reference / 측정 데이터 와의 calibration 단계.
 chemistry / sweep 추가 전에 v2 가 합리적인 절대값을 만들어내는지 검증하고, 발견된 offset 을 분류해 적절한 parameter (Hmax, kdep, DH, σ, abs_len, dose) 를 보정한다.
 
+## 정책 (2026-04-30 freeze)
+
+```text
+external reference data 미입수.
+calibration_status: internal-consistency only.
+published_data_loaded: false.
+v2_OP_frozen: true.
+
+frozen_nominal_OP (calibration_targets.yaml > frozen_nominal_OP):
+  pitch=24, dose=40, σ=2, DH=0.5, time=30,
+  kdep=0.5, Hmax=0.2, kloss=0.005, Q0=0.02, kq=1.0, DQ=0.0
+
+이후 모든 sweep 은 sensitivity / controllability / hypothesis 로만 표기.
+"calibration" 또는 "calibrated to real" 표현은 published_data_loaded=true 까지 금지.
+```
+
 ## 목적 (Phase 1)
 
 ```text
-1. v2 권장 OP (pitch=24, dose=40, σ=2, t=30, DH=0.5, kdep=0.5, Hmax=0.2,
-   Q0=0.02, kq=1.0) 가 다음을 만족하는가?
+1. frozen v2 OP (pitch=24, dose=40, σ=2, t=30, DH=0.5, kdep=0.5, Hmax=0.2,
+   Q0=0.02, kq=1.0) 가 internal target 과 일치하는가? (= internal-consistency check)
      CD ≈ 15 nm
      LER ≈ 2.5 ~ 2.7 nm
-2. Stage 5 의 process window shape 가 reference 와 일치하는가?
+2. Stage 5 의 process window shape 가 internal target 과 일치하는가?
 3. offset 이 있다면 어느 메커니즘에서 발생하는가?
    - acid generation (Hmax)
    - reaction rate (kdep)
    - acid diffusion (DH)
    - electron blur (σ)
    - z absorption (abs_len)
+
+본 phase 의 답 모두 외부 reference 와 무관한 internal 값에 대한 답.
+external calibration 은 Gate A (FUTURE_WORK.md) 가 열린 후에만 가능.
 ```
 
 ## 구조
