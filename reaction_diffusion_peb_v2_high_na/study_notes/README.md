@@ -20,3 +20,4 @@ Phase 별 학습 기록. 각 phase 가 끝날 때마다 노트를 추가하고 m
 - [04_stage4_weak_quencher.md](04_stage4_weak_quencher.md) — Stage 4: weak quencher 52-run sweep, σ=3 LER 회복 검증, PSD band metric 도입, Stage 4B (CD-locked LER) 보류
 - [05_stage5_pitch_dose.md](05_stage5_pitch_dose.md) — Stage 5: pitch × dose 36+72 runs, process window shape, pitch=16 closed 발견, quencher 의 small-pitch trade-off
 - [06_stage4B_cd_locked.md](06_stage4B_cd_locked.md) — Stage 4B: CD-locked LER + Stage 5B pitch-dependent quencher mini-sweep, displacement artifact 1 case 식별, pitch ≤ 20 real LER degradation 진단, σ=2 + quencher OP 의 적용 범위 = pitch ≥ 24
+- [07_stage6_xz_standing_wave.md](07_stage6_xz_standing_wave.md) — Stage 6: x-z PEB solver (Neumann-z mirror FFT), 3 thickness × 4 amplitude sweep, PEB standing-wave 흡수율 thin>thick, helper 에 CD-locked + PSD mid-band 통합
