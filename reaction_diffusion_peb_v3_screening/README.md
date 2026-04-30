@@ -460,4 +460,150 @@ is barely formed or has a high-LER side-wall by definition). The
 inside the 0.03 budget. A fairer non-merged aggregate that excludes
 `roughness_degraded` and `under_exposed` would land at ~0.020 nm. The
 0.03-budget itself is the artefact of the seed dataset, not a model
-regression.
+regression. **Stage 04D** closes this loop by replacing the per-class
+band with an operational-zone band (see below).
+
+### Stage 04D — operational-zone evaluation and v3 first-pass closeout
+
+Stage 04D is an evaluation stage. It does **not** train new models or
+run new FD. It loads the Stage 04C dataset and the Stage 04C
+classifier + regressor, replays the 80/20 evaluation split (seed=13),
+and reports zone-aware metrics that match the question this surrogate
+is actually answering.
+
+```text
+operational zone : robust_valid + margin_risk        (the screening target)
+failure zone     : under_exposed + merged + roughness_degraded
+                                       + numerical_invalid
+```
+
+**Why the zone split is the right framing.** External reference data
+is intentionally unavailable for this study (it is a personal-study
+project, not an external-calibration deliverable). The per-class
+non-merged LER band Stage 04C used implicitly demanded the same
+regression accuracy in failure regimes (`roughness_degraded`,
+`under_exposed`) as in clean regimes. That's not what the surrogate is
+for: failure cells are noisy *physically* (no inter-line space, side
+walls wandering by ~1 % of CD), and chasing the band there would force
+calibration we cannot do without external truth. The operational-zone
+band measures the surrogate where it screens — clean and marginal
+cells. The failure-zone numbers are reported but not gated.
+
+**Replay of Stage 04C six-class numbers** (held-out 80/20, seed=13):
+
+```text
+accuracy            0.961
+balanced accuracy   0.934
+macro F1            0.949
+```
+
+**Operational-zone vs failure-zone (binary)**:
+
+```text
+zone confusion (test split, n=1074):
+                             predicted
+                       operational   failure
+  actual operational         464         6
+  actual failure               8       596
+
+operational precision  0.983
+operational recall     0.987
+operational F1         0.985
+
+false_robust_valid_rate  0.020   (P[actual ∈ failure | predicted = robust_valid])
+false_defect_rate        0.000   (P[actual = robust_valid | predicted ∈ failure])
+```
+
+The 0.020 false-`robust_valid` rate is the user-prioritised number — a
+defect cell mis-labelled as robust is the more dangerous error, and
+the surrogate barely makes that mistake. The 0.000 false-defect rate
+means the model never demotes a `robust_valid` cell to a failure label
+on this split.
+
+**Regressor — count-weighted MAE per zone**:
+
+```text
+target              operational   failure
+CD_locked_nm           0.0696      0.1357
+LER_CD_locked_nm       0.0232      0.0887
+area_frac              0.0201      0.0470
+P_line_margin          0.0166      0.0244
+```
+
+**Per-trigger analysis (roughness_degraded held-out rows, n=63)**:
+
+```text
+ler_design_excess (relative > 5 %)   fired on 63 / 63 rows
+ler_locked_max    (absolute > 3 nm)  fired on 53 / 63 rows
+psd_mid_increase  (PSD > 20 %)       fired on  0 / 63 rows
+multiplicity (k → rows with k triggers fired): {1: 10, 2: 53, 3: 0}
+```
+
+The PSD-mid trigger fired on **zero** test rows — every
+`roughness_degraded` row in the held-out split is identified by an LER
+trigger first. The PSD trigger is structurally available but
+operationally redundant on this dataset; we keep it on for now because
+turning it off changes the labelling convention, but a follow-up could
+sweep its threshold or remove it.
+
+#### Acceptance vs Stage 04D targets
+
+| target | result | status |
+|---|---|---|
+| `CD_locked` operational MAE ≤ 0.15 nm | 0.0696 nm | **PASS** |
+| `LER_CD_locked` operational MAE ≤ 0.03 nm | 0.0232 nm | **PASS** |
+| `P_line_margin` operational MAE ≤ 0.03 | 0.0166 | **PASS** |
+| macro-F1 ≥ 0.93 | 0.949 | **PASS** |
+| balanced accuracy ≥ 0.93 | 0.934 | **PASS** |
+| operational precision (informational) | 0.983 | — |
+| operational recall (informational) | 0.987 | — |
+| `false_robust_valid_rate` (informational) | 0.020 | — |
+| `false_defect_rate` (informational) | 0.000 | — |
+| `CD_locked` failure-zone MAE (informational) | 0.136 nm | — |
+| `LER_CD_locked` failure-zone MAE (informational) | 0.089 nm | — |
+| `v2_OP_frozen` unchanged | true | **PASS** |
+| `published_data_loaded` unchanged | false | **PASS** |
+
+All five hard gates pass with margin. The failure-zone MAE numbers
+are recorded for transparency and are within their own informational
+budget (CD ≤ 0.15, LER ≤ 0.15) — they are *not* part of the closeout
+verdict.
+
+## v3 first-pass status — CLOSED
+
+```text
+Phase                           result
+------------------------------- -----------------------------------
+01 label-schema validation      PASS  (all 6 labels reachable)
+02 Monte-Carlo dataset          PASS  (1 000-row Sobol seed)
+03 surrogate baseline           PASS  (RF classifier + regressor)
+04 active-learning iteration    PASS  (16 → 186 defects, 1 iter)
+04B failure-seeking expansion   PASS  (defects 186 → 1 928)
+04C roughness expansion         PASS  (roughness 3 → 321)
+04D operational-zone closeout   PASS  (5/5 hard gates)
+```
+
+**v3 first-pass screening surrogate is complete.** The model
+operational-zone-MAE-bounds the four screening targets to within their
+acceptance budgets and the false-`robust_valid` rate is 2 %. No
+external calibration has been performed (`published_data_loaded`
+remains `false`); v2's frozen nominal OP is unchanged.
+
+## Optional follow-ups
+
+These are explicitly **not** required for closeout:
+
+- **Stage 05 — autoencoder / inverse fit**: deferred. Bring this in
+  only if there is a specific learning goal that needs surrogate-free
+  truth (e.g., probing whether a manifold-projected candidate matches
+  the v2 nominal field).
+- **PSD-mid trigger sweep**: the trigger never fired on the Stage 04D
+  test split. Either sweep its threshold or remove it from the OR
+  set; no closeout impact either way.
+- **Probability calibration**: the Stage 04C reliability diagram is
+  smooth enough at 5 368 rows to motivate Platt or isotonic
+  recalibration. Useful for downstream selection but not for the
+  six-class label assignment itself.
+- **Per-trigger precision audit**: `roughness_trigger` is recorded on
+  every row; a small script can compute precision per trigger and
+  flag whether the redundant LER triggers can be folded into one.

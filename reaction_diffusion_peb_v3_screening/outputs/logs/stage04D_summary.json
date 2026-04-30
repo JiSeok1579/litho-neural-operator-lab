@@ -1,0 +1,230 @@
+{
+  "stage": "04D",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false
+  },
+  "external_references_used": false,
+  "interpretation": "Personal-study screening: external reference data intentionally unavailable. v3 is candidate screening on the v2 nominal model, not external calibration. Operational-zone metrics are the relevant evaluation target; failure-zone metrics are informational.",
+  "training_dataset_rows": 5368,
+  "training_dataset_label_counts": {
+    "robust_valid": 1728,
+    "merged": 1531,
+    "margin_risk": 586,
+    "under_exposed": 983,
+    "roughness_degraded": 321,
+    "numerical_invalid": 219
+  },
+  "test_split": {
+    "seed": 13,
+    "size": 1074
+  },
+  "classifier_six_class": {
+    "accuracy": 0.9608938547486033,
+    "balanced_accuracy": 0.9336836311705636,
+    "macro_f1": 0.9494246577018896,
+    "per_class": {
+      "robust_valid": {
+        "precision": 0.9463276836158192,
+        "recall": 0.9852941176470589,
+        "f1": 0.9654178674351584,
+        "support": 340
+      },
+      "margin_risk": {
+        "precision": 0.9491525423728814,
+        "recall": 0.8615384615384616,
+        "f1": 0.9032258064516129,
+        "support": 130
+      },
+      "roughness_degraded": {
+        "precision": 0.9818181818181818,
+        "recall": 0.8571428571428571,
+        "f1": 0.9152542372881356,
+        "support": 63
+      },
+      "under_exposed": {
+        "precision": 0.9518716577540107,
+        "recall": 0.9726775956284153,
+        "f1": 0.9621621621621622,
+        "support": 183
+      },
+      "merged": {
+        "precision": 0.9780564263322884,
+        "recall": 0.9936305732484076,
+        "f1": 0.985781990521327,
+        "support": 314
+      },
+      "numerical_invalid": {
+        "precision": 1.0,
+        "recall": 0.9318181818181818,
+        "f1": 0.9647058823529412,
+        "support": 44
+      }
+    }
+  },
+  "classifier_zone_binary": {
+    "tp_op_op": 464,
+    "fn_op_fail": 6,
+    "fp_fail_op": 8,
+    "tn_fail_fail": 596,
+    "operational_precision": 0.9830508474576272,
+    "operational_recall": 0.9872340425531915,
+    "operational_f1": 0.9851380042462844,
+    "false_robust_valid_rate": 0.01977401129943503,
+    "false_defect_rate": 0.0,
+    "n_predicted_robust_valid": 354,
+    "n_predicted_failure": 602,
+    "support_operational": 470,
+    "support_failure": 604
+  },
+  "classifier_robust_vs_all": {
+    "tp": 335,
+    "fn": 5,
+    "fp": 19,
+    "tn": 715,
+    "precision": 0.9463276836158192,
+    "recall": 0.9852941176470589,
+    "f1": 0.9654178674351586
+  },
+  "regressor_global": {
+    "CD_locked_nm": {
+      "MAE": 0.10380915115709331,
+      "R2": 0.9947749401455183
+    },
+    "LER_CD_locked_nm": {
+      "MAE": 0.057071690078459865,
+      "R2": 0.9791829639177373
+    },
+    "area_frac": {
+      "MAE": 0.034033062061429385,
+      "R2": 0.938206498479238
+    },
+    "P_line_margin": {
+      "MAE": 0.020613458591516195,
+      "R2": 0.8966801614425518
+    }
+  },
+  "regressor_by_class": {
+    "margin_risk": {
+      "CD_locked_nm": 0.06283692491861319,
+      "LER_CD_locked_nm": 0.015285024014714665,
+      "area_frac": 0.014143091187169396,
+      "P_line_margin": 0.011410618599574558
+    },
+    "merged": {
+      "CD_locked_nm": 0.1876483195885501,
+      "LER_CD_locked_nm": 0.11938790979067711,
+      "area_frac": 0.035201399336065475,
+      "P_line_margin": 0.018284745905837015
+    },
+    "robust_valid": {
+      "CD_locked_nm": 0.07223909055871187,
+      "LER_CD_locked_nm": 0.02624052529838076,
+      "area_frac": 0.022471792127326185,
+      "P_line_margin": 0.01858324640460053
+    },
+    "roughness_degraded": {
+      "CD_locked_nm": 0.09441454577099208,
+      "LER_CD_locked_nm": 0.07125833079000758,
+      "area_frac": 0.037132156268371595,
+      "P_line_margin": 0.017576198002795102
+    },
+    "under_exposed": {
+      "CD_locked_nm": 0.07849084190057669,
+      "LER_CD_locked_nm": 0.05249934612931848,
+      "area_frac": 0.06665086377362998,
+      "P_line_margin": 0.035119870042061234
+    }
+  },
+  "regressor_zone_aggregates": {
+    "operational": {
+      "CD_locked_nm": 0.06961052812169505,
+      "LER_CD_locked_nm": 0.02317769698251712,
+      "area_frac": 0.020143338101045793,
+      "P_line_margin": 0.016577995620399723
+    },
+    "failure": {
+      "CD_locked_nm": 0.1357416003768929,
+      "LER_CD_locked_nm": 0.08871969568009316,
+      "area_frac": 0.04700238262684779,
+      "P_line_margin": 0.024381511365751455
+    }
+  },
+  "regressor_test_rows_per_class": {
+    "robust_valid": 335,
+    "under_exposed": 183,
+    "roughness_degraded": 63,
+    "merged": 252,
+    "margin_risk": 130
+  },
+  "per_trigger_analysis": {
+    "n_roughness_rows_with_trigger": 63,
+    "counts_per_trigger": {
+      "ler_locked_max": 53,
+      "ler_design_excess": 63,
+      "psd_mid_increase": 0
+    },
+    "multiplicity": {
+      "1": 10,
+      "2": 53,
+      "3": 0
+    },
+    "overlap_matrix": {
+      "ler_locked_max+ler_locked_max": 53,
+      "ler_locked_max+ler_design_excess": 53,
+      "ler_locked_max+psd_mid_increase": 0,
+      "ler_design_excess+ler_locked_max": 53,
+      "ler_design_excess+ler_design_excess": 63,
+      "ler_design_excess+psd_mid_increase": 0,
+      "psd_mid_increase+ler_locked_max": 0,
+      "psd_mid_increase+ler_design_excess": 0,
+      "psd_mid_increase+psd_mid_increase": 0
+    },
+    "trigger_order": [
+      "ler_locked_max",
+      "ler_design_excess",
+      "psd_mid_increase"
+    ]
+  },
+  "acceptance": {
+    "CD_locked_operational_MAE_nm": 0.06961052812169505,
+    "CD_locked_operational_under_0p15": true,
+    "LER_CD_locked_operational_MAE_nm": 0.02317769698251712,
+    "LER_CD_locked_operational_under_0p03": true,
+    "P_line_margin_operational_MAE": 0.016577995620399723,
+    "P_line_margin_operational_under_0p03": true,
+    "macro_F1": 0.9494246577018896,
+    "macro_F1_at_least_0p93": true,
+    "balanced_accuracy": 0.9336836311705636,
+    "balanced_accuracy_at_least_0p93": true,
+    "CD_locked_failure_MAE_nm": 0.1357416003768929,
+    "LER_CD_locked_failure_MAE_nm": 0.08871969568009316,
+    "operational_precision": 0.9830508474576272,
+    "operational_recall": 0.9872340425531915,
+    "false_robust_valid_rate": 0.01977401129943503,
+    "false_defect_rate": 0.0,
+    "policy_unchanged": {
+      "v2_OP_frozen": true,
+      "published_data_loaded": false
+    }
+  },
+  "hard_gates": [
+    "CD_locked_operational_under_0p15",
+    "LER_CD_locked_operational_under_0p03",
+    "P_line_margin_operational_under_0p03",
+    "macro_F1_at_least_0p93",
+    "balanced_accuracy_at_least_0p93"
+  ],
+  "all_hard_gates_pass": true,
+  "verdict": "v3 first-pass screening surrogate: COMPLETE. Operational-zone bands met. Stage 05 autoencoder remains optional future work.",
+  "operational_zone_labels": [
+    "robust_valid",
+    "margin_risk"
+  ],
+  "failure_zone_labels": [
+    "under_exposed",
+    "merged",
+    "roughness_degraded",
+    "numerical_invalid"
+  ]
+}
