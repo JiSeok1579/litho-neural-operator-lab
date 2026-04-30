@@ -1,0 +1,82 @@
+# v2 calibration targets — initial values from first-pass observation +
+# typical reported high-NA EUV PEB measurements at 24 nm pitch / 12.5 nm CD.
+# Update these when measured / literature data is available, then re-run
+# the calibration sweeps to recheck.
+
+reference:
+  source: "v2 first-pass observed values (Stage 1-6) + qualitative published high-NA EUV PEB ranges"
+  published_data_loaded: false      # set true when measured/published targets are imported
+  last_updated: "2026-04-30"
+
+targets:
+  cd_nm:
+    value: 15.0
+    tolerance_nm: 0.5
+    rationale: |
+      CD-locked CD that we want to recover under the v2 OP after PEB.
+      Sets a reasonable line-widening budget vs the 12.5 nm initial CD
+      (CD_shift ~ +2.5 nm) that the Stage-1 result already approximates.
+
+  ler_nm:
+    value: 2.6
+    tolerance_nm: 0.3
+    rationale: |
+      Side-wall / line-edge LER expected at this pitch / CD with PAG-based
+      EUV resists. v2 first-pass already produced LER 2.5-2.7 nm at the
+      OP — this just locks that band as a target.
+
+  process_window_at_pitch24:
+    valid_dose_min_mJ_cm2: 28.4
+    valid_dose_max_mJ_cm2: 60.0
+    rationale: |
+      Stage 5 found 4 robust_valid doses (40-60) and 1 valid (28.4) at
+      pitch=24. The observable target is "robust_valid set covers
+      28.4-60 with no merge / under_exposed in that window".
+
+  small_pitch_cliff:
+    pitch_threshold_nm: 18
+    rationale: |
+      Stage 5 found pitch=16 process window closed and pitch=18 only
+      valid at one dose. We do not target a specific small-pitch
+      behaviour — calibration only verifies the cliff position is
+      reasonable (not too high, not too low).
+
+  z_modulation_reduction_at_thick20_A0p2:
+    value_pct: 68.2
+    tolerance_pct: 10.0
+    rationale: |
+      Stage 6 finding for thickness=20 nm, amplitude=0.20: PEB reduces
+      total z-modulation by 68 %. Used as a Stage 6 sanity check during
+      calibration; recomputed automatically by the calibration runners.
+
+operating_point:
+  pitch_nm: 24
+  line_cd_nm: 12.5
+  dose_mJ_cm2: 40
+  reference_dose_mJ_cm2: 40
+  electron_blur_sigma_nm: 2
+  time_s: 30
+  kdep_s_inv: 0.5
+  Hmax_mol_dm3: 0.2
+  kloss_s_inv: 0.005
+  DH_nm2_s: 0.5
+  Q0_mol_dm3: 0.02
+  kq_s_inv: 1.0
+  DQ_nm2_s: 0.0
+  domain_x_nm: 120          # = pitch * 5
+  domain_y_nm: 120
+  grid_spacing_nm: 0.5
+  edge_roughness_amp_nm: 1.0
+  edge_roughness_corr_nm: 5.0
+  edge_roughness_seed: 7
+
+scoring:
+  distance_to_target:
+    formula: "sqrt( ((CD_locked - cd_target)/cd_target)^2 + ((LER_locked - ler_target)/ler_target)^2 )"
+    cd_target_nm: 15.0
+    ler_target_nm: 2.6
+    pass_threshold: 0.10
+    rationale: |
+      Normalised L2 distance in (CD, LER) plane. pass_threshold = 0.10
+      → on average 10% off either metric. The L2 norm balances CD and
+      LER with similar weight; targets are chosen to match v2 first-pass.
