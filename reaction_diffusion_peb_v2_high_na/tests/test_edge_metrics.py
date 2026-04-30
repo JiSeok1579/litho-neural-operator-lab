@@ -1,6 +1,10 @@
 import numpy as np
 
-from reaction_diffusion_peb_v2_high_na.src.metrics_edge import extract_edges
+from reaction_diffusion_peb_v2_high_na.src.metrics_edge import (
+    compute_edge_band_powers,
+    extract_edges,
+    stack_lr_edges,
+)
 
 
 def _make_smooth_lines(nx=128, ny=64, pitch=24.0, cd=12.0, dx=0.5, sharpness=20.0):
@@ -35,3 +39,30 @@ def test_extract_edges_handles_no_crossing():
     res = extract_edges(field, x_nm=x, line_centers_nm=centers, pitch_nm=24.0, threshold=0.5)
     assert np.isnan(res.left_edges_nm).all()
     assert np.isnan(res.right_edges_nm).all()
+
+
+def test_psd_bands_concentrate_input_frequency():
+    """A pure sinusoidal edge at a known wavelength should put all power in the matching band."""
+    ny = 240
+    dy = 0.5
+    y = np.arange(ny) * dy
+    # 8 nm wavelength -> freq 0.125 nm^-1 -> mid band [0.05, 0.20)
+    edge_track = 1.0 * np.sin(2 * np.pi * y / 8.0)
+    powers = compute_edge_band_powers(edge_track[None, :], dy_nm=dy)
+    assert powers[1] > powers[0]
+    assert powers[1] > powers[2]
+    assert powers[0] / powers[1] < 0.05
+    assert powers[2] / powers[1] < 0.05
+
+
+def test_psd_bands_zero_signal_zero_power():
+    powers = compute_edge_band_powers(np.zeros((4, 32)), dy_nm=0.5)
+    assert np.allclose(powers, 0.0)
+
+
+def test_stack_lr_edges_concatenates():
+    field, x, y, centers, _, pitch = _make_smooth_lines()
+    res = extract_edges(field, x_nm=x, line_centers_nm=centers, pitch_nm=pitch, threshold=0.5)
+    stacked = stack_lr_edges(res)
+    assert stacked.shape[0] == 2 * res.left_edges_nm.shape[0]
+    assert stacked.shape[1] == res.left_edges_nm.shape[1]

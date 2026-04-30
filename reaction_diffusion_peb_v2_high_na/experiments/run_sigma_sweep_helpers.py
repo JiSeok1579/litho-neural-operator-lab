@@ -11,7 +11,11 @@ from reaction_diffusion_peb_v2_high_na.src.electron_blur import apply_gaussian_b
 from reaction_diffusion_peb_v2_high_na.src.exposure_high_na import dill_acid_generation, normalize_dose
 from reaction_diffusion_peb_v2_high_na.src.fd_solver_2d import solve_peb_2d
 from reaction_diffusion_peb_v2_high_na.src.geometry import line_space_intensity
-from reaction_diffusion_peb_v2_high_na.src.metrics_edge import extract_edges
+from reaction_diffusion_peb_v2_high_na.src.metrics_edge import (
+    compute_edge_band_powers,
+    extract_edges,
+    stack_lr_edges,
+)
 from reaction_diffusion_peb_v2_high_na.src.visualization import plot_contour_overlay, plot_field
 
 # Interior gate thresholds.
@@ -43,6 +47,10 @@ def run_one_with_overrides(
     DH_nm2_s: float | None = None,
     kdep_s_inv: float | None = None,
     Hmax_mol_dm3: float | None = None,
+    quencher_enabled: bool | None = None,
+    Q0_mol_dm3: float | None = None,
+    DQ_nm2_s: float | None = None,
+    kq_s_inv: float | None = None,
 ) -> dict:
     """Single run with per-call overrides; cfg supplies all unspecified params."""
     geom = ensure_pitch_aligned_domain(cfg["geometry"])
@@ -55,6 +63,11 @@ def run_one_with_overrides(
     Hmax_use = exp["Hmax_mol_dm3"] if Hmax_mol_dm3 is None else float(Hmax_mol_dm3)
     DH_use = peb["DH_nm2_s"] if DH_nm2_s is None else float(DH_nm2_s)
     kdep_use = peb["kdep_s_inv"] if kdep_s_inv is None else float(kdep_s_inv)
+
+    qcf_enabled_use = qcf.get("enabled", False) if quencher_enabled is None else bool(quencher_enabled)
+    Q0_use = qcf.get("Q0_mol_dm3", 0.0) if Q0_mol_dm3 is None else float(Q0_mol_dm3)
+    DQ_use = qcf.get("DQ_nm2_s", 0.0) if DQ_nm2_s is None else float(DQ_nm2_s)
+    kq_use = qcf.get("kq_s_inv", 0.0) if kq_s_inv is None else float(kq_s_inv)
 
     I, grid = line_space_intensity(
         domain_x_nm=geom["domain_x_nm"],
@@ -86,10 +99,10 @@ def run_one_with_overrides(
         kloss_s_inv=peb.get("kloss_s_inv", 0.0),
         time_s=time_s,
         dt_s=peb.get("dt_s", 0.5),
-        quencher_enabled=qcf.get("enabled", False),
-        Q0=qcf.get("Q0_mol_dm3", 0.0),
-        DQ_nm2_s=qcf.get("DQ_nm2_s", 0.0),
-        kq_s_inv=qcf.get("kq_s_inv", 0.0),
+        quencher_enabled=qcf_enabled_use,
+        Q0=Q0_use,
+        DQ_nm2_s=DQ_use,
+        kq_s_inv=kq_use,
     )
 
     P_threshold = dev["P_threshold"]
@@ -134,6 +147,13 @@ def run_one_with_overrides(
     peb_red = _pct(ler_init, ler_final)
     total_red = _pct(ler_design, ler_final)
 
+    # PSD band powers per stage (averaged over left+right tracks of all lines).
+    dy_nm = grid.dx_nm  # uniform spacing along y
+    bp_design = compute_edge_band_powers(stack_lr_edges(design_edges), dy_nm=dy_nm)
+    bp_eblur = compute_edge_band_powers(stack_lr_edges(initial_edges), dy_nm=dy_nm)
+    bp_peb = compute_edge_band_powers(stack_lr_edges(final_edges), dy_nm=dy_nm)
+    psd_high_red = _pct(bp_design[2], bp_peb[2])  # design -> PEB high-band reduction
+
     cond_space = P_space_center_mean < P_SPACE_MAX
     cond_line = P_line_center_mean > P_LINE_MIN
     cond_contrast = contrast > CONTRAST_MIN
@@ -174,6 +194,22 @@ def run_one_with_overrides(
         "electron_blur_LER_reduction_pct": eblur_red,
         "PEB_LER_reduction_pct": peb_red,
         "total_LER_reduction_pct": total_red,
+        # PSD band powers per stage (low / mid / high).
+        "psd_design_low": float(bp_design[0]),
+        "psd_design_mid": float(bp_design[1]),
+        "psd_design_high": float(bp_design[2]),
+        "psd_eblur_low": float(bp_eblur[0]),
+        "psd_eblur_mid": float(bp_eblur[1]),
+        "psd_eblur_high": float(bp_eblur[2]),
+        "psd_PEB_low": float(bp_peb[0]),
+        "psd_PEB_mid": float(bp_peb[1]),
+        "psd_PEB_high": float(bp_peb[2]),
+        "psd_high_band_reduction_pct": psd_high_red,
+        # quencher state for downstream comparison.
+        "quencher_enabled": qcf_enabled_use,
+        "Q0_mol_dm3": Q0_use,
+        "kq_s_inv": kq_use,
+        "DQ_nm2_s": DQ_use,
         "cond_space": cond_space,
         "cond_line": cond_line,
         "cond_contrast": cond_contrast,
