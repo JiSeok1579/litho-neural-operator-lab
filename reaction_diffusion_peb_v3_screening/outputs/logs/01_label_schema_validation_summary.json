@@ -1,0 +1,10 @@
+{
+  "n_runs": 32,
+  "label_counts": {
+    "robust_valid": 23,
+    "merged": 3,
+    "under_exposed": 1,
+    "margin_risk": 5
+  },
+  "out_csv": "/home/Jiseok/litho-neural-operator-lab/reaction_diffusion_peb_v3_screening/outputs/labels/01_label_schema_validation.csv"
+}

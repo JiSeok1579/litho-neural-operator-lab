@@ -1,0 +1,32 @@
+{
+  "acquisition_diag": {
+    "n_classifier_uncertain": 90,
+    "n_regressor_uncertain": 235,
+    "n_combined_mask": 316,
+    "n_selected": 316,
+    "classifier_uncertainty_summary": {
+      "mean": 0.11133333333333334,
+      "max": 0.6133333333333333,
+      "p90": 0.2833333333333333
+    },
+    "regressor_std_summary": {
+      "mean": 0.19706830021018734,
+      "max": 1.3887247753350591,
+      "p90": 0.4985559265898441
+    }
+  },
+  "n_AL_FD_runs": 316,
+  "AL_label_counts": {
+    "under_exposed": 59,
+    "margin_risk": 32,
+    "robust_valid": 215,
+    "merged": 10
+  },
+  "classifier_accuracy_after_AL": 0.8787878787878788,
+  "regressor_mae_after_AL": {
+    "CD_locked_nm": 0.13806910843989126,
+    "LER_CD_locked_nm": 0.03205058635413004,
+    "area_frac": 0.050252803684789404,
+    "P_line_margin": 0.041917360947063054
+  }
+}

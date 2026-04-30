@@ -1,0 +1,42 @@
+# v3 screening baseline — sizes, sampling method, surrogate hyperparams.
+run:
+  name: v3_screening_first_pass
+  seed: 7
+
+candidate_space_yaml: reaction_diffusion_peb_v3_screening/configs/candidate_space.yaml
+label_schema_yaml:    reaction_diffusion_peb_v3_screening/configs/label_schema.yaml
+
+sampling:
+  method: sobol             # sobol | latin_hypercube
+  n_candidates: 10000
+
+prefilter:
+  enable: true
+  retain_top_n: 3000        # keep the top-scoring N candidates by analytical score
+
+fd_run:
+  budget: 1000              # FD batch size for the first pass
+  max_wallclock_minutes: 30
+  run_xz: false             # x-y only by default; flip for x-z extension
+
+surrogate:
+  classifier:
+    type: random_forest
+    n_estimators: 300
+    max_depth: null
+    n_jobs: -1
+  regressor:
+    type: random_forest
+    n_estimators: 300
+    max_depth: null
+    n_jobs: -1
+  test_size: 0.2
+
+active_learning:
+  pool_size: 5000           # candidates sampled for AL evaluation
+  pool_prefilter_retain: 2000
+  budget: 500               # FD calls per AL iteration
+  acquisition:
+    classifier_uncertainty_threshold: 0.6   # max class prob below this → uncertain
+    regressor_std_min_nm: 0.4               # per-tree std above this on any output → uncertain
+  combine: union            # union | intersection

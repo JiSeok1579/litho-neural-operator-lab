@@ -1,0 +1,17 @@
+{
+  "n_rows_total": 1000,
+  "n_rows_valid_for_regression": 1000,
+  "classifier_accuracy": 0.94,
+  "regressor_mae": {
+    "CD_locked_nm": 0.14016947477495087,
+    "LER_CD_locked_nm": 0.022616652545645745,
+    "area_frac": 0.042281024633487686,
+    "P_line_margin": 0.03742482934973542
+  },
+  "regressor_r2": {
+    "CD_locked_nm": 0.9865434646886173,
+    "LER_CD_locked_nm": 0.933870620366241,
+    "area_frac": 0.5388108524933238,
+    "P_line_margin": 0.4871824096880607
+  }
+}
