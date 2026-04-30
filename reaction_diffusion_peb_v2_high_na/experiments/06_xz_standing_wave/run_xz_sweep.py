@@ -344,10 +344,8 @@ def main() -> int:
 
     print(f"\nOverall Stage 6 cross-row gate: {'OK' if cross_ok else 'FAIL'}")
 
-    # Figures: I, H0, H_final, P_final per row at thickness=20.
+    # Figures: I, H0, P_final for every (thickness, amplitude) cell.
     for r in rows:
-        if r["film_thickness_nm"] != 20.0:
-            continue
         h = r["film_thickness_nm"]
         A = r["amplitude"]
         tag = f"thick_{int(h)}_A_{A:.2f}"
@@ -364,6 +362,54 @@ def main() -> int:
                 second_threshold=r["P_threshold_locked"]
                                   if r["P_threshold_locked"] is not None and np.isfinite(r["P_threshold_locked"])
                                   else None)
+
+    # Cross-row summary plots vs thickness.
+    summary_dir = fig_dir / "summary"
+    summary_dir.mkdir(parents=True, exist_ok=True)
+
+    def _summary_plot(metric_key: str, ylabel: str, title: str, out_name: str,
+                      ylog: bool = False) -> None:
+        fig, ax = plt.subplots(figsize=(6.5, 4.0))
+        for A in amplitudes:
+            xs = []
+            ys = []
+            for h in thicknesses:
+                cand = [r for r in rows
+                        if abs(r["film_thickness_nm"] - h) < 1e-9
+                        and abs(r["amplitude"] - A) < 1e-9]
+                if cand:
+                    val = cand[0][metric_key]
+                    if val is not None and (not isinstance(val, float) or np.isfinite(val)):
+                        xs.append(h)
+                        ys.append(val)
+            ax.plot(xs, ys, marker="o", label=f"A={A:.2f}")
+        ax.set_xlabel("film thickness [nm]")
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
+        if ylog:
+            ax.set_yscale("log")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(str(summary_dir / out_name), dpi=150)
+        plt.close(fig)
+
+    _summary_plot("modulation_reduction_pct",
+                   "PEB modulation reduction (%)",
+                   "Stage 6 — modulation reduction vs thickness",
+                   "modulation_reduction_vs_thickness.png")
+    _summary_plot("LER_CD_locked_nm",
+                   "side-wall LER (CD-locked) [nm]",
+                   "Stage 6 — side-wall LER vs thickness",
+                   "sidewall_ler_vs_thickness.png")
+    _summary_plot("top_bottom_asymmetry",
+                   "|P(top) - P(bottom)| / max",
+                   "Stage 6 — top/bottom asymmetry vs thickness",
+                   "top_bottom_asymmetry_vs_thickness.png")
+    _summary_plot("H0_z_modulation_sw_only_pct",
+                   "H0 standing-wave-only modulation (%)",
+                   "Stage 6 — H0 standing-wave modulation vs thickness (excl. absorption)",
+                   "H0_sw_only_vs_thickness.png")
 
     # CSV.
     keys = [

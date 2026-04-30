@@ -1,5 +1,56 @@
 # High-NA EUV PEB v2 실험 지시서
 
+## Status — first-pass closeout
+
+| Stage | Status | 비고 |
+|---|---|---|
+| 1   | ✅ complete | Stage-1 clean geometry baseline (σ=0, t=30) |
+| 1A  | ✅ complete | σ-호환 budget calibration; σ ∈ [0, 3] usable at kdep=0.5 / Hmax≤0.2 |
+| 1B  | ✅ complete | over-budget reference (σ=5/t=60 = lines merge) |
+| 2   | ✅ complete | DH × time process window (algorithmic best vs robust alternates) |
+| 3   | ✅ complete | electron blur 분리 + 3-stage LER 측정 규약 |
+| 3B  | ⏸ deferred | σ=5/8 호환 budget search (search space 확장 필요) |
+| 4   | ✅ complete | weak quencher 52-run sweep + balanced OP (Q0=0.02, kq=1) |
+| 4B  | ✅ complete | CD-locked LER + Stage-5B mini-sweep; CD-locked = helper default 채택 |
+| 5   | ✅ complete | pitch × dose process window (108 runs, primary + 2 controls) |
+| 5C  | ⏸ deferred | σ=0 small-pitch follow-up |
+| 6   | ✅ complete | x-z standing wave (12 runs, 3 thickness × 4 amplitude) |
+| 6B  | ⏸ deferred | full 3D x-y-z (compute cost 큼) |
+
+### 권장 v2 operating point (검증된 robust 영역)
+
+```yaml
+pitch_nm:           24
+line_cd_nm:         12.5
+domain_x_nm:        120          # = pitch * 5, FFT-seam-safe
+dose_mJ_cm2:        40
+electron_blur_sigma_nm: 2
+DH_nm2_s:           0.5
+time_s:             30
+kdep_s_inv:         0.5
+Hmax_mol_dm3:       0.2
+kloss_s_inv:        0.005
+quencher:           Q0=0.02, kq=1.0, DQ=0     # Stage-4 balanced
+P_threshold:        0.5                       # CD-locked variant 도 helper 가 자동 계산
+```
+
+이 OP 는 Stage 2 의 `robust alt 2` 로 시작해 Stage 3 에서 σ=2 추가, Stage 4 에서 quencher balanced, Stage 5 에서 pitch ≥ 24 robust 검증, Stage 6 에서 z-modulation 흡수 확인됨.
+
+### Next milestone
+
+literature 또는 측정 데이터와의 calibration 이 다음 단계.
+
+```text
+- 외부 reference 의 CD / LER / process window 모양과 비교
+- 체계적 offset 발견 시 kdep, Hmax, dose 보정
+- calibration 후 Stage 6B (3D), Stage 3B (σ=5/8), Stage 5C (small pitch) 등의 확장 결정
+- 그전에는 chemistry 추가나 새 stage 시작 보류
+```
+
+상세 finding 은 `STUDY_SUMMARY.md` 와 `study_notes/` 를 참조.
+
+---
+
 ## 0. 목적
 
 현재 `reaction_diffusion_peb/` 폴더는 그대로 유지한다.  
