@@ -90,6 +90,133 @@ def sample_candidates(
     return candidates
 
 
+def _apply_bias_to_parameter(param: dict, bias: dict) -> dict:
+    """Return a copy of `param` with `bias` overrides applied. `bias` may carry
+    `low`/`high` for uniform params or `choice` for choice params."""
+    p = dict(param)
+    if param["type"] == "uniform" and ("low" in bias or "high" in bias):
+        p["low"] = float(bias.get("low", param["low"]))
+        p["high"] = float(bias.get("high", param["high"]))
+    elif param["type"] == "choice" and "choice" in bias:
+        p["values"] = list(bias["choice"])
+    elif param["type"] == "uniform" and "values" in bias:
+        # allow biasing a uniform into a discrete short list (e.g. pitch)
+        p["type"] = "choice"
+        p["values"] = list(bias["values"])
+    return p
+
+
+def sample_with_bias(
+    space: CandidateSpace,
+    bias_spec: dict,
+    n: int,
+    method: str = "latin_hypercube",
+    seed: int | None = 7,
+) -> list[dict]:
+    """Sample n candidates from a biased version of `space`. Parameters listed
+    under `bias_spec["parameters"]` get their ranges narrowed; everything else
+    keeps the full range."""
+    biased_params = []
+    bias_per_param = bias_spec.get("parameters", {})
+    for p in space.parameters:
+        b = bias_per_param.get(p["name"], {})
+        if not b:
+            biased_params.append(p)
+        else:
+            biased_params.append(_apply_bias_to_parameter(p, b))
+    biased_space = CandidateSpace(
+        parameters=biased_params,
+        derived=space.derived,
+        fixed=space.fixed,
+    )
+    return sample_candidates(biased_space, n=n, method=method, seed=seed)
+
+
+def perturb_candidate(
+    base: dict,
+    perturb_keys: list[str],
+    relative_amplitude: float,
+    bounds_from_space: CandidateSpace,
+    rng: np.random.Generator,
+) -> dict:
+    """Return a perturbed copy of `base`. Only parameters listed in
+    `perturb_keys` are changed; the perturbation is uniform within
+    ±relative_amplitude × range_span and clipped to the original range.
+    Discrete parameters (choice) are left unchanged."""
+    out = dict(base)
+    bounds = {p["name"]: p for p in bounds_from_space.parameters}
+    for k in perturb_keys:
+        if k not in bounds or bounds[k]["type"] != "uniform":
+            continue
+        lo = float(bounds[k]["low"])
+        hi = float(bounds[k]["high"])
+        span = hi - lo
+        delta = float(rng.uniform(-relative_amplitude, relative_amplitude)) * span
+        v = float(out[k]) + delta
+        out[k] = float(np.clip(v, lo, hi))
+    # Recompute derived values.
+    derived = _eval_derived(out, bounds_from_space.derived)
+    out.update(derived)
+    return out
+
+
+def sample_margin_perturbation(
+    space: CandidateSpace,
+    bias_spec: dict,
+    seed_rows: list[dict],
+    n: int,
+    seed: int | None = 7,
+) -> list[dict]:
+    """Pick rows from `seed_rows` that are inside the margin band, perturb
+    them, and return n candidates. Falls back to plain LHS over the full
+    space if no seed row is in the band."""
+    perturb_cfg = bias_spec.get("perturbation", {})
+    band = perturb_cfg.get("margin_band", [0.0, 0.05])
+    keys = perturb_cfg.get("perturb_keys", [])
+    rel = float(perturb_cfg.get("perturb_relative", 0.10))
+
+    boundary = []
+    for r in seed_rows:
+        try:
+            m = float(r.get("P_line_margin", float("nan")))
+        except (TypeError, ValueError):
+            continue
+        if not np.isfinite(m):
+            continue
+        if band[0] <= m <= band[1]:
+            boundary.append(r)
+    if not boundary:
+        return sample_with_bias(space, bias_spec={}, n=n, method="latin_hypercube", seed=seed)
+
+    rng = np.random.default_rng(seed)
+    out = []
+    for i in range(n):
+        base = boundary[int(rng.integers(0, len(boundary)))]
+        # the seed row carries CSV strings; coerce known numeric params back to floats
+        base_clean = dict(base)
+        for k in keys + ["pitch_nm", "line_cd_ratio"]:
+            if k in base_clean:
+                try:
+                    base_clean[k] = float(base_clean[k])
+                except (TypeError, ValueError):
+                    pass
+        # ensure required fixed-keys are present in the candidate
+        for fk, fv in space.fixed.items():
+            base_clean.setdefault(fk, fv)
+        # ensure derived keys are present
+        if "line_cd_nm" not in base_clean and "pitch_nm" in base_clean and "line_cd_ratio" in base_clean:
+            base_clean["line_cd_nm"] = float(base_clean["pitch_nm"]) * float(base_clean["line_cd_ratio"])
+        if "domain_x_nm" not in base_clean and "pitch_nm" in base_clean:
+            base_clean["domain_x_nm"] = float(base_clean["pitch_nm"]) * 5.0
+        if "dose_norm" not in base_clean and "dose_mJ_cm2" in base_clean and "reference_dose_mJ_cm2" in base_clean:
+            base_clean["dose_norm"] = float(base_clean["dose_mJ_cm2"]) / float(base_clean["reference_dose_mJ_cm2"])
+
+        c = perturb_candidate(base_clean, keys, rel, space, rng)
+        c["_id"] = f"perturb_{i}"
+        out.append(c)
+    return out
+
+
 def write_jsonl(candidates: list[dict], out_path: str | Path) -> None:
     import json
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,37 @@
+# Failure-seeking sampling biases for v3 Stage 04B.
+# Each entry overrides a subset of `candidate_space.yaml` parameters with a
+# narrower range that pushes the chemistry toward the named failure mode.
+# Parameters not listed inherit their full range from candidate_space.yaml.
+
+target_under_exposed:
+  description: "low dose / weak chemistry — line center under-deprotected"
+  parameters:
+    dose_mJ_cm2:    {low: 21.0, high: 35.0}
+    Hmax_mol_dm3:   {low: 0.15, high: 0.18}
+    kdep_s_inv:     {low: 0.35, high: 0.45}
+    Q0_mol_dm3:     {low: 0.015, high: 0.03}
+    kq_s_inv:       {low: 1.0, high: 2.0}
+
+target_merged:
+  description: "high dose / wide blur / long PEB — lines fuse across the space"
+  parameters:
+    dose_mJ_cm2:    {low: 44.0, high: 60.0}
+    sigma_nm:       {low: 2.0, high: 3.0}
+    DH_nm2_s:       {low: 0.6, high: 0.8}
+    time_s:         {low: 35.0, high: 45.0}
+    Q0_mol_dm3:     {low: 0.0, high: 0.005}
+
+target_margin_risk:
+  description: "perturb around known boundary rows (P_line_margin ≈ 0..0.05)"
+  perturbation:
+    margin_band: [0.0, 0.05]   # boundary band in the seed dataset
+    perturb_relative: 0.10     # ±10 % of the parameter's full-range span
+    perturb_keys: [dose_mJ_cm2, Q0_mol_dm3, DH_nm2_s, sigma_nm, time_s, Hmax_mol_dm3, kdep_s_inv]
+
+target_roughness_degraded:
+  description: "small pitch + heavy e-blur — sidewall LER excess"
+  parameters:
+    pitch_nm:       {choice: [18, 20]}
+    sigma_nm:       {low: 1.5, high: 3.0}
+    DH_nm2_s:       {low: 0.6, high: 0.8}
+    time_s:         {low: 35.0, high: 45.0}
