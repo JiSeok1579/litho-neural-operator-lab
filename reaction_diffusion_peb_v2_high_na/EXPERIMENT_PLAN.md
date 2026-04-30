@@ -834,35 +834,114 @@ trigger: Stage 5 (process window) 또는 외부 reference 비교에서 σ/quench
 
 ### 목적
 
-High-NA pitch 범위에서 PEB 조건이 유지되는지 확인한다.
+Stage 4 의 balanced operating point 가 다양한 pitch / dose 에서 유지되는지 확인.
+pitch 별로 robust_valid 한 dose window 크기와 추천 dose 를 정량화.
+
+### Operating point (primary)
+
+```yaml
+sigma_nm    : 2.0
+DH_nm2_s    : 0.5
+time_s      : 30
+kdep_s_inv  : 0.5
+kloss_s_inv : 0.005
+Hmax_mol_dm3: 0.2
+quencher    : Q0=0.02, kq=1.0, DQ=0    # Stage 4 balanced
+line_cd_nm  : 12.5                       # pitch 별 고정
+```
 
 ### Sweep
 
 ```yaml
-pitch_sweep_nm: [16, 18, 20, 24, 28, 32]
+pitch_sweep_nm:    [16, 18, 20, 24, 28, 32]
 dose_sweep_mJ_cm2: [21, 28.4, 40, 44.2, 59, 60]
+domain_x_nm  = pitch_nm * 5     # n_periods_x = 5
+domain_y_nm  = 120              # 고정 (LER y-sample 수 동일)
 ```
 
-### 출력
+총 36 runs (primary). 추가 controls 36 + 36 = 108 runs.
+
+### Optional controls
 
 ```text
-Pmax
-area(P>threshold)
-CD_final
-CD_shift
-LER_final
-line merge 여부
-space loss 여부
+control_sigma0_no_q : sigma=0, quencher disabled  → 측정 규약 σ-독립 reference
+control_sigma2_no_q : sigma=2, quencher disabled  → quencher 만의 효과 분리
 ```
+
+### Per-run 분류 (precedence 순)
+
+```text
+unstable      : NaN / Inf / bounds violation / 등고선 추출 실패
+merged        : P_space_mean >= 0.50  OR  area_frac >= 0.90  OR  CD/pitch >= 0.85
+under_exposed : P_line_mean  < 0.65
+low_contrast  : contrast      <= 0.15  (드물게 등장. 본 sweep 에서는 0)
+valid         : interior gate 통과, margin 부족
+robust_valid  : interior gate 통과 AND P_line_margin >= 0.05
+```
+
+### 추천 dose 선택 알고리즘
+
+각 pitch 에서:
+
+```text
+1. robust_valid pool 우선
+2. 없으면 valid pool
+3. pool 안에서 |CD_shift_nm| 최소화
+4. 동률 시 total_LER_reduction_pct 최대화
+5. 동률 시 P_line_margin 최대화
+```
+
+### 검증된 결과 (primary OP)
+
+config: `configs/v2_stage5_pitch_dose.yaml`
+
+```text
+status heatmap (primary):
+                21    28.4    40    44.2    59     60
+  pitch=32     unde   vali   robu   robu   robu   robu
+  pitch=28     unde   vali   robu   robu   robu   robu
+  pitch=24     unde   vali   robu   robu   robu   robu
+  pitch=20     unde   vali   robu   merg   merg   merg
+  pitch=18     unde   vali   merg   merg   merg   merg
+  pitch=16     unde   merg   merg   merg   merg   merg
+
+→ pitch=16 에서는 dose 어디에서도 valid 영역 없음. process window 닫힘.
+→ pitch ≥ 24 에서는 4 dose 점이 robust_valid (workable window).
+```
+
+추천 dose per pitch:
+
+```text
+pitch=16: 추천 없음 (process window closed)
+pitch=18: dose=28.4 (valid only, margin 0.012, CD_shift +1.99, LER -34.18%)
+pitch=20: dose=40   (robust_valid, margin 0.098, CD_shift +4.10, LER -26.22%)
+pitch=24: dose=40   (robust_valid, margin 0.096, CD_shift +2.07, LER  +8.77%)
+pitch=28: dose=40   (robust_valid, margin 0.095, CD_shift +1.81, LER +14.33%)
+pitch=32: dose=40   (robust_valid, margin 0.095, CD_shift +1.78, LER +15.03%)
+```
+
+pitch ≤ 20 에서 음수 LER reduction 은 Stage 3 / 4 에서 진단된 contour-displacement artifact (line widening 으로 contour 가 design edge 에서 벗어남). Stage 4B (CD-locked LER) 에서 수정될 예정이지만 robust_valid 분류 자체는 정상.
+
+### Control 비교 (primary 대비)
+
+```text
+control_sigma0_no_q:  pitch=16 만 process window 닫힘. pitch ≥ 18 부터 robust_valid 대부분
+control_sigma2_no_q:  pitch=20 까지는 process window 좁음, pitch ≥ 24 에서 robust_valid 대부분
+primary (sigma=2 + Q0=0.02, kq=1):  pitch=20 에서 dose=40 단 한 점만 robust_valid
+```
+
+흥미로운 발견: **quencher 추가가 small pitch process window 를 좁힌다.** 이는 Stage 4 의 LER 개선 효과와 trade-off (line widening 감소 = contour 가 더 가까워져 small pitch 에서 merge 임계 빨리 도달).
 
 ### 성공 기준
 
 ```text
-20~24 nm pitch에서 stable contour 형성
-16~18 nm pitch에서 process window가 좁아지는 경향 확인
-high dose에서 CD widening 또는 over-deprotection 확인
-low dose에서 under-deprotection 확인
+✓ 20~24 nm pitch 에서 stable contour 형성 → primary 에서 pitch=20 (dose=40) / pitch=24 (4 dose) robust_valid
+✓ 16~18 nm pitch 에서 process window 가 좁아지는 경향 → pitch=16 closed, pitch=18 valid only at one dose
+✓ high dose 에서 CD widening / over-deprotection → pitch ≤ 20, dose ≥ 44 에서 merged
+✓ low dose 에서 under-deprotection → 모든 pitch, dose=21 에서 under_exposed
 ```
+
+세부 분석은 `study_notes/05_stage5_pitch_dose.md` 참조.
 
 ---
 

@@ -1,0 +1,57 @@
+[
+  {
+    "pitch_nm": 16,
+    "rec_dose_mJ_cm2": null,
+    "status": "none"
+  },
+  {
+    "pitch_nm": 18,
+    "rec_dose_mJ_cm2": 28.4,
+    "status": "valid",
+    "CD_shift_nm": 1.9853077328109112,
+    "total_LER_reduction_pct": -34.17985504351318,
+    "P_line_margin": 0.012481308321003581,
+    "area_frac": 0.820324074074074,
+    "CD_pitch_frac": 0.8111059234828826
+  },
+  {
+    "pitch_nm": 20,
+    "rec_dose_mJ_cm2": 40.0,
+    "status": "robust_valid",
+    "CD_shift_nm": 4.09563340730789,
+    "total_LER_reduction_pct": -26.222697591581685,
+    "P_line_margin": 0.09760635474518609,
+    "area_frac": 0.8357083333333334,
+    "CD_pitch_frac": 0.8281261712897721
+  },
+  {
+    "pitch_nm": 24,
+    "rec_dose_mJ_cm2": 40.0,
+    "status": "robust_valid",
+    "CD_shift_nm": 2.068856925951245,
+    "total_LER_reduction_pct": 8.770239305863106,
+    "P_line_margin": 0.09550847259722162,
+    "area_frac": 0.6056597222222222,
+    "CD_pitch_frac": 0.6052992135613827
+  },
+  {
+    "pitch_nm": 28,
+    "rec_dose_mJ_cm2": 40.0,
+    "status": "robust_valid",
+    "CD_shift_nm": 1.8094301833002806,
+    "total_LER_reduction_pct": 14.325184772715007,
+    "P_line_margin": 0.0953004411226519,
+    "area_frac": 0.5096130952380953,
+    "CD_pitch_frac": 0.5095625168101475
+  },
+  {
+    "pitch_nm": 32,
+    "rec_dose_mJ_cm2": 40.0,
+    "status": "robust_valid",
+    "CD_shift_nm": 1.7780864512966215,
+    "total_LER_reduction_pct": 15.033848937867175,
+    "P_line_margin": 0.09528675141719722,
+    "area_frac": 0.44485677083333336,
+    "CD_pitch_frac": 0.4448877105820377
+  }
+]
