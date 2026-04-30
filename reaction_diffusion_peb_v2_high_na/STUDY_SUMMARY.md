@@ -372,4 +372,25 @@ STUDY_SUMMARY.md                         (this file — first-pass closeout)
 
 ## v2 first-pass 종료 선언
 
-7 stages (1 / 1A / 1B / 2 / 3 / 4 / 4B / 5 / 6) 모두 완료, 모든 stage 의 study notes 와 PR (#29 ~ #35) 머지 완료, 검증된 robust OP 식별. 다음은 외부 calibration.
+7 stages (1 / 1A / 1B / 2 / 3 / 4 / 4B / 5 / 6) 모두 완료, 모든 stage 의 study notes 와 PR (#29 ~ #35) 머지 완료, 검증된 robust OP 식별.
+
+## Calibration policy (2026-04-30 freeze)
+
+```text
+external reference data 미입수.
+v2 OP 는 internal-consistent nominal OP 로 freeze.
+calibration_status         = internal-consistency only
+published_data_loaded      = false
+v2_OP_frozen               = true
+
+이후 모든 sweep / 실험은 다음 중 하나로만 label:
+  - sensitivity study
+  - controllability study
+  - hypothesis test
+
+"calibration" 또는 "calibrated to real" 표현은 외부 measurement / literature
+데이터가 calibration_targets.yaml 에 등록된 후 (published_data_loaded=true) 에만
+허용. 그 전까지의 모든 작업은 internal exploration.
+```
+
+세부는 `calibration/calibration_plan.md` 와 `calibration/calibration_targets.yaml` 참조.

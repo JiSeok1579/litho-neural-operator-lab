@@ -10,6 +10,9 @@ reference:
 
 calibration_status:
   level: "internal-consistency only"
+  published_data_loaded: false
+  v2_OP_frozen: true
+  v2_OP_freeze_date: "2026-04-30"
   note: |
     The current targets are derived from v2's own first-pass observations,
     so any pass / fail of the calibration sweeps is an internal-consistency
@@ -17,6 +20,38 @@ calibration_status:
     "calibrated to real measurements" until `published_data_loaded` is true
     and the targets here have been replaced with literature / measured
     values.
+
+    The frozen_nominal_OP below is the agreed v2 first-pass OP. Later runs
+    must be labelled as one of:
+        sensitivity study
+        controllability study
+        hypothesis test
+    They MUST NOT be labelled "calibration" or "calibrated to real" until
+    published_data_loaded flips to true. This is enforced in writeups
+    (calibration_plan.md), commit messages, and PR descriptions.
+
+frozen_nominal_OP:
+  # The internally-consistent v2 first-pass OP. Stays frozen until external
+  # data lands and the targets above are replaced with measured values.
+  pitch_nm:        24
+  line_cd_nm:      12.5
+  dose_mJ_cm2:     40
+  reference_dose_mJ_cm2: 40
+  sigma_nm:        2
+  time_s:          30
+  kdep_s_inv:      0.5
+  Hmax_mol_dm3:    0.2
+  kloss_s_inv:     0.005
+  DH_nm2_s:        0.5
+  Q0_mol_dm3:      0.02
+  kq_s_inv:        1.0
+  DQ_nm2_s:        0.0
+  domain_x_nm:     120          # = pitch * 5
+  domain_y_nm:     120
+  grid_spacing_nm: 0.5
+  edge_roughness_amp_nm: 1.0
+  edge_roughness_corr_nm: 5.0
+  edge_roughness_seed: 7
 
 internal_best_score_candidate:
   # Recorded for traceability; NOT adopted as the recommended OP. The

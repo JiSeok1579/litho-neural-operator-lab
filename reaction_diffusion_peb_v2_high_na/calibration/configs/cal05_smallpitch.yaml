@@ -1,0 +1,57 @@
+# Phase 2B Part C — Stage 5C small-pitch follow-up (hypothesis study).
+# Hypothesis: weakening or removing the quencher and/or lowering sigma can
+# re-open the small-pitch (18, 20) process window observed in Stage 5.
+# NOT a calibration. Sensitivity / hypothesis study only.
+run:
+  name: cal05_smallpitch
+  seed: 7
+
+geometry:
+  pattern: line_space
+  pitch_nm: 18.0                  # overridden per row
+  half_pitch_nm: 9.0
+  line_cd_nm: 12.5
+  grid_spacing_nm: 0.5
+  domain_x_nm: 90.0               # overridden per row to pitch * 5
+  domain_y_nm: 120.0
+  edge_roughness_enabled: true
+  edge_roughness_amp_nm: 1.0
+  edge_roughness_corr_nm: 5.0
+
+exposure:
+  wavelength_nm: 13.5
+  dose_mJ_cm2: 28.4               # overridden per row
+  reference_dose_mJ_cm2: 40.0
+  dose_norm: 0.71
+  eta: 1.0
+  Hmax_mol_dm3: 0.20
+  electron_blur_enabled: true
+  electron_blur_sigma_nm: 2.0     # overridden per row
+
+peb:
+  time_s: 30.0                    # overridden per row
+  temperature_C: 100.0
+  DH_nm2_s: 0.5                   # overridden per row
+  kloss_s_inv: 0.005
+  kdep_s_inv: 0.5
+
+quencher:
+  enabled: false                  # overridden per row (off / weak)
+  Q0_mol_dm3: 0.0
+  DQ_nm2_s: 0.0
+  kq_s_inv: 0.0
+
+development:
+  method: threshold
+  P_threshold: 0.5
+
+# Hypothesis-test sweeps.
+sweeps:
+  pitch_nm:    [18, 20]
+  dose_mJ_cm2: [21, 28.4, 40]
+  electron_blur_sigma_nm: [0, 1, 2]
+  DH_nm2_s:    [0.3, 0.5]
+  time_s:      [20, 30]
+  quencher_modes:
+    off:  {Q0_mol_dm3: 0.0,   kq_s_inv: 0.0,   enabled: false}
+    weak: {Q0_mol_dm3: 0.01,  kq_s_inv: 1.0,   enabled: true}
