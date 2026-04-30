@@ -1,0 +1,59 @@
+# Stage 6 base config — x-z standing wave at the Stage-2/4 robust OP.
+# The runner overrides film_thickness_nm and standing_wave_amplitude per row.
+run:
+  name: v2_stage6_xz_standing_wave
+  seed: 7
+
+geometry:
+  pattern: line_space
+  pitch_nm: 24.0
+  half_pitch_nm: 12.0
+  line_cd_nm: 12.5
+  grid_spacing_nm: 0.5            # used as both dx and dz
+  domain_x_nm: 120.0              # 5 * pitch
+  edge_roughness_enabled: false   # Stage 6 is x-z; LER along y is omitted
+
+exposure:
+  wavelength_nm: 13.5
+  dose_mJ_cm2: 40.0
+  reference_dose_mJ_cm2: 40.0
+  dose_norm: 1.0
+  eta: 1.0
+  Hmax_mol_dm3: 0.2
+  electron_blur_enabled: true
+  electron_blur_sigma_nm: 2.0
+  target_NILS: 1.5
+
+peb:
+  time_s: 30.0
+  temperature_C: 100.0
+  DH_nm2_s: 0.5
+  kloss_s_inv: 0.005
+  kdep_s_inv: 0.5
+  dt_s: 0.5
+
+quencher:
+  enabled: true
+  Q0_mol_dm3: 0.02
+  DQ_nm2_s: 0.0
+  kq_s_inv: 1.0
+
+development:
+  method: threshold
+  P_threshold: 0.5
+
+film:
+  thickness_sweep_nm: [15.0, 20.0, 30.0]
+  dz_nm: 0.5
+
+standing_wave:
+  enabled: true
+  period_nm: 6.75
+  amplitude_sweep: [0.0, 0.05, 0.10, 0.20]
+  phase_rad: 0.0
+  absorption_enabled: true
+  absorption_length_nm: 30.0
+
+outputs:
+  save_fields: false
+  save_figures: true

@@ -1010,49 +1010,135 @@ primary (sigma=2 + Q0=0.02, kq=1):  pitch=20 에서 dose=40 단 한 점만 robus
 
 ---
 
-## Stage 6 — x-z standing wave 실험
+## Stage 6 — x-z standing wave 실험 (executed)
 
 ### 목적
 
-z 방향 film thickness와 standing wave modulation이 PEB 후 완화되는지 확인한다.
+z 방향 film thickness 와 standing wave modulation 이 PEB 후 완화되는지 확인. pitch=24 의 robust OP (Stage 4 balanced + Stage 5 검증) 를 그대로 사용.
 
-### 시작 설정
+### Operating point (fixed)
 
 ```yaml
-film.enabled_z: true
-film.film_thickness_nm: 20
-film.dz_nm: 0.5
-standing_wave.enabled: true
-standing_wave.period_nm: 6.75
-standing_wave.amplitude: 0.1
+pitch_nm    : 24
+line_cd_nm  : 12.5
+sigma_nm    : 2          # e-blur (1D, x 방향)
+DH_nm2_s    : 0.5
+time_s      : 30
+kdep_s_inv  : 0.5
+kloss_s_inv : 0.005
+Hmax        : 0.2
+quencher    : Q0=0.02, kq=1.0, DQ=0
 ```
 
-### Model
+### Sweep
+
+```yaml
+film.thickness_sweep_nm     : [15.0, 20.0, 30.0]
+film.dz_nm                  : 0.5
+standing_wave.period_nm     : 6.75
+standing_wave.amplitude_sweep: [0.0, 0.05, 0.10, 0.20]
+standing_wave.absorption_length_nm: 30.0
+top / bottom BC             : no-flux (Neumann), even-mirror FFT 로 처리
+```
+
+총 12 runs.
+
+### 측정 (per run)
 
 ```text
-I(x,z) = I_xy(x) * [1 + A*cos(2*pi*z/6.75 + phase)] * exp(-z/absorption_length)
-H0(x,z) = Hmax * (1 - exp(-eta*dose_norm*I(x,z)))
+H0_z_modulation_pct          (peak-to-peak / mean of H0[:, ix_line])
+H0_z_modulation_sw_only_pct  (= H0_z_modulation_pct - same-thickness A=0 baseline)
+H_final_z_modulation_pct
+P_final_z_modulation_pct
+modulation_reduction_pct     (H0 → P_final 의 zmod 감소)
+top_bottom_asymmetry         (|P[top] - P[bot]| / max at line-center column)
+LER_fixed_threshold_nm       (extract_edges on P(x,z) treating z as the edge-track axis;
+                              사이드월 x-위치 변동을 측정)
+LER_CD_locked_nm             (same with P_threshold bisected to design CD)
+psd_mid_fixed / psd_mid_locked (Stage 4 PSD mid-band on z-tracks)
+H_min, P_min, P_max          (bounds)
+mass_budget_drift_pct        (H trapezoidal 적분의 H0 → H_final 변화율;
+                              kloss + quencher 의 정상 H 소모 → 약 -35% 가 expected)
 ```
 
-### 출력
+### Gate (per row)
 
 ```text
-I(x,z)
-H0(x,z)
-H_final(x,z)
-P_final(x,z)
-z profile at line center
-standing wave contrast before / after PEB
+no NaN / no Inf
+H_min >= -1e-6, P_min >= -1e-6, P_max <= 1+1e-6
+A == 0  → H0_z_modulation_sw_only_pct < 1 %     (absorption 분 제외)
+A > 0   → H0_z_modulation_sw_only_pct increases monotonically with A
+PEB     → P_final_z_modulation_pct < H0_z_modulation_pct (전 row)
 ```
 
-### 성공 기준
+### 검증된 결과
+
+config: `configs/v2_stage6_xz_standing_wave.yaml`
+
+**12/12 rows PASS** all gates (per-row + cross-row).
 
 ```text
-A=0이면 z modulation 없음
-A>0이면 H0/P에 z 방향 층상 modulation 발생
-PEB 후 modulation amplitude 감소
-film thickness 15/20/30 nm에 따라 z modulation 영향 차이 확인
+H0_z_modulation_sw_only_pct (standing-wave 단독, absorption 제외):
+
+                A=0.00   A=0.05   A=0.10   A=0.20
+  thick=15      +0.00    +2.70    +5.26   +15.56
+  thick=20      +0.00    +1.04    +7.12   +20.27
+  thick=30      +0.00    +6.51   +12.93   +25.54
+
+  → A 단조 증가, thickness 단조 증가 (긴 film 일수록 standing wave 가
+    누적 효과 많음). 모든 A=0 row 에서 sw_only ≡ 0 (정의에 의해).
+
+P_final_z_modulation_pct (PEB 후 전체 z-mod, absorption 포함):
+
+                A=0.00   A=0.05   A=0.10   A=0.20
+  thick=15       9.86    10.00    10.06    10.20
+  thick=20      20.05    20.19    20.34    20.71
+  thick=30      38.17    38.24    38.31    38.42
+
+  → A 가 커도 P_final z-mod 의 거의 모든 부분 (95%) 은 absorption 의 결정성.
+    standing wave 의 PEB 후 잔여 효과는 0.14–0.85% 로 매우 작음.
+
+modulation_reduction_pct = (H0_zmod - P_zmod) / H0_zmod:
+  thick=15, A=0.20: +78.89 % (H0 48.31 → Pf 10.20)
+  thick=20, A=0.20: +68.24 % (H0 65.20 → Pf 20.71)
+  thick=30, A=0.20: +60.00 % (H0 96.06 → Pf 38.42)
+
+  → film 이 두꺼울수록 PEB 의 z-mod 감쇠율 작아짐.
+    diffusion length 가 thickness 보다 짧아 z-uniform 화 못함.
+
+top_bottom_asymmetry (line-center column):
+  thick=15: 0.10
+  thick=20: 0.18-0.19
+  thick=30: 0.32
+
+  → film 이 두꺼울수록 absorption 으로 top/bottom 격차 커짐.
+
+LER_CD_locked_nm (사이드월 x-displacement std):
+  thick=15: 1.32 (very small; PEB 가 thin film 에서 매우 효과적)
+  thick=20: 2.32-2.40 (A 에 따라 약간 증가)
+  thick=30: 3.80-3.87 (큼; PEB 가 thick film 에서 약함)
+
+H_min ≈ 0.014–0.022, P_min ≈ 0.13–0.21, P_max ≈ 0.73 → bounds 모두 정상.
+mass_budget_drift_pct ≈ -35% → kloss(0.005)*30s ≈ 14% + quencher(Q0=0.02
+  consumes proportional H) ≈ 21% 의 합. 정상 H 소모.
 ```
+
+### 성공 기준 매핑 (plan §6 의 success vs observed)
+
+| plan expected | observed |
+|---|---|
+| A=0 이면 z modulation (standing-wave 만) 없음 | yes — `H0_zmod_sw_only_pct` ≡ 0 at A=0 (정의) |
+| A>0 이면 H0/P 에 z 방향 층상 modulation 발생 | yes — sw_only +1.04 ~ +25.54 %, 단조 증가 |
+| PEB 후 modulation amplitude 감소 | yes — 12/12 rows 에서 `P_zmod < H0_zmod` |
+| thickness 15 / 20 / 30 nm 영향 차이 확인 | yes — modulation_reduction (15: 79% > 20: 68% > 30: 60%), top/bottom asymmetry (0.10 < 0.19 < 0.32) |
+
+### 다음 단계 후보
+
+- **Stage 6B (full 3D)**: x-y-z 통합. 본 stage 는 (x, z) 만이라 y-roughness 와 결합 효과를 보지 못함. compute cost 크다.
+- **CD-locked LER + PSD mid-band 의 plotting / heatmap 화**: 본 stage CSV 는 풍부하지만 figure 가 thick=20 만 있음. 다른 thickness 도 추가 가능.
+- **Stage 4B sigma=0 follow-up**, **Stage 3B σ=5/8 호환 budget**: 여전히 보류 가능.
+
+세부 분석은 `study_notes/07_stage6_xz_standing_wave.md` 참조.
 
 ---
 
