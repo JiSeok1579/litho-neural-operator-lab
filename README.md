@@ -77,7 +77,7 @@ numbers · how to run · takeaway).
 | 10 | Active learning | 💤 deferred | [PROGRESS.md §H](./PROGRESS.md) |
 | — | PEB submodule v1 (`reaction_diffusion_peb/`) — Phases 1-11 done | ✅ | [docs/peb_submodule](./docs/peb_submodule.md) |
 | — | PEB v2 High-NA (`reaction_diffusion_peb_v2_high_na/`) — Stages 1-6 + Phase 2B | ✅ first-pass | [STUDY_SUMMARY](./reaction_diffusion_peb_v2_high_na/STUDY_SUMMARY.md) |
-| — | PEB v3 Screening (`reaction_diffusion_peb_v3_screening/`) — Stages 01-04 | ✅ first-pass | [v3 README](./reaction_diffusion_peb_v3_screening/README.md) |
+| — | PEB v3 Screening (`reaction_diffusion_peb_v3_screening/`) — Stages 01-04D | ✅ first-pass closed | [v3 README](./reaction_diffusion_peb_v3_screening/README.md) |
 
 ---
 
@@ -260,22 +260,39 @@ candidate_space.yaml  →  Sobol / LHS sampler  →  10 000 candidates
                        active_learning  →  re-target FD on uncertain candidates
 ```
 
-The first end-to-end run produced:
-- 1 000 FD-labelled candidates (135 s, ~7.4 runs / s, 91.5 % `robust_valid`).
-- A regressor with MAE 0.14 nm on `CD_locked` (R² 0.99) and 0.02 nm on `LER_CD_locked` (R² 0.93).
-- An active-learning iteration that grew the defect-class minority by ~11× (16 → 186) using a single 316-FD acquisition step; `under_exposed` precision goes from 0 → 0.67 after retraining.
+The first-pass loop ran end-to-end through Stage 04D:
 
-PINN stays out of the v3 primary screening loop. v3 may use PINN later only inside Stage 05 (autoencoder / inverse-fitting) and only after Stage 02–04 are stable.
+- **Stage 02** seeded the dataset with 1 000 FD-labelled candidates (135 s, ~7.4 runs / s, 91.5 % `robust_valid`).
+- **Stage 03 + 04** trained an RF classifier and regressor and ran one active-learning iteration (defects 16 → 186 from a single 316-FD acquisition step).
+- **Stage 04B** added four failure-seeking samplers (defects 186 → 1 928).
+- **Stage 04C** expanded the rare `roughness_degraded` class from 3 to 321 and switched to a per-class regression acceptance.
+- **Stage 04D** replaced the per-class band with an operational-zone band (operational = `robust_valid` + `margin_risk`; failure = the four defect labels) and reported five hard gates — all PASS:
 
-This is **candidate screening / defect classification on the v2 nominal model**. It is **not** external calibration: the `calibration_status.published_data_loaded` flag stays `false` and v3 never overwrites v2's frozen OP.
+```text
+CD_locked operational MAE  ≤ 0.15 nm   PASS  (0.0696)
+LER_CD_locked operational  ≤ 0.03 nm   PASS  (0.0232)
+P_line_margin operational  ≤ 0.03      PASS  (0.0166)
+balanced accuracy          ≥ 0.93      PASS  (0.934)
+macro F1                   ≥ 0.93      PASS  (0.949)
+
+false_robust_valid_rate (informational)  0.020
+false_defect_rate       (informational)  0.000
+```
+
+The user-prioritised error — a defect cell mis-promoted to `robust_valid` — lands at 2 %. **v3 first-pass screening surrogate is closed.** Stage 05 (autoencoder / inverse fit) remains optional future work.
+
+PINN stays out of the v3 primary screening loop. v3 may use PINN later only inside the optional Stage 05 (autoencoder / inverse-fitting) and only if a specific learning goal needs surrogate-free truth.
+
+This is **candidate screening / defect classification on the v2 nominal model**. It is **not** external calibration: external reference data is intentionally unavailable for this study, the `calibration_status.published_data_loaded` flag stays `false`, and v3 never overwrites v2's frozen OP.
 
 | Document | Purpose |
 |---|---|
-| [`reaction_diffusion_peb_v3_screening/README.md`](./reaction_diffusion_peb_v3_screening/README.md) | one-page entry, pipeline, label schema, first-pass results |
-| [`reaction_diffusion_peb_v3_screening/configs/`](./reaction_diffusion_peb_v3_screening/configs/) | label_schema, candidate_space, screening_baseline |
-| [`reaction_diffusion_peb_v3_screening/src/`](./reaction_diffusion_peb_v3_screening/src/) | sampler, prefilter, FD runner, labeler, surrogates, AL |
-| [`reaction_diffusion_peb_v3_screening/experiments/`](./reaction_diffusion_peb_v3_screening/experiments/) | runners for Stages 01-04 (and a placeholder 05) |
-| [`reaction_diffusion_peb_v3_screening/outputs/`](./reaction_diffusion_peb_v3_screening/outputs/) | candidate JSONL, label CSV, surrogate joblib, figures, logs |
+| [`reaction_diffusion_peb_v3_screening/README.md`](./reaction_diffusion_peb_v3_screening/README.md) | one-page entry, pipeline, label schema, Stage 02-04D results, closeout verdict |
+| [`reaction_diffusion_peb_v3_screening/study_notes/`](./reaction_diffusion_peb_v3_screening/study_notes/) | per-stage narratives (04B, 04C, 04D) — decisions, problems, and follow-ups |
+| [`reaction_diffusion_peb_v3_screening/configs/`](./reaction_diffusion_peb_v3_screening/configs/) | label_schema, candidate_space, failure_seeking, screening_baseline |
+| [`reaction_diffusion_peb_v3_screening/src/`](./reaction_diffusion_peb_v3_screening/src/) | sampler, prefilter, FD runner, labeler, surrogates, AL, zone-aware evaluation |
+| [`reaction_diffusion_peb_v3_screening/experiments/`](./reaction_diffusion_peb_v3_screening/experiments/) | runners for Stages 01-04D (and a placeholder 05) |
+| [`reaction_diffusion_peb_v3_screening/outputs/`](./reaction_diffusion_peb_v3_screening/outputs/) | candidate JSONL, label CSV, surrogate joblib, figures, logs (incl. `stage04D_summary.json`) |
 
 ---
 
