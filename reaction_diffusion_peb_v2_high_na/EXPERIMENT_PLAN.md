@@ -822,11 +822,76 @@ Hmax/dose/kdep 중 하나가 너무 약하거나 Q0 가 여전히 강한 것
 → 본 sweep 에서는 발생하지 않음 (모든 row P contour 정상).
 ```
 
-### Stage 4B (deferred — CD-locked LER)
+### Stage 4B — CD-locked LER (executed)
 
-Stage 3/4 의 LER 비교는 fixed P_threshold=0.5 contour 에서 측정하므로, σ 또는 quencher 가 CD 를 바꾸면 contour 위치가 함께 이동해 LER 측정 위치가 달라진다. 이를 보정하기 위한 **CD-locked LER** (각 row 의 P_threshold 를 자동 조정해 CD_final = CD_initial 로 맞추고 LER 비교) 는 Stage 4 (fixed-threshold) 완료 후 별도 stage 로 진행.
+Stage 3/4 의 LER 비교는 fixed P_threshold=0.5 contour 에서 측정하므로, σ 또는 quencher 가 CD 를 바꾸면 contour 위치가 함께 이동해 LER 측정 위치가 달라진다. Stage 5 에서 pitch ≤ 20 의 negative LER reduction artifact 가 trigger 되어 CD-lock 재측정 진행.
 
-trigger: Stage 5 (process window) 또는 외부 reference 비교에서 σ/quencher-induced CD shift 가 LER 비교를 오염시키는 경우.
+#### 측정 규약
+
+```text
+P_threshold 를 [0.2, 0.8] 에서 bisect 해 CD_overall_mean ≈ CD_initial (tol 0.25 nm) 로 맞춤.
+끝점이 contour-empty 면 0.05 step 으로 안쪽 narrow.
+status 는 ok / unstable_low_bound / unstable_high_bound / unstable_no_crossing / unstable_no_converge.
+```
+
+#### Block A 결과 (12 runs)
+
+| OP | pitch | dose | LER_design | LER_fixed | LER_locked | decision |
+|---|---|---|---|---|---|---|
+| primary | 18 | 28.4 | 2.77 | 3.72 | 4.07 | real degradation |
+| primary | 18 | 40   | 2.77 | 1.63 | 4.16 | fixed underestimates (merged-line artifact) |
+| primary | 20 | 28.4 | 2.77 | 3.24 | 3.14 | real degradation |
+| primary | 20 | 40   | 2.77 | 3.50 | 3.25 | real degradation |
+| primary | 24 | 28.4 | 2.77 | 2.46 | 2.47 | OK |
+| primary | 24 | 40   | 2.77 | 2.53 | 2.47 | OK |
+| ctrl σ0 | 18 | 28.4 | 2.77 | 3.42 | 3.49 | real degradation |
+| ctrl σ0 | 18 | 40   | 2.77 | 2.27 | 3.47 | fixed underestimates (merged-line artifact) |
+| ctrl σ0 | 20 | 28.4 | 2.77 | 2.95 | 2.85 | OK |
+| ctrl σ0 | 20 | 40   | 2.77 | 3.32 | 2.84 | **fixed overestimates (displacement artifact); locked recovers** |
+| ctrl σ0 | 24 | 28.4 | 2.77 | 2.52 | 2.52 | OK |
+| ctrl σ0 | 24 | 40   | 2.77 | 2.53 | 2.52 | OK |
+
+#### 핵심 finding
+
+```text
+1. pitch=24 의 LER 값 (fixed 와 locked 모두 ~ design) → PEB smoothing 정상.
+2. control σ=0 / pitch=20 / dose=40 만 displacement artifact (fixed=3.32, locked=2.84).
+   Stage 5 에서 본 "negative LER reduction at pitch=20" 의 일부는 이 artifact.
+3. 그러나 primary OP (σ=2 + Q0=0.02 + kq=1) / pitch=20 의 LER 는 CD-lock 후에도
+   3.14–3.25 로 design 2.77 보다 높음 → "real roughness degradation" 진단.
+4. pitch=18 dose=40 은 lines 가 완전 merged 라 fixed LER 가 인공적으로 낮음.
+   CD-lock 이 contour 를 진짜 line 자리로 이동시키면 LER=4.16 으로 정확하게 잡힌다.
+```
+
+→ **Stage 4 의 quencher 가 pitch=20 에서는 LER 를 더 악화**시킨다. Stage 4 의 "quencher rescues σ-induced LER degradation" 결론은 pitch=24 에서만 유효. 이는 Stage 5 의 small-pitch process-window 축소와 동일한 메커니즘.
+
+#### Block B — pitch-dependent weak-quencher mini-sweep (Stage-5 follow-up)
+
+**목적**: pitch ∈ {18, 20} 에서 quencher 약화 (Q0 ≤ 0.005, kq ≤ 0.5) 가 LER_locked 를 회복시키는지 검증.
+
+**설정**: σ=2, DH=0.5, t=30. (pitch=18, dose=28.4) + (pitch=20, dose=40) 의 두 (pitch, dose) × (Q0=0 baseline + Q0 ∈ {0.005, 0.01, 0.02} × kq ∈ {0.5, 1.0, 2.0}) = 20 runs.
+
+**결과 요약**:
+
+```text
+pitch=18 / dose=28.4:
+  baseline (no q):  LER_lock = 4.16
+  최선 (Q0=0.005, kq=0.5): LER_lock = 4.13   (ΔLER_lock = -0.02 nm 회복 거의 없음)
+  최강 (Q0=0.02,  kq=2.0): LER_lock = 4.05   (ΔLER_lock = -0.11)
+  → 모든 quencher 설정에서 LER_lock 이 design 2.77 보다 +1.3 nm 이상 → 회복 불가.
+
+pitch=20 / dose=40:
+  baseline (no q):  LER_lock = 3.28
+  최선 (Q0=0.02, kq=2.0): LER_lock = 3.21   (ΔLER_lock = -0.08)
+  → 회복은 작음. design 2.77 에 도달 불가.
+
+→ pitch ≤ 20 의 LER 악화는 quencher 로 회복 안 됨. 24 nm pitch 와는 다른 regime.
+```
+
+**결론**: pitch=18, 20 의 LER degradation 은 (a) e-blur σ=2 의 영향이 큼, (b) quencher 를 약화해도 회복 안 됨. Stage 4 의 balanced OP 는 pitch ≥ 24 에서만 권장.
+
+config: `configs/v2_stage4b_cd_locked.yaml`
+세부 분석: `study_notes/06_stage4B_cd_locked.md`
 
 ---
 
