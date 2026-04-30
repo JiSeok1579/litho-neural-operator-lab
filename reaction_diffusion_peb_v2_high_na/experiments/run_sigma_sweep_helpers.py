@@ -71,6 +71,11 @@ def run_one_with_overrides(
     H0 = dill_acid_generation(I_blurred, dose_norm=dose_norm, eta=exp["eta"], Hmax=Hmax_use)
 
     init_thr = exp.get("initial_threshold", 0.5)
+    # Stage-3 measurement convention: three independent edge measurements.
+    # `LER_design_initial`  is sigma-independent (binary I).
+    # `LER_after_eblur_H0`  isolates the electron-blur-only smoothing.
+    # `LER_after_PEB_P`     isolates the cumulative effect post-PEB.
+    design_edges = extract_edges(I, grid.x_nm, grid.line_centers_nm, grid.pitch_nm, init_thr)
     initial_edges = extract_edges(I_blurred, grid.x_nm, grid.line_centers_nm, grid.pitch_nm, init_thr)
 
     res = solve_peb_2d(
@@ -117,7 +122,17 @@ def run_one_with_overrides(
     ler_final = final_edges.ler_mean_nm
     cd_init = initial_edges.cd_overall_mean_nm
     ler_init = initial_edges.ler_mean_nm
+    ler_design = design_edges.ler_mean_nm
     metrics_finite = bool(np.isfinite(cd_final) and np.isfinite(ler_final))
+
+    def _pct(a: float, b: float) -> float:
+        if np.isfinite(a) and np.isfinite(b) and a > 0:
+            return float(100.0 * (a - b) / a)
+        return float("nan")
+
+    eblur_red = _pct(ler_design, ler_init)
+    peb_red = _pct(ler_init, ler_final)
+    total_red = _pct(ler_design, ler_final)
 
     cond_space = P_space_center_mean < P_SPACE_MAX
     cond_line = P_line_center_mean > P_LINE_MIN
@@ -140,6 +155,7 @@ def run_one_with_overrides(
         "P_space_center_mean": P_space_center_mean,
         "P_line_max": P_line_max,
         "P_line_center_mean": P_line_center_mean,
+        "P_line_margin": float(P_line_center_mean - P_LINE_MIN),
         "contrast": contrast,
         "P_mean": float(res.P.mean()),
         "area_P_gt_threshold_nm2": area_above,
@@ -148,8 +164,16 @@ def run_one_with_overrides(
         "CD_final_nm": cd_final,
         "CD_shift_nm": float(cd_final - cd_init) if metrics_finite else float("nan"),
         "CD_pitch_frac": float(cd_final / pitch) if metrics_finite else float("nan"),
+        # Stage-1/2 backward-compat aliases.
         "LER_initial_nm": ler_init,
         "LER_final_nm": ler_final,
+        # Stage-3 explicit names.
+        "LER_design_initial_nm": ler_design,
+        "LER_after_eblur_H0_nm": ler_init,
+        "LER_after_PEB_P_nm": ler_final,
+        "electron_blur_LER_reduction_pct": eblur_red,
+        "PEB_LER_reduction_pct": peb_red,
+        "total_LER_reduction_pct": total_red,
         "cond_space": cond_space,
         "cond_line": cond_line,
         "cond_contrast": cond_contrast,
@@ -158,6 +182,7 @@ def run_one_with_overrides(
         "cond_metrics": metrics_finite,
         "passed": passed,
         "_grid": grid,
+        "_design_edges": design_edges,
         "_initial_edges": initial_edges,
         "_final_edges": final_edges,
         "_P_final": res.P,

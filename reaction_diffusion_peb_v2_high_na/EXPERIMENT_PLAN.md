@@ -603,30 +603,102 @@ LER reduction (%) — DH (rows) × time (cols), ✓ = interior gate pass
 
 ### 목적
 
-EUV 2차 전자 blur와 PEB acid diffusion blur를 분리한다.
+EUV 2차 전자 blur 와 PEB acid diffusion blur 를 분리한다.
 
-### Sweep
+### Sweep (revised)
 
 ```yaml
-electron_blur_sigma_nm: [0, 2, 5, 8]
-DH_nm2_s: [0.3, 0.8, 1.5]
+electron_blur_sigma_nm: [0, 1, 2, 3]      # 24 nm pitch / kdep=0.5 / Hmax<=0.2 호환 범위
+DH_nm2_s, time_s: Stage 2 의 두 operating point
+                  - robust OP             : DH=0.5, t=30
+                  - algorithmic-best OP   : DH=0.8, t=20
 ```
+
+원안 `[0, 2, 5, 8]` 에서 σ=5, σ=8 은 24 nm pitch / kdep=0.5 / Hmax≤0.2 budget 과 호환되지 않음 (Stage 1A 에서 search space 전수 fail). 호환 budget 을 찾으려면 dose / kdep / Hmax 를 늘려야 하며 이는 별도 stage (Stage 3B) 로 분리.
+
+### 측정 규약 (재정의)
+
+Stage 1/2 의 "initial edge" 정의는 σ-의존성 (`I_blurred` 가 σ 따라 매끈해짐) 이 있어 σ-스윕에서 불공정. Stage 3 부터는 LER 를 세 단계로 분리해서 측정.
+
+```text
+LER_design_initial    : binary I (blur 전) 의 threshold 0.5 contour
+LER_after_eblur_H0    : I_blurred (blur 후, PEB 전) 의 threshold 0.5 contour
+LER_after_PEB_P       : P (PEB 후) 의 threshold 0.5 contour
+
+electron_blur_LER_reduction_pct = 100 * (LER_design_initial - LER_after_eblur_H0) / LER_design_initial
+PEB_LER_reduction_pct           = 100 * (LER_after_eblur_H0 - LER_after_PEB_P)   / LER_after_eblur_H0
+total_LER_reduction_pct         = 100 * (LER_design_initial - LER_after_PEB_P)   / LER_design_initial
+```
+
+`LER_design_initial` 은 σ 독립이므로 σ-스윕의 baseline 으로 일관된다.
+
+### Gate (Stage 3, 강화)
+
+Stage 1/2 interior gate + `P_line_margin >= 0.03` 추가.
+
+```text
+P_space_center_mean < 0.50
+P_line_center_mean  > 0.65
+P_line_margin = P_line_center_mean - 0.65 >= 0.03   # 새로 추가
+contrast > 0.15
+area_frac < 0.90
+CD_final / pitch < 0.85
+CD_final, LER_after_PEB_P 가 finite
+```
+
+P_line_margin 게이트는 Stage 2 에서 algorithmic best (DH=0.8, t=20) 가 P_line=0.6534 로 boundary 에 안착했던 문제를 방지한다.
 
 ### 분석
 
 ```text
-electron_blur만 켠 H0 roughness
-PEB diffusion 후 P roughness
-총 blur budget = electron blur + acid diffusion blur
+electron_blur 단독 효과 (PEB 전): I_blurred → LER 감소 = electron_blur_LER_reduction_pct
+PEB 단독 효과 (electron_blur 후): I_blurred → P    → LER 감소 = PEB_LER_reduction_pct
+두 효과 합산                   : binary I  → P    → LER 감소 = total_LER_reduction_pct
 ```
 
 ### 성공 기준
 
 ```text
-sigma=0 대비 sigma=5에서 H0 edge가 더 smooth
-PEB 후에는 추가 smoothing 발생
-두 효과를 LER / PSD로 분리 가능
+σ 증가 → LER_after_eblur_H0 감소 (electron blur 의 1차 smoothing)
+σ 증가 → LER_after_PEB_P 감소 또는 유사 (PEB 가 추가 smoothing)
+두 효과를 별도 컬럼으로 분리 가능
+gate 통과 σ 가 OP 별로 1 개 이상 존재
 ```
+
+---
+
+## Stage 3B — σ=5/8 호환 budget search (future / optional)
+
+### 목적
+
+Stage 1A 에서 `σ=5` 의 호환 budget 이 spec 범위 (`kdep=0.5`, `Hmax∈{0.1,0.15,0.2}`) 안에 없음을 확인. Stage 3 결과로 σ ∈ {0,1,2,3} 의 분리 분석은 가능하지만, 실제 High-NA EUV 의 e-beam blur 는 σ ≈ 5 nm 가 reference. 이 σ 값을 살리려면 search space 확장이 필요.
+
+### 진행은 Stage 3 결과를 본 후 결정
+
+trigger 조건 (다음 중 하나가 만족되면 Stage 3B 를 시작):
+
+```text
+- Stage 3 의 electron_blur_LER_reduction_pct 가 σ=3 까지의 trend 로 σ=5/8 의 효과 추정 불가
+- PSD 분해에서 high-frequency cutoff 를 σ=3 까지로는 정량 못함
+- 외부 reference (literature / 실측) 와의 비교가 σ=5 에서 필수
+```
+
+### Search space (Stage 3B)
+
+```text
+변수 1: dose_mJ_cm2          ∈ {40, 50, 60}    # H0 contrast 강화
+변수 2: kdep_s_inv           ∈ {0.5, 1.0}      # P_line lift
+변수 3: Hmax_mol_dm3         ∈ {0.1, 0.15, 0.2}
+변수 4: σ                    ∈ {5, 8}
+변수 5: time_s               ∈ {15, 20, 30}
+변수 6: DH_nm2_s             ∈ {0.3, 0.5, 0.8}
+```
+
+전수 grid (3×2×3×2×3×3 = 324) 는 너무 크므로, factorial design 또는 Latin-Hypercube 등 sampling 으로 축소.
+
+### 성공 기준 (Stage 3B)
+
+Stage 3 의 interior gate (P_line_margin 포함) 를 σ=5 와 σ=8 각각에서 **하나 이상** 의 (dose, kdep, Hmax, t, DH) 조합이 통과.
 
 ---
 
