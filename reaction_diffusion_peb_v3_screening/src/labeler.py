@@ -21,6 +21,14 @@ class LabelThresholds:
     area_frac_max: float = 0.90
     CD_pitch_frac_max: float = 0.85
     P_line_margin_robust: float = 0.05
+
+    # Stage 04C — three OR triggers for roughness_degraded.
+    ler_locked_max_nm:                    float = 3.0
+    ler_locked_design_excess_pct:         float = 5.0
+    psd_mid_band_locked_increase_pct:     float = 20.0
+
+    # Legacy: pre-04C absolute-excess trigger. Kept for backward-compat
+    # reads; not used by label_one any more.
     roughness_excess_nm: float = 1.5
 
     @classmethod
@@ -36,6 +44,9 @@ class LabelThresholds:
             area_frac_max=float(t.get("area_frac_max", 0.90)),
             CD_pitch_frac_max=float(t.get("CD_pitch_frac_max", 0.85)),
             P_line_margin_robust=float(t.get("P_line_margin_robust", 0.05)),
+            ler_locked_max_nm=float(t.get("ler_locked_max_nm", 3.0)),
+            ler_locked_design_excess_pct=float(t.get("ler_locked_design_excess_pct", 5.0)),
+            psd_mid_band_locked_increase_pct=float(t.get("psd_mid_band_locked_increase_pct", 20.0)),
             roughness_excess_nm=float(t.get("roughness_excess_nm", 1.5)),
         )
 
@@ -44,9 +55,40 @@ def _is_finite(x) -> bool:
     return isinstance(x, (int, float)) and math.isfinite(float(x))
 
 
+def roughness_triggers(r: dict, t: LabelThresholds) -> list[str]:
+    """Return the list of fired roughness triggers for this row (may be empty)."""
+    fired = []
+    ler_design = r.get("LER_design_initial_nm")
+    ler_locked = r.get("LER_CD_locked_nm")
+    psd_design = r.get("psd_design_mid")
+    psd_locked = r.get("psd_locked_mid")
+
+    if _is_finite(ler_locked) and ler_locked > t.ler_locked_max_nm:
+        fired.append("ler_locked_max")
+    if (
+        _is_finite(ler_locked) and _is_finite(ler_design)
+        and ler_design > 1e-9
+    ):
+        excess_pct = 100.0 * (ler_locked - ler_design) / ler_design
+        if excess_pct > t.ler_locked_design_excess_pct:
+            fired.append("ler_design_excess")
+    if (
+        _is_finite(psd_locked) and _is_finite(psd_design)
+        and psd_design > 1e-9
+    ):
+        psd_inc = 100.0 * (psd_locked - psd_design) / psd_design
+        if psd_inc > t.psd_mid_band_locked_increase_pct:
+            fired.append("psd_mid_increase")
+    return fired
+
+
 def label_one(r: dict, t: LabelThresholds | None = None) -> str:
-    """r is the helper output dict (run_one_with_overrides). Returns one
-    of the six v3 label strings."""
+    """r is the helper output dict (run_one_with_overrides). Returns one of
+    the six v3 label strings.
+
+    Precedence (Stage 04C): numerical_invalid > under_exposed > merged >
+                            roughness_degraded > margin_risk > robust_valid.
+    """
     t = t or LabelThresholds()
 
     # numerical_invalid
@@ -60,6 +102,10 @@ def label_one(r: dict, t: LabelThresholds | None = None) -> str:
     if r.get("P_min", 0.0) < -1e-6 or r.get("P_max", 0.0) > 1.0 + 1e-6:
         return "numerical_invalid"
 
+    # under_exposed (Stage 04C: now precedes merged).
+    if r.get("P_line_center_mean", 0.0) < t.P_line_min:
+        return "under_exposed"
+
     # merged
     cd_pitch = r.get("CD_pitch_frac")
     if (
@@ -69,26 +115,16 @@ def label_one(r: dict, t: LabelThresholds | None = None) -> str:
     ):
         return "merged"
 
-    # under_exposed
-    if r.get("P_line_center_mean", 0.0) < t.P_line_min:
-        return "under_exposed"
-
-    # below: passes basic interior gate (P_space, P_line, area, CD/pitch).
-    # contrast guard is folded under margin_risk if it fails.
+    # contrast guard — falls into margin_risk when contrast collapses
+    # despite P_line / P_space passing.
     if r.get("contrast", 0.0) <= t.contrast_min:
         return "margin_risk"
 
-    # roughness_degraded — locked LER exceeds the σ-independent design baseline.
-    ler_design = r.get("LER_design_initial_nm")
-    ler_locked = r.get("LER_CD_locked_nm")
-    if (
-        _is_finite(ler_design)
-        and _is_finite(ler_locked)
-        and (ler_locked - ler_design) > t.roughness_excess_nm
-    ):
+    # roughness_degraded — three OR triggers (any one fires the label).
+    if roughness_triggers(r, t):
         return "roughness_degraded"
 
-    # margin_risk vs robust_valid by margin.
+    # margin_risk vs robust_valid by P_line_margin.
     margin = r.get("P_line_margin", 0.0)
     if margin >= t.P_line_margin_robust:
         return "robust_valid"

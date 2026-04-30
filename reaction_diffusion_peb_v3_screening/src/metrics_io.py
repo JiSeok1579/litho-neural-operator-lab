@@ -48,9 +48,10 @@ LABEL_CSV_COLUMNS = [
     "LER_after_PEB_P_nm", "LER_design_initial_nm",
     "P_space_center_mean", "P_line_center_mean",
     "contrast",
-    "psd_locked_mid",
+    "psd_locked_mid", "psd_design_mid",
     "H_min", "P_min", "P_max",
     "prefilter_score",
+    "roughness_trigger",
 ]
 
 
