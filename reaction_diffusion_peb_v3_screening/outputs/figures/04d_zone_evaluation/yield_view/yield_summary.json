@@ -1,0 +1,41 @@
+{
+  "stage": "04D-yield-view",
+  "n_total": 5368,
+  "bucket_counts": {
+    "PASS": 1728,
+    "FAIL": 3054,
+    "MARGINAL": 586
+  },
+  "label_counts": {
+    "robust_valid": 1728,
+    "merged": 1531,
+    "margin_risk": 586,
+    "under_exposed": 983,
+    "roughness_degraded": 321,
+    "numerical_invalid": 219
+  },
+  "yield_strict_pct": 32.19076005961252,
+  "yield_inclusive_pct": 43.10730253353204,
+  "fail_rate_pct": 56.89269746646796,
+  "test_split": {
+    "seed": 13,
+    "size": 1074,
+    "n_predicted_robust_valid": 354,
+    "missed_defects": 7,
+    "false_pass_rate": 0.01977401129943503
+  },
+  "bucket_definition": {
+    "PASS": [
+      "robust_valid"
+    ],
+    "MARGINAL": [
+      "margin_risk"
+    ],
+    "FAIL": [
+      "under_exposed",
+      "merged",
+      "roughness_degraded",
+      "numerical_invalid"
+    ]
+  }
+}
