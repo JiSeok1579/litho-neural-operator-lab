@@ -670,8 +670,68 @@ outputs/figures/06_yield_optimization/
 study_notes/04_v3_stage06a_yield_optimization.md
 ```
 
-Stage 06B (FD verification + AL update) is deferred to its own PR. The
-closed Stage 04C training dataset is not mutated by this stage.
+## Stage 06B — FD verification + AL additions
+
+Stage 06B verifies the Stage 06A top-100 surrogate picks against v2
+nominal FD and runs FD Monte-Carlo (100 process variations) on the top
+10 to check ranking stability. The closed Stage 04C surrogate is not
+retrained; the closed Stage 04D / 04C training datasets are not
+mutated. New FD rows go to a separate AL-additions CSV.
+
+```bash
+python -m reaction_diffusion_peb_v3_screening.experiments.06_yield_optimization.run_fd_verification
+python -m reaction_diffusion_peb_v3_screening.experiments.06_yield_optimization.analyze_fd_verification
+```
+
+Headline numbers (Mode A, primary verification path):
+
+```text
+top-100 nominal FD label agreement                      100 / 100 robust_valid
+top-1 / top-3 / top-5 surrogate-FD overlap              1/1, 3/3, 5/5
+top-10 surrogate ∩ top-10 FD                            10 / 10
+top-100 nominal FD recipes that beat v2 OP baseline     85 / 100
+top-10 FD MC recipes that beat v2 OP baseline           10 / 10  (all FD = 1.000)
+hard / soft false-PASS in top-100                       0 / 0
+Spearman ρ (top-100 surrogate vs FD yield_score)        +0.071
+Spearman ρ (top-10 MC, all FD tied at 1.000)            n/a
+regression MAE (surrogate vs FD nominal):
+    CD_fixed   0.995 nm   CD_locked   0.133 nm
+    LER_locked 0.047 nm   area_frac   0.055
+    P_line_margin 0.038
+```
+
+**Reading**: Stage 06A delivers a clean candidate set — every top-100
+pick is FD-confirmed `robust_valid`, top-10 are all FD-MC-perfect, and
+there are zero false-PASS recipes. The surrogate is therefore useful
+for *candidate proposal*. Inside the top tier the surrogate's ranking
+is dominated by aux-CD-regressor noise (within-band Spearman ≈ 0); the
+surrogate is **not** a reliable fine-grained ranker. See
+`study_notes/05_v3_stage06b_fd_verification.md` for the full reading
+and the gating discussion for a possible Stage 06C surrogate refresh.
+
+```text
+outputs/labels/
+  fd_top100_nominal_verification.csv         100 FD rows
+  fd_top10_mc_verification.csv             1,000 FD rows
+  surrogate_vs_fd_metrics.csv                100 paired rows
+  false_pass_cases.csv                         0 rows (header only)
+  06_yield_optimization_al_additions.csv   1,100 FD rows
+outputs/logs/
+  06b_surrogate_fd_ranking_comparison.json
+  06b_false_pass_summary.json
+outputs/figures/06_yield_optimization/
+  surrogate_vs_fd_yield_score_scatter.png
+  surrogate_vs_fd_cd_ler_scatter.png
+  top10_fd_yield_barplot.png
+  defect_breakdown_top10.png
+  false_pass_parameter_parallel_coordinates.png
+```
+
+The Stage 06B AL-additions CSV is intentionally separate from the
+closed Stage 04C training dataset. Append it (and re-train the four
+surrogate components, including the auxiliary CD_fixed regressor) only
+when Stage 06C is greenlit. Mode B FD verification is deferred — only
+Mode A's primary verification path is run here.
 
 ## Optional follow-ups
 
