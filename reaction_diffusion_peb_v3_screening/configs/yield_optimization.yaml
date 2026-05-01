@@ -1,0 +1,140 @@
+# Stage 06A — surrogate-driven yield optimization.
+#
+# Optimisation target is a "nominal-model yield proxy", NOT real fab yield.
+# v2 nominal physics is frozen, v3 04C surrogate is closed; this study only
+# *uses* both. Do not interpret yield_score as % of working chips.
+
+run:
+  name: v3_stage06a_yield_optimization
+  seed: 1011
+
+candidate_space_yaml:
+  reaction_diffusion_peb_v3_screening/configs/candidate_space.yaml
+
+# Saved artefacts (closed Stage 04C surrogate + auxiliary CD_fixed model).
+models:
+  classifier:
+    reaction_diffusion_peb_v3_screening/outputs/models/stage04C_classifier.joblib
+  regressor_4target:
+    reaction_diffusion_peb_v3_screening/outputs/models/stage04C_regressor.joblib
+  cd_fixed_aux:
+    reaction_diffusion_peb_v3_screening/outputs/models/06_yield_optimization_cd_fixed_aux.joblib
+
+aux_training:
+  # Source CSV for the auxiliary CD_fixed_nm regressor. CSV column
+  # CD_final_nm is the same value as v2's CD_fixed_nm (helper alias).
+  source_csv:
+    reaction_diffusion_peb_v3_screening/outputs/labels/stage04C_training_dataset.csv
+  target_field: CD_final_nm
+  estimator:
+    type: random_forest
+    n_estimators: 300
+    max_depth: null
+    n_jobs: -1
+  test_size: 0.2
+
+# 5,000 candidate recipes per mode; 200 process variations per candidate.
+sampling:
+  method: sobol
+  n_candidates: 5000
+  variations_per_candidate: 200
+
+# Bounded Uniform variations. relative=true → ±width × base. absolute=true → ±width.
+# All varied features are clipped back to candidate_space bounds.
+process_variation:
+  knobs:
+    - {name: dose_mJ_cm2,  relative: true,  width: 0.05}   # ±5 %
+    - {name: time_s,       absolute: true,  width: 2.0}    # ±2 s
+    - {name: sigma_nm,     absolute: true,  width: 0.2}    # ±0.2 nm
+    - {name: DH_nm2_s,     relative: true,  width: 0.10}   # ±10 %
+    - {name: Q0_mol_dm3,   relative: true,  width: 0.10}   # ±10 %
+    - {name: Hmax_mol_dm3, relative: true,  width: 0.05}   # ±5 %
+  # line_cd ±0.5 nm is applied through line_cd_ratio because the surrogate
+  # feature set carries line_cd_ratio, not line_cd_nm. Width per recipe is
+  # 0.5 / pitch_nm and gets clipped into the ratio bounds spanned by the
+  # candidate-space choice list.
+  line_cd_abs_nm: 0.5
+  # Anything not listed (kdep, kq, abs_len, pitch_nm, line_cd_ratio when
+  # not explicitly the line_cd channel) gets zero MC variation.
+
+# yield_score = +1.0*P(robust_valid)
+#             - 0.5*P(margin_risk)
+#             - 2.0*P(merged)
+#             - 2.0*P(under_exposed)
+#             - 1.5*P(roughness_degraded)
+#             - 3.0*P(numerical_invalid)
+#             - 1.0*CD_error_penalty
+#             - 1.0*LER_penalty
+yield_score:
+  class_weights:
+    robust_valid:        1.0
+    margin_risk:        -0.5
+    merged:             -2.0
+    under_exposed:      -2.0
+    roughness_degraded: -1.5
+    numerical_invalid:  -3.0
+  cd_target_nm:    15.0
+  cd_tolerance_nm: 1.0
+  cd_penalty_weight: 1.0
+  ler_max_nm:    3.0
+  ler_penalty_weight: 1.0
+
+# Mode A — fixed-design recipe optimisation (primary).
+mode_a_fixed_design:
+  enabled: true
+  fixed:
+    pitch_nm:       24
+    line_cd_ratio:  0.52
+    abs_len_nm:     50.0
+  recipe_axes:
+    # Sobol is drawn over these 8 axes. Range = candidate_space bounds.
+    - dose_mJ_cm2
+    - sigma_nm
+    - DH_nm2_s
+    - time_s
+    - Hmax_mol_dm3
+    - kdep_s_inv
+    - Q0_mol_dm3
+    - kq_s_inv
+
+# Mode B — open design-space exploration (secondary).
+mode_b_open_design:
+  enabled: true
+  recipe_axes:
+    - pitch_nm
+    - line_cd_ratio
+    - dose_mJ_cm2
+    - sigma_nm
+    - DH_nm2_s
+    - time_s
+    - Hmax_mol_dm3
+    - kdep_s_inv
+    - Q0_mol_dm3
+    - kq_s_inv
+    - abs_len_nm
+
+# v2 frozen nominal OP — reused as a baseline yield_score reference. The
+# 200-variation eval is run on this OP exactly the way candidates are.
+v2_frozen_op:
+  pitch_nm:       24
+  line_cd_ratio:  0.52        # 12.5/24 ≈ 0.521 → nearest candidate-space choice
+  dose_mJ_cm2:    40.0
+  sigma_nm:       2.0
+  time_s:         30.0
+  DH_nm2_s:       0.5
+  Hmax_mol_dm3:   0.2
+  kdep_s_inv:     0.5
+  Q0_mol_dm3:     0.02
+  kq_s_inv:       1.0
+  abs_len_nm:     50.0        # neutral / candidate-space midpoint
+
+reporting:
+  top_n: 100
+
+policy:
+  v2_OP_frozen: true
+  published_data_loaded: false
+  notes: |
+    Stage 06A is a nominal-model yield-proxy optimisation. The 04C
+    surrogate is treated as an oracle for the v2 nominal physics, not
+    for a real fab. No external calibration has been performed.
