@@ -592,11 +592,10 @@ remains `false`); v2's frozen nominal OP is unchanged.
 ## Yield-management view (presentation layer)
 
 Stage 04D's evaluation figures use internal label names (`robust_valid`,
-`merged`, …) that are not friendly for fab-style 양품/불량 inspection.
+`merged`, …) that are not friendly for fab-style PASS/FAIL inspection.
 A separate presentation-only script renders the same Stage 04C dataset
-into yield-engineering vocabulary (PASS / MARGINAL / FAIL =
-양품 / 한계 / 불량), with colour-coded tiles, defect Pareto, and a
-process-window scatter:
+into yield-engineering vocabulary (PASS / MARGINAL / FAIL), with
+colour-coded tiles, defect Pareto, and a process-window scatter:
 
 ```bash
 python -m reaction_diffusion_peb_v3_screening.experiments.04d_zone_evaluation.run_yield_view
@@ -608,7 +607,7 @@ Outputs (no model retraining, no new FD):
 outputs/figures/04d_zone_evaluation/yield_view/
   01_yield_summary.png        big-number tile card (PASS / MARGINAL / FAIL)
   02_defect_pareto.png        defect mode bars + cumulative line
-  03_pass_fail_confusion.png  3×3 colour-coded confusion (위험 셀 강조)
+  03_pass_fail_confusion.png  3x3 colour-coded confusion (FAIL->PASS cell highlighted)
   04_process_window.png       CD_locked vs P_line_margin scatter
   05_yield_by_pitch.png       stacked bars + yield-line per pitch_nm
   yield_summary.json          machine-readable counts + rates

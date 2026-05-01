@@ -2,15 +2,14 @@
 
 Produces a fab-style yield dashboard from the same Stage 04C dataset and
 classifier the operational-zone evaluation already uses. No retraining,
-no new FD. The point is purely visualisation: make 양품 / 불량 obvious at
-a glance the way a fab yield engineer expects to see it.
+no new FD. The point is purely visualisation: make PASS / FAIL obvious
+at a glance the way a fab yield engineer expects to see it.
 
-Class → yield bucket mapping (semiconductor convention):
+Class -> yield bucket mapping (semiconductor convention):
 
-    PASS      (양품)      robust_valid
-    MARGINAL  (한계품)    margin_risk
-    FAIL      (불량)      under_exposed, merged, roughness_degraded,
-                          numerical_invalid
+    PASS      robust_valid
+    MARGINAL  margin_risk
+    FAIL      under_exposed, merged, roughness_degraded, numerical_invalid
 
 Outputs (figures only, no model artefacts):
     outputs/figures/04d_zone_evaluation/yield_view/
@@ -50,14 +49,6 @@ from reaction_diffusion_peb_v3_screening.src.metrics_io import (
 
 V3_DIR = ROOT / "reaction_diffusion_peb_v3_screening"
 
-# Korean font — Noto Sans CJK KR ships in the NotoSansCJK-Regular.ttc on
-# this box. Register explicitly so Hangul renders even though matplotlib
-# enumerates the .ttc as "Noto Sans CJK JP".
-_CJK_TTC = Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc")
-if _CJK_TTC.exists():
-    from matplotlib import font_manager
-    font_manager.fontManager.addfont(str(_CJK_TTC))
-    plt.rcParams["font.family"] = ["Noto Sans CJK JP", "DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 
 
@@ -66,16 +57,15 @@ MARGINAL_LABEL = "margin_risk"
 FAIL_LABELS    = ("under_exposed", "merged", "roughness_degraded", "numerical_invalid")
 
 BUCKETS = ["PASS", "MARGINAL", "FAIL"]
-BUCKET_KO = {"PASS": "양품", "MARGINAL": "한계", "FAIL": "불량"}
 BUCKET_COLOR = {"PASS": "#2ca02c", "MARGINAL": "#ffbf00", "FAIL": "#d62728"}
 
-DEFECT_KO = {
-    "under_exposed":      "노광 부족 (under-exposed)",
-    "merged":             "라인 병합 (merged)",
-    "roughness_degraded": "거칠기 불량 (roughness)",
-    "numerical_invalid":  "수치 무효 (numerical)",
-    "margin_risk":        "마진 부족 (margin-risk)",
-    "robust_valid":       "양품 (robust)",
+DEFECT_LABEL = {
+    "under_exposed":      "under-exposed",
+    "merged":             "merged",
+    "roughness_degraded": "roughness",
+    "numerical_invalid":  "numerical-invalid",
+    "margin_risk":        "margin-risk",
+    "robust_valid":       "robust",
 }
 
 
@@ -133,11 +123,12 @@ def plot_yield_summary(
 
     ax_title = fig.add_subplot(gs[0, :]); ax_title.axis("off")
     ax_title.text(0.5, 0.55,
-                  "PEB v3 — Yield Summary  (수율 요약)",
+                  "PEB v3 — Yield Summary",
                   ha="center", va="center", fontsize=20, fontweight="bold")
     ax_title.text(0.5, 0.05,
-                  f"전체 후보(샘플): N = {n_total:,}   "
-                  f"|   robust_valid = 양품, margin_risk = 한계, 그 외 = 불량",
+                  f"Total candidates: N = {n_total:,}   "
+                  f"|   PASS = robust_valid, MARGINAL = margin_risk, "
+                  f"FAIL = others",
                   ha="center", va="center", fontsize=10, color="#555")
 
     # Big-number tiles for each bucket
@@ -146,8 +137,8 @@ def plot_yield_summary(
         ax.add_patch(plt.Rectangle((0.02, 0.05), 0.96, 0.90,
                                    facecolor=BUCKET_COLOR[b], alpha=0.18,
                                    edgecolor=BUCKET_COLOR[b], linewidth=2))
-        ax.text(0.5, 0.78, f"{b}  ({BUCKET_KO[b]})",
-                ha="center", fontsize=13, fontweight="bold",
+        ax.text(0.5, 0.78, b,
+                ha="center", fontsize=14, fontweight="bold",
                 color=BUCKET_COLOR[b])
         cnt = bucket_counts[b]
         pct = 100.0 * cnt / max(n_total, 1)
@@ -159,7 +150,7 @@ def plot_yield_summary(
 
     # Bottom row: yield + risk metrics
     ax_y = fig.add_subplot(gs[2, 0]); ax_y.axis("off")
-    ax_y.text(0.05, 0.85, "Yield (양품률, strict)",
+    ax_y.text(0.05, 0.85, "Yield (strict, PASS only)",
               fontsize=11, color="#555")
     ax_y.text(0.05, 0.45, f"{yield_strict:.2f} %",
               fontsize=24, fontweight="bold", color="#2ca02c")
@@ -168,25 +159,25 @@ def plot_yield_summary(
               fontsize=9, color="#666")
 
     ax_y2 = fig.add_subplot(gs[2, 1]); ax_y2.axis("off")
-    ax_y2.text(0.05, 0.85, "Yield (PASS+MARGINAL, inclusive)",
+    ax_y2.text(0.05, 0.85, "Yield (inclusive, PASS + MARGINAL)",
                fontsize=11, color="#555")
     ax_y2.text(0.05, 0.45, f"{yield_inclusive:.2f} %",
                fontsize=24, fontweight="bold", color="#888c2c")
     ax_y2.text(0.05, 0.10,
-               f"한계품을 양품으로 간주했을 때",
+               f"treating MARGINAL as PASS",
                fontsize=9, color="#666")
 
     ax_r = fig.add_subplot(gs[2, 2]); ax_r.axis("off")
-    ax_r.text(0.05, 0.85, "Surrogate 위험 지표",
+    ax_r.text(0.05, 0.85, "Surrogate risk metric",
               fontsize=11, color="#555")
     ax_r.text(0.05, 0.55,
-              f"불량 누락률(false-PASS) : {false_pass_rate*100:.2f} %",
+              f"Defect leakage (false-PASS) : {false_pass_rate*100:.2f} %",
               fontsize=11, color="#d62728")
     ax_r.text(0.05, 0.30,
-              f"  test split, predicted=robust_valid 중 실제 불량",
+              f"  test split, actual FAIL among predicted=robust_valid",
               fontsize=8, color="#777")
     ax_r.text(0.05, 0.05,
-              f"누락 건수: {missed_defect_count}",
+              f"Missed count: {missed_defect_count}",
               fontsize=9, color="#444")
 
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
@@ -200,7 +191,7 @@ def plot_defect_pareto(label_counts: dict[str, int], n_total: int,
                        out_path: Path) -> None:
     defects = {k: v for k, v in label_counts.items() if k in FAIL_LABELS}
     items = sorted(defects.items(), key=lambda kv: kv[1], reverse=True)
-    names = [DEFECT_KO.get(k, k) for k, _ in items]
+    names = [DEFECT_LABEL.get(k, k) for k, _ in items]
     counts = [v for _, v in items]
     n_defect = sum(counts)
     cum = np.cumsum(counts)
@@ -209,10 +200,10 @@ def plot_defect_pareto(label_counts: dict[str, int], n_total: int,
     fig, ax = plt.subplots(figsize=(9.5, 5.5))
     bars = ax.bar(names, counts, color="#d62728", alpha=0.85,
                   edgecolor="#a01010")
-    ax.set_ylabel("불량 건수 (count)")
+    ax.set_ylabel("Defect count")
     fail_pct = 100.0 * n_defect / max(n_total, 1)
-    ax.set_title(f"Defect Pareto — 불량 모드별 분포  "
-                 f"(전체 N={n_total:,}, 불량 {n_defect:,} / {fail_pct:.1f} %)")
+    ax.set_title(f"Defect Pareto — count by failure mode  "
+                 f"(N={n_total:,}, FAIL {n_defect:,} / {fail_pct:.1f} %)")
     ax.tick_params(axis="x", rotation=15)
 
     for b, v in zip(bars, counts):
@@ -221,7 +212,7 @@ def plot_defect_pareto(label_counts: dict[str, int], n_total: int,
 
     ax2 = ax.twinx()
     ax2.plot(names, cum_pct, "o-", color="#1f1f1f", lw=1.5)
-    ax2.set_ylabel("누적 불량 비율 (cumulative %)")
+    ax2.set_ylabel("Cumulative defect ratio (%)")
     ax2.set_ylim(0, 105)
     for x, y in zip(names, cum_pct):
         ax2.text(x, y + 2, f"{y:.0f}%", ha="center",
@@ -255,7 +246,7 @@ def plot_pass_fail_confusion(y_true_bucket: list[str], y_pred_bucket: list[str],
         ("PASS", "MARGINAL"):     "#fce6a3",
         ("MARGINAL", "PASS"):     "#cfe6c8",
         ("MARGINAL", "FAIL"):     "#f6b8b8",
-        ("FAIL", "PASS"):         "#7a0a0a",  # 가장 위험: 불량을 양품으로
+        ("FAIL", "PASS"):         "#7a0a0a",  # most dangerous: defect leaks as PASS
         ("FAIL", "MARGINAL"):     "#f6b8b8",
     }
     for i, t in enumerate(BUCKETS):
@@ -275,13 +266,13 @@ def plot_pass_fail_confusion(y_true_bucket: list[str], y_pred_bucket: list[str],
                     ha="center", va="center", fontsize=9, color=txt_color)
 
     ax.set_xticks(range(3))
-    ax.set_xticklabels([f"{b}\n({BUCKET_KO[b]})" for b in BUCKETS])
+    ax.set_xticklabels(BUCKETS)
     ax.set_yticks(range(3))
-    ax.set_yticklabels([f"{b}\n({BUCKET_KO[b]})" for b in BUCKETS])
-    ax.set_xlabel("Surrogate 예측 (predicted)")
-    ax.set_ylabel("실제 라벨 (actual)")
-    ax.set_title("PASS / MARGINAL / FAIL  (양품 / 한계 / 불량) — surrogate 판정 정합성\n"
-                 "← 위험: 불량을 양품으로 흘려보내는 경우 (어두운 빨강)",
+    ax.set_yticklabels(BUCKETS)
+    ax.set_xlabel("Surrogate prediction")
+    ax.set_ylabel("Actual label")
+    ax.set_title("PASS / MARGINAL / FAIL — surrogate prediction agreement\n"
+                 "Risk cell: defects leaking through as PASS (dark red)",
                  fontsize=11)
     ax.set_xlim(-0.5, 2.5); ax.set_ylim(2.5, -0.5)
     fig.tight_layout()
@@ -310,14 +301,14 @@ def plot_process_window(rows: list[dict], out_path: Path) -> None:
         m = (bk == b)
         ax.scatter(cd[m], mg[m], s=14, alpha=0.55,
                    color=BUCKET_COLOR[b],
-                   label=f"{b} ({BUCKET_KO[b]}) n={int(m.sum()):,}")
+                   label=f"{b} n={int(m.sum()):,}")
     ax.axhline(0.05, color="#2ca02c", lw=1.0, ls="--", alpha=0.7,
                label="margin = 0.05 (robust threshold)")
     ax.axhline(0.0, color="#d62728", lw=1.0, ls=":", alpha=0.7,
                label="margin = 0 (process gate)")
     ax.set_xlabel("CD_locked_nm  (locked critical dimension)")
     ax.set_ylabel("P_line_margin")
-    ax.set_title("Process-window 산점도 — 양품 / 한계 / 불량 분포")
+    ax.set_title("Process-window scatter — PASS / MARGINAL / FAIL distribution")
     ax.legend(loc="lower right", fontsize=10, framealpha=0.9)
     ax.grid(True, alpha=0.25)
     fig.tight_layout()
@@ -350,17 +341,17 @@ def plot_yield_by_pitch(rows: list[dict], out_path: Path) -> None:
 
     fig, ax = plt.subplots(figsize=(9.0, 5.5))
     x = np.arange(len(pitches))
-    ax.bar(x, pass_cnt, color=BUCKET_COLOR["PASS"], alpha=0.85, label="PASS (양품)")
+    ax.bar(x, pass_cnt, color=BUCKET_COLOR["PASS"], alpha=0.85, label="PASS")
     ax.bar(x, marg_cnt, bottom=pass_cnt,
-           color=BUCKET_COLOR["MARGINAL"], alpha=0.85, label="MARGINAL (한계)")
+           color=BUCKET_COLOR["MARGINAL"], alpha=0.85, label="MARGINAL")
     bottom2 = [pc + mc for pc, mc in zip(pass_cnt, marg_cnt)]
     ax.bar(x, fail_cnt, bottom=bottom2,
-           color=BUCKET_COLOR["FAIL"], alpha=0.85, label="FAIL (불량)")
+           color=BUCKET_COLOR["FAIL"], alpha=0.85, label="FAIL")
     ax.set_xticks(x)
     ax.set_xticklabels([f"{int(p)} nm\n(N={t:,})" for p, t in zip(pitches, totals)])
     ax.set_xlabel("pitch_nm")
     ax.set_ylabel("count")
-    ax.set_title("Pitch별 분포 — stacked PASS / MARGINAL / FAIL")
+    ax.set_title("Distribution by pitch — stacked PASS / MARGINAL / FAIL")
     ax.legend(loc="upper right", fontsize=9)
 
     ax2 = ax.twinx()
@@ -399,7 +390,7 @@ def main() -> int:
     bucket_counts = Counter(label_to_bucket(r["label"]) for r in rows)
     print(f"yield-view — dataset rows: {n_total}")
     for b in BUCKETS:
-        print(f"  {b:<10} ({BUCKET_KO[b]}) {bucket_counts.get(b, 0):,}")
+        print(f"  {b:<10} {bucket_counts.get(b, 0):,}")
     for k in sorted(label_counts):
         print(f"    {k:<22} {label_counts[k]:,}")
 
@@ -416,7 +407,7 @@ def main() -> int:
     false_pass_rate = (n_missed / n_pred_pass) if n_pred_pass > 0 else float("nan")
     print(f"\ntest split: {len(test_rows)} rows  "
           f"|  predicted=robust_valid: {n_pred_pass}  "
-          f"|  실제 불량(누락): {n_missed}  "
+          f"|  actual FAIL (missed): {n_missed}  "
           f"|  false-PASS rate: {false_pass_rate*100:.2f} %")
 
     fig_dir = V3_DIR / "outputs" / "figures" / args.tag
