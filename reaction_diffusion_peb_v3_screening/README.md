@@ -811,6 +811,81 @@ outputs/figures/06_yield_optimization/
 study_notes/06_v3_stage06c_surrogate_refresh.md
 ```
 
+## Stages 06D – 06I — saturation, Pareto, strict scoring, FD-final ranking
+
+By Stage 06D the original `yield_score` had **saturated**: the v2
+frozen OP itself returned `yield_score = 1.0` under both single
+nominal FD and 100× MC FD, and 69 / 100 of the second-pass top-100
+candidates tied that ceiling without false-PASS. The metric had run
+out of dynamic range, so "beats yield_score" stopped being a
+meaningful question. Stages 06D – 06I close Mode A by working around
+the saturation:
+
+| stage | what changed | result |
+|---|---|---|
+| **06D** | second-pass surrogate optimisation with the 06C surrogate, fresh Sobol seed (4042) | best 06C-yield 1.000, 77 novelty candidates, FD top-20 zero false-PASS |
+| **06E** | full FD verification of 06D top-100 + top-10 × 100 MC + 17 disagreement candidates + v2 OP MC FD baseline | OP saturates the FD metric too; 0 false-PASS in top-100; matches OP ceiling under MC |
+| **06F** | multi-objective Pareto ranking on FD-derived metrics + threshold survival sensitivity | rank-1 = 35 / 100 nominal; recovers discrimination yield_score lost; chooses 4 representatives (CD-best, LER-best, balanced, margin) |
+| **06G** | data-driven `strict_score` (CD ±0.5 nm + LER ≤ 3.0 nm chosen from the 06F survival table) and Mode A re-optimisation | OP `strict_score` = 0.323; 06G best = 0.771; 6 representatives identified by the surrogate |
+| **06H** | FD verification of the 06G strict candidates (top-100 + 1,000 MC + 1,800 representative MC) + surrogate refresh on 06C ∪ 06E disagreement ∪ 06H FD = 8,311-row pool | 0 false-PASS in top-100 nominal; 10 / 10 MC robust; refreshed surrogate did **not** keep the 06G representatives in top-20 (1 / 6 stayed) |
+| **06I** | Mode A final manifest + decision table; FD MC strict_pass_prob is the final ranking authority; optional direct strict_score regressor diagnostic | primary recommended recipe = **`G_4867`** (FD MC strict_pass_prob 0.680, FD nominal CD_error 0.003 nm); direct strict_score regressor recovers FD ranking at Spearman ρ = +0.967 (vs +0.143 for the 06G surrogate) but is kept as diagnostic only |
+
+The Mode A research conclusion lives in
+`outputs/yield_optimization/stage06I_mode_a_final_recipes.yaml`. That
+manifest names `G_4867` as the default recipe, `G_1096` as the
+backup primary, `G_715` as the third option, and four other recipes
+as use-case-dependent or diagnostic. Surrogate scores stay in the
+manifest as columns for transparency; FD is the ranking authority.
+
+`study_notes/08_v3_stage06i_mode_a_final_selection.md` walks through
+the full 06A → 06I path, the saturation argument, and why no single
+recipe is universally best when CD / LER / margin trade off.
+
+```text
+outputs/yield_optimization/
+  stage06D_recipe_summary.csv               (5,000 second-pass candidates)
+  stage06D_top_recipes.csv                  (top 100, 06C surrogate)
+  stage06F_pareto_nominal.csv               (Pareto ranks + crowding)
+  stage06F_threshold_sensitivity.csv        (survival under tighter specs)
+  stage06G_recipe_summary.csv               (5,000 strict-score candidates)
+  stage06G_top_recipes.csv                  (top 100, strict_score)
+  stage06G_strict_score_config.yaml         (formula + chosen thresholds)
+  stage06G_threshold_selection.md           (data-driven threshold rationale)
+  stage06H_06g_recipes_rescored_by_06h.csv  (refresh comparison)
+  stage06I_mode_a_final_recipes.yaml        ← FINAL RECIPE MANIFEST
+  stage06I_final_decision_table.csv         (per-recipe rank + use case)
+outputs/labels/
+  stage06E_fd_top100_nominal.csv            (Stage 06D verification, 100)
+  stage06E_fd_top10_mc.csv                  (Stage 06D verification, 1,000)
+  stage06E_fd_disagreement.csv              (17 surrogate-disagreement FD rows)
+  stage06H_fd_top100_nominal.csv            (Stage 06G verification, 100)
+  stage06H_fd_top10_mc.csv                  (Stage 06G verification, 1,000)
+  stage06H_fd_representative_mc.csv         (6 representatives × 300 MC)
+  stage06H_training_dataset.csv             (06H surrogate refresh pool, 9,385)
+outputs/models/
+  stage06H_classifier.joblib
+  stage06H_regressor.joblib                 (n_estimators=200; keeps the
+                                             joblib under GitHub's 100 MB
+                                             push limit)
+  stage06H_aux_cd_fixed_regressor.joblib
+  stage06I_strict_score_regressor.joblib    (diagnostic only)
+outputs/logs/
+  stage06D_summary.json                     stage06H_fd_verification_summary.json
+  stage06E_summary.json                     stage06H_surrogate_refresh_summary.json
+  stage06F_summary.json                     stage06H_false_pass_summary.json
+  stage06G_summary.json                     stage06I_strict_score_regressor_metrics.json
+study_notes/
+  07_v3_stage06f_pareto_ranking.md
+  08_v3_stage06i_mode_a_final_selection.md  ← MODE A CLOSEOUT NOTE
+```
+
+**Reading**: FD is the final ranking authority for Mode A. The
+surrogate (06C, 06H, or the diagnostic 06I direct strict_score head)
+is for candidate proposal and screening — generate 5,000-candidate
+batches, send the top tier to FD, and use `strict_pass_prob` to pick
+among the FD-verified survivors. Mode B open-design exploration and
+process-window robustness maps remain future stages.
+
 ## Optional follow-ups
 
 These are explicitly **not** required for closeout:
