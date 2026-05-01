@@ -1,0 +1,98 @@
+{
+  "stage": "06J",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n"
+  },
+  "scope": "mode_b_open_design (pitch + line_cd_ratio variable)",
+  "seed": 7373,
+  "n_candidates": 5000,
+  "n_var_per_candidate": 200,
+  "strict_thresholds": {
+    "cd_tol_nm": 0.5,
+    "ler_cap_nm": 3.0
+  },
+  "v2_frozen_op_under_06h": {
+    "yield_score": 0.6907333333333334,
+    "strict_score": 0.2287391246120527,
+    "strict_pass_proxy": 0.5798158359562727,
+    "mean_cd_error": 0.11296153737453096,
+    "mean_ler_locked": 2.5181625683340236,
+    "p_robust_valid": 0.8625
+  },
+  "best_mode_b": {
+    "strict_best": {
+      "recipe_id": "J_1453",
+      "strict_score": 0.8981508092418597,
+      "pitch_nm": 24.0,
+      "line_cd_ratio": 0.45
+    },
+    "cd_best": {
+      "recipe_id": "J_2261",
+      "mean_cd_error": 0.0004779738483655649,
+      "pitch_nm": 28.0,
+      "line_cd_ratio": 0.52
+    },
+    "ler_best": {
+      "recipe_id": "J_993",
+      "mean_ler_locked": 2.2612567002454176,
+      "pitch_nm": 32.0,
+      "line_cd_ratio": 0.45
+    },
+    "balanced_best": {
+      "recipe_id": "J_4793",
+      "balanced_score": -5.003820053112583,
+      "pitch_nm": 28.0,
+      "line_cd_ratio": 0.45
+    },
+    "margin_best": {
+      "recipe_id": "J_3806",
+      "mean_p_line_margin": 0.24277013891517182,
+      "pitch_nm": 32.0,
+      "line_cd_ratio": 0.52
+    },
+    "novelty_best": {
+      "recipe_id": "J_1453",
+      "geometry_distance_to_modeA": 0.46666666666666684,
+      "strict_score": 0.8981508092418597,
+      "pitch_nm": 24.0,
+      "line_cd_ratio": 0.45
+    }
+  },
+  "geometry_clustering_top_strict_100": {
+    "n_at_modeA_geometry": 21,
+    "pitch_distribution": {
+      "20.0": 6,
+      "24.0": 37,
+      "28.0": 54,
+      "32.0": 3
+    },
+    "line_cd_ratio_distribution": {
+      "0.45": 47,
+      "0.52": 48,
+      "0.6": 5
+    }
+  },
+  "fd_sanity_check": {
+    "n_runs": 33,
+    "n_robust_valid": 28,
+    "n_strict_pass": 9,
+    "n_false_pass": 4,
+    "n_targets_dedup": 33
+  },
+  "fd_mc_optional": {
+    "n_targets": 5,
+    "n_runs": 500
+  },
+  "acceptance": {
+    "mode_b_search_run": true,
+    "top_candidates_identified": 100,
+    "compared_against_modeA_recipes": true,
+    "fd_sanity_check_run": true,
+    "false_pass_count": 4,
+    "policy_v2_OP_frozen": true,
+    "policy_published_data_loaded": false,
+    "policy_external_calibration": "none"
+  }
+}
