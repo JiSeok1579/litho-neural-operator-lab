@@ -1,0 +1,235 @@
+{
+  "stage": "06E",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n"
+  },
+  "n_top_nominal": 100,
+  "n_top_mc_recipes": 10,
+  "n_mc_per_recipe": 100,
+  "n_disagreement": 17,
+  "fd_baseline_v2_op": {
+    "nominal_yield_score": 1.0,
+    "nominal_label": "robust_valid",
+    "mc_yield_score": 1.0,
+    "mc_p_robust_valid": 1.0,
+    "mc_n": 100
+  },
+  "regression_errors_nominal": {
+    "CD_fixed": {
+      "mae": 0.5984474132738066,
+      "rmse": 0.7408166892612342,
+      "n": 100
+    },
+    "LER_locked": {
+      "mae": 0.02279139340158108,
+      "rmse": 0.02490066617925312,
+      "n": 100
+    }
+  },
+  "spearman_top100_nominal_yield_score": 0.10031936241312926,
+  "spearman_top10_mc_yield_score": -0.22992248278044786,
+  "topk_overlap_top100": {
+    "top1": 1,
+    "top3": 2,
+    "top5": 3
+  },
+  "surrogate_top10_overlap_with_fd_top10": 10,
+  "surrogate_top1_in_fd_top10": true,
+  "label_agreement_top100_2class": {
+    "n": 100,
+    "agree": 100,
+    "rate": 1.0
+  },
+  "fd_top10_recipes_by_score": [
+    {
+      "rank_surrogate": 1,
+      "recipe_id": "D_1243",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.764254307473772,
+      "mean_ler_locked_fd": 2.536876691027422
+    },
+    {
+      "rank_surrogate": 2,
+      "recipe_id": "D_812",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.458637247308873,
+      "mean_ler_locked_fd": 2.5448926532103413
+    },
+    {
+      "rank_surrogate": 4,
+      "recipe_id": "D_3225",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.884469163551948,
+      "mean_ler_locked_fd": 2.546478552907838
+    },
+    {
+      "rank_surrogate": 6,
+      "recipe_id": "D_4593",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.910075323477598,
+      "mean_ler_locked_fd": 2.5362681180569813
+    },
+    {
+      "rank_surrogate": 7,
+      "recipe_id": "D_1752",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.324211413805724,
+      "mean_ler_locked_fd": 2.541532359336704
+    },
+    {
+      "rank_surrogate": 8,
+      "recipe_id": "D_2652",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.1478133021615,
+      "mean_ler_locked_fd": 2.5419852776763894
+    },
+    {
+      "rank_surrogate": 9,
+      "recipe_id": "D_1963",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.223658948355824,
+      "mean_ler_locked_fd": 2.528188120107305
+    },
+    {
+      "rank_surrogate": 10,
+      "recipe_id": "D_2899",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.933205790132094,
+      "mean_ler_locked_fd": 2.545973511492036
+    },
+    {
+      "rank_surrogate": 5,
+      "recipe_id": "D_29",
+      "FD_yield_score": 0.8844616352899202,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 13.88446163528992,
+      "mean_ler_locked_fd": 2.567767291637738
+    },
+    {
+      "rank_surrogate": 3,
+      "recipe_id": "D_1513",
+      "FD_yield_score": 0.32125406876134477,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 16.678745931238655,
+      "mean_ler_locked_fd": 2.5448131084771317
+    }
+  ],
+  "fd_top10_recipes_06a_for_reference": [
+    {
+      "rank_surrogate": 1,
+      "recipe_id": "A_4856",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0
+    },
+    {
+      "rank_surrogate": 2,
+      "recipe_id": "A_279",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0
+    },
+    {
+      "rank_surrogate": 3,
+      "recipe_id": "A_94",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0
+    },
+    {
+      "rank_surrogate": 4,
+      "recipe_id": "A_1933",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0
+    },
+    {
+      "rank_surrogate": 5,
+      "recipe_id": "A_3686",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0
+    },
+    {
+      "rank_surrogate": 6,
+      "recipe_id": "A_2660",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0
+    },
+    {
+      "rank_surrogate": 7,
+      "recipe_id": "A_2002",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0
+    },
+    {
+      "rank_surrogate": 8,
+      "recipe_id": "A_3267",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0
+    },
+    {
+      "rank_surrogate": 9,
+      "recipe_id": "A_844",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0
+    },
+    {
+      "rank_surrogate": 10,
+      "recipe_id": "A_838",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0
+    }
+  ],
+  "disagreement_summary": {
+    "n_disagreement": 17,
+    "label_breakdown": {
+      "robust_valid": 17
+    },
+    "n_robust_valid": 17,
+    "n_margin_risk": 0,
+    "n_hard_fail": 0,
+    "06c_correct": 17,
+    "06a_correct": 5,
+    "06c_correct_rate": 1.0
+  },
+  "n_al_additions": 1218,
+  "acceptance": {
+    "fd_baseline_v2_op_nominal_yield_score": 1.0,
+    "fd_baseline_v2_op_nominal_label": "robust_valid",
+    "fd_baseline_v2_op_mc_yield_score": 1.0,
+    "fd_baseline_v2_op_mc_p_robust_valid": 1.0,
+    "fd_baseline_v2_op_mc_n": 100,
+    "mc_baseline_used_for_comparison": "v2 frozen OP MC",
+    "metric_saturated_at_op": true,
+    "matches_op_ceiling_or_robust_under_mc_pass": true,
+    "matches_op_ceiling_top100_nominal_count": 69,
+    "matches_op_ceiling_top10_mc_count": 8,
+    "top100_FD_strict_beat_nominal_baseline_count": 0,
+    "top10_FD_MC_strict_beat_baseline_count": 0,
+    "spearman_top100": 0.10031936241312926,
+    "spearman_top10": -0.22992248278044786,
+    "topk_overlap": {
+      "top1": 1,
+      "top3": 2,
+      "top5": 3
+    },
+    "surrogate_top1_in_fd_top10": true,
+    "surrogate_top10_overlap_fd_top10": 10,
+    "false_pass_rate_top100": 0.0,
+    "false_pass_within_threshold": true,
+    "false_pass_threshold": 0.2,
+    "disagreement_n": 17,
+    "disagreement_n_robust_valid": 17,
+    "disagreement_n_hard_fail": 0,
+    "disagreement_06c_correct_rate": 1.0,
+    "policy_v2_OP_frozen": true,
+    "policy_published_data_loaded": false,
+    "policy_external_calibration": "none"
+  }
+}
