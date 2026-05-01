@@ -620,6 +620,59 @@ samplers) — they are *not* a forecast of fab yield, but a fab-style
 view of the screening-set defect mix and the surrogate's PASS/FAIL
 agreement on it.
 
+## Stage 06A — surrogate-driven nominal-yield-proxy optimisation
+
+A new milestone on top of the closed first pass. The closed Stage 04C
+classifier + 4-target regressor are reused (not retrained); a small
+auxiliary `CD_fixed_nm` regressor is added on top of the same Stage 04C
+labelled pool so the score can read CD at the v2 fixed P-threshold. The
+v2 frozen nominal OP runs through the same MC pipeline as a baseline.
+
+This is **not** real fab yield; it is a *nominal-model yield proxy*.
+`v2_OP_frozen` stays `true` and `published_data_loaded` stays `false`.
+
+```bash
+python -m reaction_diffusion_peb_v3_screening.experiments.06_yield_optimization.run_yield_optimization
+python -m reaction_diffusion_peb_v3_screening.experiments.06_yield_optimization.plot_results
+```
+
+`yield_score` =
+`+1.0·P(robust_valid) − 0.5·P(margin_risk) − 2.0·P(merged) − 2.0·P(under_exposed) − 1.5·P(roughness_degraded) − 3.0·P(numerical_invalid) − 1.0·CD_error_penalty − 1.0·LER_penalty`,
+with `CD_error_penalty = max(0, |mean(CD_fixed) − 15| − 1)` (uses the
+auxiliary regressor) and `LER_penalty = max(0, mean(LER_CD_locked) − 3)`.
+
+Two modes (5,000 candidates × 200 process variations each):
+
+- **Mode A — fixed-design** (primary): pin `pitch_nm=24`,
+  `line_cd_ratio=0.52`, `abs_len_nm=50`; sample only the 8 recipe /
+  material-effective knobs. **190 / 5,000 recipes (3.8 %) beat the v2
+  baseline.** Best yield_score = 0.9522 vs baseline 0.6828.
+- **Mode B — open design** (secondary): all candidate-space axes free.
+  **87 / 5,000 (1.7 %) beat the v2 baseline.** Reported separately so
+  Mode A's "same design, better recipe" comparison is not confounded.
+
+Outputs:
+
+```text
+outputs/labels/
+  06_yield_optimization_summary.csv               all rows + baseline
+  06_top_recipes_fixed_design_surrogate.csv       Mode A top-100
+  06_top_recipes_open_design_surrogate.csv        Mode B top-100
+outputs/models/
+  06_yield_optimization_cd_fixed_aux.joblib       aux CD_fixed regressor
+outputs/logs/
+  06_yield_optimization_summary.json              run-level summary
+outputs/figures/06_yield_optimization/
+  pareto_front_fixed_design.png
+  pareto_front_open_design.png
+  defect_breakdown_heatmaps.png
+  recipe_sensitivity.png
+study_notes/04_v3_stage06a_yield_optimization.md
+```
+
+Stage 06B (FD verification + AL update) is deferred to its own PR. The
+closed Stage 04C training dataset is not mutated by this stage.
+
 ## Optional follow-ups
 
 These are explicitly **not** required for closeout:

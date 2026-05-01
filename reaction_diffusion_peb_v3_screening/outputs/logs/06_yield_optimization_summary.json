@@ -1,0 +1,41 @@
+{
+  "stage": "06A_yield_optimization",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n"
+  },
+  "n_candidates": 5000,
+  "variations_per_candidate": 200,
+  "seed": 1011,
+  "v2_frozen_op_baseline": {
+    "yield_score": 0.6828249999999999,
+    "p_robust_valid": 0.8484666666666665,
+    "p_margin_risk": 0.08811666666666662,
+    "p_merged": 0.029516666666666636,
+    "p_under_exposed": 0.02329999999999999,
+    "p_roughness": 0.01056666666666667,
+    "p_numerical": 3.3333333333333335e-05,
+    "cd_error_penalty": 0.0,
+    "ler_penalty": 0.0,
+    "mean_cd_fixed": 14.808220945919583,
+    "mean_cd_locked": 12.483260781772474,
+    "mean_ler_locked": 2.5235645094794674
+  },
+  "mode_summaries": {
+    "fixed_design": {
+      "n_recipes": 5000,
+      "best_yield_score": 0.9521500000000006,
+      "median_yield_score": -1.4103699606127358,
+      "beats_baseline_count": 190,
+      "beats_baseline_rate": 0.038
+    },
+    "open_design": {
+      "n_recipes": 5000,
+      "best_yield_score": 0.9385750000000003,
+      "median_yield_score": -2.2809443614099507,
+      "beats_baseline_count": 87,
+      "beats_baseline_rate": 0.0174
+    }
+  }
+}
