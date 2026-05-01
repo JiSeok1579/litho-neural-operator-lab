@@ -1,0 +1,74 @@
+stage: 06N
+policy:
+  v2_OP_frozen: true
+  published_data_loaded: false
+  external_calibration: none
+comparison_basis:
+  protocol: 11 deterministic offsets x 100 FD + sigma_t = 2 s gaussian
+  n_fd_runs_g4867: 1100
+  n_fd_runs_g4299: 1100
+  strict_thresholds:
+    cd_tol_nm: 0.5
+    ler_cap_nm: 3.0
+G_4867:
+  role_06i: fd_stability_best (default / strict-best)
+  role_06n_assigned: default_cd_accurate
+  nominal_time_s: 29.275345294736326
+  strict_pass_at_zero: 0.78
+  mean_cd_error_at_zero: 0.33042613268894827
+  time_budget:
+    strict_pass_ge_0.5:
+    - -2.0
+    - 1.0
+    robust_valid_ge_0.8:
+    - -5.0
+    - 5.0
+    defect_le_0.05:
+    - -5.0
+    - 5.0
+    all_three:
+    - -2.0
+    - 1.0
+    all_three_width: 3.0
+    strict_pass_width: 3.0
+    neg_threshold_strict: -2.0
+    pos_threshold_strict: 1.0
+  primary_failure_neg:
+    kind: cd_error_overshoot_no_label_flip
+    avg_prob: 0.0
+  primary_failure_pos:
+    kind: cd_error_overshoot_no_label_flip
+    avg_prob: 0.0
+G_4299:
+  role_06i: margin_best
+  role_06n_assigned: fragile_strict_optimum
+  nominal_time_s: 28.919346518814564
+  strict_pass_at_zero: 0.46
+  mean_cd_error_at_zero: 0.5437530504414775
+  time_budget:
+    strict_pass_ge_0.5:
+    - .nan
+    - .nan
+    robust_valid_ge_0.8:
+    - -5.0
+    - 5.0
+    defect_le_0.05:
+    - -5.0
+    - 5.0
+    all_three:
+    - .nan
+    - .nan
+    all_three_width: .nan
+    strict_pass_width: .nan
+    neg_threshold_strict: .nan
+    pos_threshold_strict: .nan
+  primary_failure_neg:
+    kind: cd_error_overshoot_no_label_flip
+    avg_prob: 0.0
+  primary_failure_pos:
+    kind: cd_error_overshoot_no_label_flip
+    avg_prob: 0.0
+outcome: G_4867_remains_default
+recommendation: G_4299 does not improve the time window. Keep G_4867 as Mode A default;
+  mark G_4299 as margin-interesting but not more time-robust.
+primary_recipe_after_06n: G_4867
