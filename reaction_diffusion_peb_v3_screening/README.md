@@ -728,10 +728,88 @@ outputs/figures/06_yield_optimization/
 ```
 
 The Stage 06B AL-additions CSV is intentionally separate from the
-closed Stage 04C training dataset. Append it (and re-train the four
-surrogate components, including the auxiliary CD_fixed regressor) only
-when Stage 06C is greenlit. Mode B FD verification is deferred — only
-Mode A's primary verification path is run here.
+closed Stage 04C training dataset. Stage 06C uses it for the surrogate
+refresh; the closed Stage 04C joblibs / dataset on disk are untouched.
+Mode B FD verification is deferred — only Mode A's primary
+verification path is run.
+
+## Stage 06C — surrogate refresh with Stage 06B FD additions
+
+Stage 06B diagnosed that the closed Stage 04C surrogate is good at
+*candidate proposal* but weak at *fine ranking inside the top tier*
+(within-tier yield_score Spearman ≈ +0.07, aux CD_fixed MAE ≈ 1 nm
+≈ the ±1 nm tolerance window). Stage 06C tests whether folding the
+1,100 FD-verified top-tier rows back into training shrinks that
+ranking noise.
+
+Closed-state preservation
+- The closed Stage 04C training dataset is **not mutated**.
+- The closed Stage 04C joblibs at `outputs/models/stage04C_*.joblib`
+  are **not modified**.
+- The 06C training CSV is a fresh file; the 06C joblibs are fresh
+  files. \`v2_OP_frozen\` stays \`true\`, \`published_data_loaded\`
+  stays \`false\`.
+
+```bash
+python -m reaction_diffusion_peb_v3_screening.experiments.06_yield_optimization.build_stage06c_dataset
+python -m reaction_diffusion_peb_v3_screening.experiments.06_yield_optimization.train_stage06c_models
+python -m reaction_diffusion_peb_v3_screening.experiments.06_yield_optimization.evaluate_stage06c_ranking
+```
+
+### Headline result — top-tier ranking on the original Stage 06A top-100
+
+| metric | Stage 06A | Stage 06C | Δ |
+|---|---:|---:|---:|
+| **yield_score Spearman ρ vs FD truth**   | **+0.071** | **+0.447** | **+0.376 ✅** |
+| CD_fixed Spearman ρ vs FD                | +0.526     | +0.891     | +0.365      |
+| LER_locked Spearman ρ vs FD              | +0.086     | +0.765     | +0.679      |
+| **CD_fixed MAE vs FD nominal (top-100)** | **0.995 nm** | **0.322 nm** | **−67.6 % ✅** |
+| LER_locked MAE vs FD nominal             | 0.047 nm   | 0.027 nm   | −42 %       |
+| top-10 overlap with FD top-10            | 10/10      | 10/10      | unchanged   |
+| false-PASS in top-100                    | 0          | 0          | unchanged ✅ |
+
+All user-spec ranking acceptance thresholds pass:
+\`CD_fixed MAE < 0.75 nm\` (0.322 ≪ 0.75),
+\`yield_score Spearman > 0.25\` (+0.447),
+\`false-PASS = 0\`,
+\`macro-F1 drop ≤ 0.03\` (actual −0.014 on the 04D failure-biased test set).
+
+### Apples-to-apples on the 04D holdout
+
+A *fair* 04C baseline (re-trained on the same 4,294 04D-train rows the
+06C model uses, no leakage) is compared to refreshed 06C on the same
+1,074-row 04D test set. On this failure-biased pool the refresh
+barely moves: macro-F1 0.722 → 0.708, balanced accuracy 0.695 →
+0.684, all four 4-target MAEs flat to two decimals. This is expected
+— the 1,100 new rows cluster near the v2 OP and label `robust_valid`
+only, so they offer little leverage over the failure-zone classifier.
+Use 06C joblibs for *yield-optimisation top-tier ranking*; keep the
+closed 04C joblibs for the closed-state screening narrative.
+
+### Outputs
+
+```text
+outputs/labels/
+  stage06C_training_dataset.csv               6,468 rows
+  stage06C_ranking_comparison.csv               100 rows
+outputs/models/
+  stage06C_classifier.joblib
+  stage06C_regressor.joblib
+  stage06C_aux_cd_fixed_regressor.joblib
+  stage06C_fair_04c_baseline_classifier.joblib
+  stage06C_fair_04c_baseline_regressor.joblib
+  stage06C_fair_04c_baseline_aux_cd_fixed.joblib
+outputs/logs/
+  stage06C_model_metrics.json
+  stage06C_ranking_comparison.json
+  stage06C_false_pass_summary.json
+outputs/figures/06_yield_optimization/
+  stage06C_surrogate_vs_fd_yield_scatter.png
+  stage06C_cd_fixed_pred_vs_fd.png
+  stage06C_ranking_before_after.png
+  stage06C_feature_importance.png
+study_notes/06_v3_stage06c_surrogate_refresh.md
+```
 
 ## Optional follow-ups
 

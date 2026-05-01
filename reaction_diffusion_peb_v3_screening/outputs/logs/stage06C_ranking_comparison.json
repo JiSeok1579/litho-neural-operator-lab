@@ -1,0 +1,74 @@
+{
+  "stage": "06C",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n"
+  },
+  "n_recipes_rescored": 100,
+  "n_var_per_recipe": 200,
+  "ranking_metrics": {
+    "spearman_yield_score": {
+      "06a": 0.07107279980205397,
+      "06c": 0.44686190212435495
+    },
+    "spearman_cd_fixed": {
+      "06a": 0.5257125712571257,
+      "06c": 0.8908130813081306
+    },
+    "spearman_ler_locked": {
+      "06a": 0.08602460246024601,
+      "06c": 0.765028502850285
+    },
+    "topk_overlap": {
+      "top1": {
+        "06a_vs_fd": 1,
+        "06c_vs_fd": 0,
+        "06a_vs_06c": 0
+      },
+      "top3": {
+        "06a_vs_fd": 3,
+        "06c_vs_fd": 2,
+        "06a_vs_06c": 2
+      },
+      "top5": {
+        "06a_vs_fd": 5,
+        "06c_vs_fd": 3,
+        "06a_vs_06c": 3
+      },
+      "top10": {
+        "06a_vs_fd": 10,
+        "06c_vs_fd": 10,
+        "06a_vs_06c": 10
+      }
+    }
+  },
+  "regression_vs_fd_nominal": {
+    "cd_fixed": {
+      "mae_06a": 0.9952458597511984,
+      "rmse_06a": 1.147437653987322,
+      "mae_06c": 0.32198005635116517,
+      "rmse_06c": 0.43801685280027114,
+      "n": 100
+    },
+    "ler_locked": {
+      "mae_06a": 0.04736367057047298,
+      "rmse_06a": 0.059283581512456975,
+      "mae_06c": 0.0265795811020124,
+      "rmse_06c": 0.03160346658012748,
+      "n": 100
+    }
+  },
+  "acceptance": {
+    "cd_fixed_mae_06b_baseline": 0.995,
+    "cd_fixed_mae_06c": 0.32198005635116517,
+    "cd_fixed_mae_improvement_pct": 67.64019534159145,
+    "cd_fixed_mae_pass_strict": true,
+    "cd_fixed_mae_pass_relative": true,
+    "yield_spearman_06b_baseline": 0.071,
+    "yield_spearman_06c": 0.44686190212435495,
+    "yield_spearman_pass": true,
+    "false_pass_total_06c": 0,
+    "false_pass_pass": true
+  }
+}
