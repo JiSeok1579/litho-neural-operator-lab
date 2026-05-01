@@ -1,0 +1,33 @@
+thresholds:
+  cd_tol_nm: 0.5
+  ler_cap_nm: 3.0
+class_weights:
+  robust_valid: 1.0
+  margin_risk: -0.5
+  under_exposed: -2.0
+  merged: -2.0
+  roughness_degraded: -1.5
+  numerical_invalid: -3.0
+strict_penalties:
+  cd_strict_weight: 1.5
+  ler_strict_weight: 1.5
+  cd_std_weight: 0.5
+  ler_std_weight: 0.5
+  margin_bonus: 0.25
+  cd_std_norm_nm: 0.5
+  ler_std_norm_nm: 1.0
+formula: strict_score = + w_robust_valid*P(robust_valid) + w_margin_risk*P(margin_risk)
+  + w_under_exposed*P(under_exposed) + w_merged*P(merged) + w_roughness_degraded*P(roughness_degraded)
+  + w_numerical_invalid*P(numerical_invalid) - w_cd_strict_pen*max(0, |mean(CD_fixed_nm)-15|
+  - cd_tol_nm)/cd_tol_nm - w_ler_strict_pen*max(0, mean(LER_CD_locked_nm) - ler_cap_nm)/1.0
+  - w_cd_std_pen*(std_cd_fixed_nm/cd_std_norm_nm) - w_ler_std_pen*(std_ler_locked_nm/ler_std_norm_nm)
+  + w_margin_bonus*mean(P_line_margin)
+rationale_source: stage06F_threshold_sensitivity.csv
+selection_summary:
+  primary_choice_cd_tol_nm: 0.5
+  primary_choice_ler_cap_nm: 3.0
+  expected_top100_survival_06f: Selected from stage06F_threshold_sensitivity.csv --
+    the cell (cd_tol=0.5, ler_cap=3.0) had n_survivors that was nonzero but selective
+    (~30-50%).
+  backup_cd_tol_nm: 0.75
+  backup_ler_cap_nm: 3.0
