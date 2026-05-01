@@ -1,0 +1,196 @@
+{
+  "stage": "06K",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n"
+  },
+  "primary_recipe_id": "G_4867",
+  "strict_thresholds": {
+    "cd_tol_nm": 0.5,
+    "ler_cap_nm": 3.0
+  },
+  "baseline_metrics": {
+    "strict_score": 0.6452632750603119,
+    "strict_pass_proxy": 0.7970763880791879,
+    "mean_cd_error": 0.041070518094867836,
+    "mean_ler_locked": 2.535902006260472,
+    "p_robust_valid": 0.9999000000000001
+  },
+  "knob_sensitivity_oat": [
+    {
+      "knob": "time_s",
+      "max_abs_strict_drop": 0.6461405618324697,
+      "max_abs_proxy_drop": 0.651228772086714,
+      "max_cd_error": 0.7635029492618468,
+      "max_ler_excursion": 0.002768011506336876
+    },
+    {
+      "knob": "Hmax_mol_dm3",
+      "max_abs_strict_drop": 0.11767257616372773,
+      "max_abs_proxy_drop": 0.1377175393628164,
+      "max_cd_error": 0.3326965080355535,
+      "max_ler_excursion": 0.0029737967795804288
+    },
+    {
+      "knob": "sigma_nm",
+      "max_abs_strict_drop": 0.08860084794530831,
+      "max_abs_proxy_drop": 0.16109395735667342,
+      "max_cd_error": 0.25811458165957823,
+      "max_ler_excursion": 0.006945874638364824
+    },
+    {
+      "knob": "kdep_s_inv",
+      "max_abs_strict_drop": 0.07275246795760493,
+      "max_abs_proxy_drop": 0.16739311991291206,
+      "max_cd_error": 0.3812803375096312,
+      "max_ler_excursion": 0.004572476217060473
+    },
+    {
+      "knob": "dose_mJ_cm2",
+      "max_abs_strict_drop": 0.05847140411282514,
+      "max_abs_proxy_drop": 0.07844150581066511,
+      "max_cd_error": 0.14268658337933715,
+      "max_ler_excursion": 0.0025952941410962715
+    },
+    {
+      "knob": "Q0_mol_dm3",
+      "max_abs_strict_drop": 0.04597425571847369,
+      "max_abs_proxy_drop": 0.05392995765173858,
+      "max_cd_error": 0.10240221624563262,
+      "max_ler_excursion": 0.004175041706997895
+    },
+    {
+      "knob": "DH_nm2_s",
+      "max_abs_strict_drop": 0.03885491965090171,
+      "max_abs_proxy_drop": 0.043125685508276335,
+      "max_cd_error": 0.12620027129829126,
+      "max_ler_excursion": 0.00231541983089123
+    },
+    {
+      "knob": "kq_s_inv",
+      "max_abs_strict_drop": 0.03187045321374615,
+      "max_abs_proxy_drop": 0.034562154323552474,
+      "max_cd_error": 0.05210243433487882,
+      "max_ler_excursion": 0.003211293450970043
+    }
+  ],
+  "fd_subset": {
+    "n_total": 701,
+    "n_nominal": 101,
+    "label_counts_nominal": {
+      "robust_valid": 98,
+      "margin_risk": 3
+    },
+    "n_robust_valid": 98,
+    "n_strict_pass": 55,
+    "n_strict_fail": 46,
+    "n_mc": 600,
+    "fd_mc_aggregates": [
+      {
+        "recipe_id": "K_base",
+        "role": "baseline_mc",
+        "n_mc": 100,
+        "robust_prob": 1.0,
+        "margin_risk_prob": 0.0,
+        "defect_prob": 0.0,
+        "strict_pass_prob": 0.72,
+        "mean_CD_final_nm": 14.98277313989858,
+        "std_CD_final_nm": 0.4368441897951794,
+        "mean_LER_CD_locked": 2.531528767366264,
+        "std_LER_CD_locked": 0.019294059151751152
+      },
+      {
+        "recipe_id": "K_oat_time_s_10",
+        "role": "worst_oat_time_s",
+        "n_mc": 100,
+        "robust_prob": 1.0,
+        "margin_risk_prob": 0.0,
+        "defect_prob": 0.0,
+        "strict_pass_prob": 0.12,
+        "mean_CD_final_nm": 16.160762016095813,
+        "std_CD_final_nm": 0.5880024126048365,
+        "mean_LER_CD_locked": 2.5377875425918957,
+        "std_LER_CD_locked": 0.022119113852166694
+      },
+      {
+        "recipe_id": "K_oat_Hmax_mol_dm3_00",
+        "role": "worst_oat_Hmax_mol_dm3",
+        "n_mc": 100,
+        "robust_prob": 1.0,
+        "margin_risk_prob": 0.0,
+        "defect_prob": 0.0,
+        "strict_pass_prob": 0.3,
+        "mean_CD_final_nm": 14.315258317351681,
+        "std_CD_final_nm": 0.4860782483309619,
+        "mean_LER_CD_locked": 2.532616001517181,
+        "std_LER_CD_locked": 0.020238380258257825
+      },
+      {
+        "recipe_id": "K_oat_sigma_nm_10",
+        "role": "worst_oat_sigma_nm",
+        "n_mc": 100,
+        "robust_prob": 1.0,
+        "margin_risk_prob": 0.0,
+        "defect_prob": 0.0,
+        "strict_pass_prob": 0.58,
+        "mean_CD_final_nm": 15.268785916563317,
+        "std_CD_final_nm": 0.47884153995589035,
+        "mean_LER_CD_locked": 2.5252041393550098,
+        "std_LER_CD_locked": 0.01951898593050252
+      },
+      {
+        "recipe_id": "K_oat_kdep_s_inv_10",
+        "role": "worst_oat_kdep_s_inv",
+        "n_mc": 100,
+        "robust_prob": 1.0,
+        "margin_risk_prob": 0.0,
+        "defect_prob": 0.0,
+        "strict_pass_prob": 0.67,
+        "mean_CD_final_nm": 15.011928938077714,
+        "std_CD_final_nm": 0.49912058243529983,
+        "mean_LER_CD_locked": 2.534851075517067,
+        "std_LER_CD_locked": 0.02018107049585329
+      },
+      {
+        "recipe_id": "K_oat_dose_mJ_cm2_01",
+        "role": "worst_oat_dose_mJ_cm2",
+        "n_mc": 100,
+        "robust_prob": 1.0,
+        "margin_risk_prob": 0.0,
+        "defect_prob": 0.0,
+        "strict_pass_prob": 0.52,
+        "mean_CD_final_nm": 14.610944237918659,
+        "std_CD_final_nm": 0.46556457088407543,
+        "mean_LER_CD_locked": 2.5323982783862378,
+        "std_LER_CD_locked": 0.016825200172289428
+      }
+    ]
+  },
+  "interpretation": {
+    "broad_basin_inferred": false,
+    "primary_process_control_knob": "time_s",
+    "process_window_recommendation": "Tighten control most aggressively on the top-1 fragile knob; loosen tolerances on the bottom-1 fragile knob if cost matters."
+  },
+  "acceptance": {
+    "local_pw_mapped": true,
+    "n_local_candidates": 4735,
+    "n_oat_candidates": 89,
+    "n_pair_candidates": 2646,
+    "strict_pass_proxy_quantified": true,
+    "top3_fragile_knobs": [
+      "time_s",
+      "Hmax_mol_dm3",
+      "sigma_nm"
+    ],
+    "n_pairwise_maps_generated": 3,
+    "fd_verification_done": true,
+    "fd_nominal_n_robust": 98,
+    "fd_nominal_n_strict_pass": 55,
+    "fd_nominal_n_strict_fail": 46,
+    "fd_mc_aggr_count": 6,
+    "policy_v2_OP_frozen": true,
+    "policy_published_data_loaded": false,
+    "policy_external_calibration": "none"
+  }
+}
