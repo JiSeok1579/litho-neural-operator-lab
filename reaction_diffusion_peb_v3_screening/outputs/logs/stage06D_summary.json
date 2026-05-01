@@ -1,0 +1,120 @@
+{
+  "stage": "06D",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n"
+  },
+  "n_candidates": 5000,
+  "n_var_per_candidate": 200,
+  "seed": 4042,
+  "v2_frozen_op_baseline": {
+    "yield_score_06c": 0.6730166666666665,
+    "yield_score_06a": 0.6759083333333332
+  },
+  "best_recipe_06d": {
+    "recipe_id": "D_1243",
+    "yield_score_06c": 1.0,
+    "yield_score_06a": 0.5487685920315793,
+    "pitch_nm": 24.0,
+    "line_cd_ratio": 0.52,
+    "dose_mJ_cm2": 52.952189340256155,
+    "sigma_nm": 0.6573477387428284,
+    "DH_nm2_s": 0.47568279430270194,
+    "time_s": 33.43297273851931,
+    "Hmax_mol_dm3": 0.2021333150751889,
+    "kdep_s_inv": 0.4906858271919191,
+    "Q0_mol_dm3": 0.011134928120300173,
+    "kq_s_inv": 1.5573461670428514,
+    "abs_len_nm": 50.0
+  },
+  "knob_shift": {
+    "dose_mJ_cm2": {
+      "mean_06a_top100": 49.857329195374625,
+      "mean_06d_top100": 52.07682078793645,
+      "std_06a_top100": 6.764306265983908,
+      "std_06d_top100": 5.888520552153854,
+      "delta_mean": 2.2194915925618233
+    },
+    "sigma_nm": {
+      "mean_06a_top100": 0.747931626951322,
+      "mean_06d_top100": 0.584516220157966,
+      "std_06a_top100": 0.47173889019634774,
+      "std_06d_top100": 0.3294756695741554,
+      "delta_mean": -0.16341540679335598
+    },
+    "DH_nm2_s": {
+      "mean_06a_top100": 0.443539155134931,
+      "mean_06d_top100": 0.4381959408847614,
+      "std_06a_top100": 0.09125546262702264,
+      "std_06d_top100": 0.07767214201255324,
+      "delta_mean": -0.005343214250169592
+    },
+    "time_s": {
+      "mean_06a_top100": 29.77025529416278,
+      "mean_06d_top100": 31.653636232716963,
+      "std_06a_top100": 4.32325691382241,
+      "std_06d_top100": 4.524673679893687,
+      "delta_mean": 1.8833809385541826
+    },
+    "Hmax_mol_dm3": {
+      "mean_06a_top100": 0.19069197891019282,
+      "mean_06d_top100": 0.19185064475443217,
+      "std_06a_top100": 0.017259722509452374,
+      "std_06d_top100": 0.015657071907904167,
+      "delta_mean": 0.0011586658442393483
+    },
+    "kdep_s_inv": {
+      "mean_06a_top100": 0.5584898788630963,
+      "mean_06d_top100": 0.5656644740421326,
+      "std_06a_top100": 0.05269627076999103,
+      "std_06d_top100": 0.05076030542928842,
+      "delta_mean": 0.007174595179036292
+    },
+    "Q0_mol_dm3": {
+      "mean_06a_top100": 0.015868828173726795,
+      "mean_06d_top100": 0.013900800442881882,
+      "std_06a_top100": 0.00706394179936273,
+      "std_06d_top100": 0.006331817939303226,
+      "delta_mean": -0.001968027730844913
+    },
+    "kq_s_inv": {
+      "mean_06a_top100": 1.3347335812961683,
+      "mean_06d_top100": 1.254543465934694,
+      "std_06a_top100": 0.3698097376914826,
+      "std_06d_top100": 0.39763969769365154,
+      "delta_mean": -0.08019011536147436
+    }
+  },
+  "novelty": {
+    "distance_threshold": 0.3,
+    "n_candidates": 77,
+    "median_min_dist_top100": 0.3511449347227141,
+    "min_min_dist_top100": 0.18683293494199185,
+    "max_min_dist_top100": 0.538521726282113
+  },
+  "fd_top20_check": {
+    "n_runs": 20,
+    "n_robust_valid": 20,
+    "n_hard_fail": 0,
+    "n_margin_risk": 0,
+    "fd_yield_score_mean": 0.9160342577081758
+  },
+  "acceptance": {
+    "best_yield_score_06a": 0.9521500000000006,
+    "best_yield_score_06d": 1.0,
+    "delta_best_yield_score": 0.04784999999999939,
+    "best_06d_ge_best_06a": true,
+    "median_min_dist_06d_top100_to_06a": 0.3511449347227141,
+    "top_n_overlap_06a_06d": 0,
+    "n_novelty_candidates": 77,
+    "n_disagreement_candidates": 17,
+    "fd_top20_robust_valid_count": 20,
+    "fd_top20_hard_fail_count": 0,
+    "fd_top20_margin_risk_count": 0,
+    "fd_top20_yield_score_mean": 0.9160342577081758,
+    "policy_v2_OP_frozen": true,
+    "policy_published_data_loaded": false,
+    "policy_external_calibration": "none"
+  }
+}
