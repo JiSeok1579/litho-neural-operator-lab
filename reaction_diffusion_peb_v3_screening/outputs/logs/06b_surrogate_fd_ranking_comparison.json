@@ -1,0 +1,148 @@
+{
+  "stage": "06B",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n"
+  },
+  "n_top_nominal": 100,
+  "n_top_mc_recipes": 10,
+  "n_mc_per_recipe": 100,
+  "v2_frozen_op_yield_score_baseline": 0.6828249999999999,
+  "regression_errors_nominal": {
+    "CD_fixed": {
+      "mae": 0.9952458597511984,
+      "rmse": 1.147437653987322,
+      "n": 100
+    },
+    "CD_locked": {
+      "mae": 0.1333022819035204,
+      "rmse": 0.16225977733872407,
+      "n": 100
+    },
+    "LER_locked": {
+      "mae": 0.04736367057047298,
+      "rmse": 0.059283581512456975,
+      "n": 100
+    },
+    "area_frac": {
+      "mae": 0.054829416707175914,
+      "rmse": 0.06780795089047464,
+      "n": 100
+    },
+    "P_line_margin": {
+      "mae": 0.03842418399582487,
+      "rmse": 0.046767503032589856,
+      "n": 100
+    }
+  },
+  "spearman_top100_nominal_yield_score": 0.07107279980205397,
+  "spearman_top10_mc_yield_score": NaN,
+  "topk_overlap_top100": {
+    "top1": 1,
+    "top3": 3,
+    "top5": 5
+  },
+  "surrogate_top10_overlap_with_fd_top10": 10,
+  "surrogate_top1_in_fd_top10": true,
+  "label_agreement_top100": {
+    "n": 100,
+    "agree": 100,
+    "rate": 1.0
+  },
+  "fd_top10_recipes_by_score": [
+    {
+      "rank_surrogate": 1,
+      "recipe_id": "A_4856",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.315004869689686,
+      "mean_ler_locked_fd": 2.539436928233404
+    },
+    {
+      "rank_surrogate": 2,
+      "recipe_id": "A_279",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.127500024432235,
+      "mean_ler_locked_fd": 2.5355826493718907
+    },
+    {
+      "rank_surrogate": 3,
+      "recipe_id": "A_94",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.789180800129476,
+      "mean_ler_locked_fd": 2.5320007325417966
+    },
+    {
+      "rank_surrogate": 4,
+      "recipe_id": "A_1933",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 14.121922351665628,
+      "mean_ler_locked_fd": 2.555055735688138
+    },
+    {
+      "rank_surrogate": 5,
+      "recipe_id": "A_3686",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.592516816844379,
+      "mean_ler_locked_fd": 2.5427906801677564
+    },
+    {
+      "rank_surrogate": 6,
+      "recipe_id": "A_2660",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 15.17102129846305,
+      "mean_ler_locked_fd": 2.5420877710786747
+    },
+    {
+      "rank_surrogate": 7,
+      "recipe_id": "A_2002",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 14.442165151820948,
+      "mean_ler_locked_fd": 2.5320917629196718
+    },
+    {
+      "rank_surrogate": 8,
+      "recipe_id": "A_3267",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 14.211238092948292,
+      "mean_ler_locked_fd": 2.541600780480058
+    },
+    {
+      "rank_surrogate": 9,
+      "recipe_id": "A_844",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 14.832564619033164,
+      "mean_ler_locked_fd": 2.5460149831101115
+    },
+    {
+      "rank_surrogate": 10,
+      "recipe_id": "A_838",
+      "FD_yield_score": 1.0,
+      "P_FD_robust_valid": 1.0,
+      "mean_cd_fixed_fd": 14.74902424111669,
+      "mean_ler_locked_fd": 2.5346250408255684
+    }
+  ],
+  "acceptance": {
+    "top100_FD_beats_baseline_count": 85,
+    "top100_FD_beats_baseline_pass": true,
+    "fd_mc_beats_baseline_count": 10,
+    "fd_mc_beats_baseline_pass": true,
+    "surrogate_top10_overlap_fd_top10": 10,
+    "surrogate_top10_overlap_pass": true,
+    "spearman_top100": 0.07107279980205397,
+    "spearman_top10": NaN,
+    "spearman_positive_pass": true,
+    "false_pass_rate_top100": 0.0,
+    "false_pass_catastrophic": false
+  }
+}

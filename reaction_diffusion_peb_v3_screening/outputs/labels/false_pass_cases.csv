@@ -1,0 +1,1 @@
+recipe_id,rank_surrogate,fd_label,false_pass_kind,yield_score_surrogate,p_robust_valid_surrogate,CD_final_fd,CD_locked_fd,LER_CD_locked_fd,area_frac_fd,P_line_margin_fd,dose_mJ_cm2,sigma_nm,DH_nm2_s,time_s,Hmax_mol_dm3,kdep_s_inv,Q0_mol_dm3,kq_s_inv,line_cd_ratio
