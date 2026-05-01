@@ -1,0 +1,410 @@
+{
+  "stage": "06C",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "external_calibration": "none"
+  },
+  "split": {
+    "seed": 13,
+    "n_train_04c_only": 4294,
+    "n_train_06c_pool": 5394,
+    "n_test_04c_only": 1074,
+    "note": "Fair-baseline 04C and refreshed 06C are both trained with strict 04D-train holdout (same 1,074-row test set, no leakage). The closed Stage 04C joblibs on disk are not used in this comparison and are not modified."
+  },
+  "feature_keys": [
+    "pitch_nm",
+    "line_cd_ratio",
+    "dose_mJ_cm2",
+    "sigma_nm",
+    "DH_nm2_s",
+    "time_s",
+    "Hmax_mol_dm3",
+    "kdep_s_inv",
+    "Q0_mol_dm3",
+    "kq_s_inv",
+    "abs_len_nm"
+  ],
+  "labels": [
+    "robust_valid",
+    "margin_risk",
+    "roughness_degraded",
+    "under_exposed",
+    "merged",
+    "numerical_invalid"
+  ],
+  "regression_targets": [
+    "CD_locked_nm",
+    "LER_CD_locked_nm",
+    "area_frac",
+    "P_line_margin"
+  ],
+  "fair_baseline_04c": {
+    "n_train": 4294,
+    "classifier": {
+      "accuracy": 0.8016759776536313,
+      "balanced_accuracy": 0.6953405899244274,
+      "macro_f1": 0.7215044390871485,
+      "per_class": {
+        "robust_valid": {
+          "precision": 0.8211382113821138,
+          "recall": 0.8911764705882353,
+          "f1": 0.8547249647390691,
+          "support": 340
+        },
+        "margin_risk": {
+          "precision": 0.65625,
+          "recall": 0.4846153846153846,
+          "f1": 0.5575221238938053,
+          "support": 130
+        },
+        "roughness_degraded": {
+          "precision": 0.6206896551724138,
+          "recall": 0.2857142857142857,
+          "f1": 0.391304347826087,
+          "support": 63
+        },
+        "under_exposed": {
+          "precision": 0.7638190954773869,
+          "recall": 0.8306010928961749,
+          "f1": 0.7958115183246073,
+          "support": 183
+        },
+        "merged": {
+          "precision": 0.8414985590778098,
+          "recall": 0.9299363057324841,
+          "f1": 0.8835098335854765,
+          "support": 314
+        },
+        "numerical_invalid": {
+          "precision": 0.9705882352941176,
+          "recall": 0.75,
+          "f1": 0.8461538461538461,
+          "support": 44
+        }
+      },
+      "confusion_matrix": [
+        [
+          303,
+          16,
+          1,
+          2,
+          18,
+          0
+        ],
+        [
+          41,
+          63,
+          3,
+          22,
+          1,
+          0
+        ],
+        [
+          6,
+          0,
+          18,
+          9,
+          30,
+          0
+        ],
+        [
+          5,
+          17,
+          2,
+          152,
+          6,
+          1
+        ],
+        [
+          14,
+          0,
+          5,
+          3,
+          292,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          11,
+          0,
+          33
+        ]
+      ],
+      "labels": [
+        "robust_valid",
+        "margin_risk",
+        "roughness_degraded",
+        "under_exposed",
+        "merged",
+        "numerical_invalid"
+      ],
+      "n_predicted_robust_valid": 369,
+      "n_missed_defect_in_pred_pass": 25,
+      "false_robust_valid_rate": 0.06775067750677506,
+      "n_missed_non_robust_in_pred_pass": 66,
+      "false_robust_valid_includes_margin_rate": 0.17886178861788618
+    },
+    "regressor4": {
+      "CD_locked_nm": {
+        "mae": 0.2840362231485194,
+        "rmse": 0.8726288891419045,
+        "n": 1030
+      },
+      "LER_CD_locked_nm": {
+        "mae": 0.06651668200150387,
+        "rmse": 0.10737464733339086,
+        "n": 963
+      },
+      "area_frac": {
+        "mae": 0.08672676617437595,
+        "rmse": 0.13432171918272007,
+        "n": 1074
+      },
+      "P_line_margin": {
+        "mae": 0.053646371373696246,
+        "rmse": 0.07119357661937081,
+        "n": 1074
+      }
+    },
+    "regressor4_zones": {
+      "operational_zone": {
+        "CD_locked_nm": {
+          "mae": 0.12590586242279816,
+          "rmse": 0.16519294642839047,
+          "n": 470
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.029974128160500362,
+          "rmse": 0.04777047769566276,
+          "n": 465
+        },
+        "area_frac": {
+          "mae": 0.042331882605820104,
+          "rmse": 0.057286424801403425,
+          "n": 470
+        },
+        "P_line_margin": {
+          "mae": 0.03393879568089749,
+          "rmse": 0.04424798721515697,
+          "n": 470
+        }
+      },
+      "failure_zone": {
+        "CD_locked_nm": {
+          "mae": 0.4167527759004641,
+          "rmse": 1.173745470112687,
+          "n": 560
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.10063774131087463,
+          "rmse": 0.14199943165704307,
+          "n": 498
+        },
+        "area_frac": {
+          "mae": 0.12127245371944424,
+          "rmse": 0.17183775382824465,
+          "n": 604
+        },
+        "P_line_margin": {
+          "mae": 0.06898173656511247,
+          "rmse": 0.08653933926080841,
+          "n": 604
+        }
+      },
+      "n_operational": 470,
+      "n_failure": 604
+    },
+    "aux_cd_fixed": {
+      "mae": 1.0327583225240207,
+      "rmse": 1.4208554821152353,
+      "n": 1030
+    }
+  },
+  "refreshed_06c": {
+    "n_train": 5394,
+    "classifier": {
+      "accuracy": 0.7905027932960894,
+      "balanced_accuracy": 0.6840601296594208,
+      "macro_f1": 0.7084434296851874,
+      "per_class": {
+        "robust_valid": {
+          "precision": 0.7973684210526316,
+          "recall": 0.8911764705882353,
+          "f1": 0.8416666666666667,
+          "support": 340
+        },
+        "margin_risk": {
+          "precision": 0.631578947368421,
+          "recall": 0.46153846153846156,
+          "f1": 0.5333333333333333,
+          "support": 130
+        },
+        "roughness_degraded": {
+          "precision": 0.6071428571428571,
+          "recall": 0.2698412698412698,
+          "f1": 0.37362637362637363,
+          "support": 63
+        },
+        "under_exposed": {
+          "precision": 0.7553191489361702,
+          "recall": 0.7759562841530054,
+          "f1": 0.7654986522911051,
+          "support": 183
+        },
+        "merged": {
+          "precision": 0.8443804034582133,
+          "recall": 0.9331210191082803,
+          "f1": 0.886535552193646,
+          "support": 314
+        },
+        "numerical_invalid": {
+          "precision": 0.9444444444444444,
+          "recall": 0.7727272727272727,
+          "f1": 0.85,
+          "support": 44
+        }
+      },
+      "confusion_matrix": [
+        [
+          303,
+          15,
+          2,
+          3,
+          17,
+          0
+        ],
+        [
+          46,
+          60,
+          2,
+          21,
+          1,
+          0
+        ],
+        [
+          7,
+          0,
+          17,
+          9,
+          30,
+          0
+        ],
+        [
+          10,
+          20,
+          3,
+          142,
+          6,
+          2
+        ],
+        [
+          14,
+          0,
+          4,
+          3,
+          293,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          10,
+          0,
+          34
+        ]
+      ],
+      "labels": [
+        "robust_valid",
+        "margin_risk",
+        "roughness_degraded",
+        "under_exposed",
+        "merged",
+        "numerical_invalid"
+      ],
+      "n_predicted_robust_valid": 380,
+      "n_missed_defect_in_pred_pass": 31,
+      "false_robust_valid_rate": 0.08157894736842106,
+      "n_missed_non_robust_in_pred_pass": 77,
+      "false_robust_valid_includes_margin_rate": 0.2026315789473684
+    },
+    "regressor4": {
+      "CD_locked_nm": {
+        "mae": 0.28383881005467293,
+        "rmse": 0.8726385720052778,
+        "n": 1030
+      },
+      "LER_CD_locked_nm": {
+        "mae": 0.06688364139906734,
+        "rmse": 0.1080852907975857,
+        "n": 963
+      },
+      "area_frac": {
+        "mae": 0.08673596081505723,
+        "rmse": 0.13511611360314893,
+        "n": 1074
+      },
+      "P_line_margin": {
+        "mae": 0.053499307336386866,
+        "rmse": 0.07114985572036149,
+        "n": 1074
+      }
+    },
+    "regressor4_zones": {
+      "operational_zone": {
+        "CD_locked_nm": {
+          "mae": 0.12561963442535246,
+          "rmse": 0.164465483753896,
+          "n": 470
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.029069218954690824,
+          "rmse": 0.045830756162797866,
+          "n": 465
+        },
+        "area_frac": {
+          "mae": 0.0426868591296226,
+          "rmse": 0.05897062694711383,
+          "n": 470
+        },
+        "P_line_margin": {
+          "mae": 0.033996023438811696,
+          "rmse": 0.04413799015466881,
+          "n": 470
+        }
+      },
+      "failure_zone": {
+        "CD_locked_nm": {
+          "mae": 0.41662990388642407,
+          "rmse": 1.1738444461158564,
+          "n": 560
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.10219228886219,
+          "rmse": 0.14362956526958606,
+          "n": 498
+        },
+        "area_frac": {
+          "mae": 0.12101257967623984,
+          "rmse": 0.1725005697596574,
+          "n": 604
+        },
+        "P_line_margin": {
+          "mae": 0.06867570374675165,
+          "rmse": 0.08651911028551197,
+          "n": 604
+        }
+      },
+      "n_operational": 470,
+      "n_failure": 604
+    },
+    "aux_cd_fixed": {
+      "mae": 1.0252085072154924,
+      "rmse": 1.4179090163487758,
+      "n": 1030
+    }
+  }
+}
