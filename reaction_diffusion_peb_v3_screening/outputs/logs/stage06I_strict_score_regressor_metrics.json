@@ -1,0 +1,163 @@
+{
+  "stage": "06I",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n",
+    "external_calibration": "none"
+  },
+  "diagnostic_status": "optional -- does NOT replace FD final ranking",
+  "test_set_per_row_metrics": {
+    "n": 1074,
+    "mae": 4.305240036754102,
+    "rmse": 6.0268044539731935,
+    "spearman_rho": 0.7093456510633825
+  },
+  "ranking_correlation_vs_fd_mc": {
+    "n_recipes_with_fd_mc": 13,
+    "spearman_06g_surrogate_strict_vs_fd_strict_pass_prob": 0.14325123227581624,
+    "spearman_06h_surrogate_strict_vs_fd_strict_pass_prob": 0.8898105389440124,
+    "spearman_06i_direct_vs_fd_strict_pass_prob": 0.9669458178617597,
+    "spearman_06g_surrogate_strict_vs_fd_mc_strict_score": 0.021978021978021976,
+    "spearman_06h_surrogate_strict_vs_fd_mc_strict_score": 0.9780219780219779,
+    "spearman_06i_direct_vs_fd_mc_strict_score": 0.8791208791208791
+  },
+  "topk_overlap_vs_fd_truth": {
+    "06g_surrogate_top3": 1,
+    "06g_surrogate_top5": 1,
+    "06h_surrogate_top3": 1,
+    "06h_surrogate_top5": 5,
+    "06i_direct_top3": 3,
+    "06i_direct_top5": 5
+  },
+  "manifest_recipe_rank_under_06i": {
+    "G_4867": 1,
+    "G_1096": 2,
+    "G_715": 3,
+    "G_3691": 20,
+    "G_2311": 44,
+    "G_829": 89,
+    "G_4299": 5,
+    "G_1226": 40
+  },
+  "comparison_table": [
+    {
+      "recipe_id": "G_3691",
+      "fd_strict_pass_prob": 0.43,
+      "fd_FD_MC_strict_score": 0.32253458318365535,
+      "06g_surrogate_strict_score": 0.7712882024965764,
+      "06h_surrogate_strict_score": 0.4469161479623408,
+      "06i_direct_strict_score": 0.39601423993799173,
+      "rank_06g_surrogate": 1
+    },
+    {
+      "recipe_id": "G_1500",
+      "fd_strict_pass_prob": 0.44,
+      "fd_FD_MC_strict_score": 0.27199549807610063,
+      "06g_surrogate_strict_score": 0.7650266250777417,
+      "06h_surrogate_strict_score": 0.5189386447618699,
+      "06i_direct_strict_score": 0.37195418108261613,
+      "rank_06g_surrogate": 2
+    },
+    {
+      "recipe_id": "G_4867",
+      "fd_strict_pass_prob": 0.68,
+      "fd_FD_MC_strict_score": 0.5478515639220011,
+      "06g_surrogate_strict_score": 0.744115080370199,
+      "06h_surrogate_strict_score": 0.6330110652935987,
+      "06i_direct_strict_score": 0.8070309500921821,
+      "rank_06g_surrogate": 3
+    },
+    {
+      "recipe_id": "G_3185",
+      "fd_strict_pass_prob": 0.14,
+      "fd_FD_MC_strict_score": -0.506283106206868,
+      "06g_surrogate_strict_score": 0.7367785111141446,
+      "06h_surrogate_strict_score": -0.6926458118835654,
+      "06i_direct_strict_score": -0.49677242708982405,
+      "rank_06g_surrogate": 4
+    },
+    {
+      "recipe_id": "G_1226",
+      "fd_strict_pass_prob": 0.2966666666666667,
+      "fd_FD_MC_strict_score": 0.1276643677865259,
+      "06g_surrogate_strict_score": 0.7363568021215621,
+      "06h_surrogate_strict_score": 0.022338077933650793,
+      "06i_direct_strict_score": 0.1115266645862104,
+      "rank_06g_surrogate": 5
+    },
+    {
+      "recipe_id": "G_1679",
+      "fd_strict_pass_prob": 0.6,
+      "fd_FD_MC_strict_score": 0.5721702978185341,
+      "06g_surrogate_strict_score": 0.7280005609143199,
+      "06h_surrogate_strict_score": 0.7070251830106902,
+      "06i_direct_strict_score": 0.5691964115599675,
+      "rank_06g_surrogate": 6
+    },
+    {
+      "recipe_id": "G_3366",
+      "fd_strict_pass_prob": 0.27,
+      "fd_FD_MC_strict_score": -0.1753149453865585,
+      "06g_surrogate_strict_score": 0.7067064085465492,
+      "06h_surrogate_strict_score": 0.1310643863793835,
+      "06i_direct_strict_score": 0.15604743970280108,
+      "rank_06g_surrogate": 7
+    },
+    {
+      "recipe_id": "G_715",
+      "fd_strict_pass_prob": 0.63,
+      "fd_FD_MC_strict_score": 0.5492350815171386,
+      "06g_surrogate_strict_score": 0.7013104203929961,
+      "06h_surrogate_strict_score": 0.6587044107213273,
+      "06i_direct_strict_score": 0.7304496738250854,
+      "rank_06g_surrogate": 8
+    },
+    {
+      "recipe_id": "G_1096",
+      "fd_strict_pass_prob": 0.68,
+      "fd_FD_MC_strict_score": 0.5515334483601994,
+      "06g_surrogate_strict_score": 0.6990312374985798,
+      "06h_surrogate_strict_score": 0.6651939277808381,
+      "06i_direct_strict_score": 0.7791768136741396,
+      "rank_06g_surrogate": 9
+    },
+    {
+      "recipe_id": "G_1553",
+      "fd_strict_pass_prob": 0.44,
+      "fd_FD_MC_strict_score": 0.4507377572767297,
+      "06g_surrogate_strict_score": 0.6897324852945307,
+      "06h_surrogate_strict_score": 0.617822944656289,
+      "06i_direct_strict_score": 0.40052895324101656,
+      "rank_06g_surrogate": 10
+    },
+    {
+      "recipe_id": "G_2311",
+      "fd_strict_pass_prob": 0.2866666666666667,
+      "fd_FD_MC_strict_score": -0.031257438288507584,
+      "06g_surrogate_strict_score": 0.5893410985822867,
+      "06h_surrogate_strict_score": -0.15617969514548982,
+      "06i_direct_strict_score": 0.048174911104101596,
+      "rank_06g_surrogate": 60
+    },
+    {
+      "recipe_id": "G_829",
+      "fd_strict_pass_prob": 0.09,
+      "fd_FD_MC_strict_score": -1.0453296747230012,
+      "06g_surrogate_strict_score": 0.603344985614801,
+      "06h_surrogate_strict_score": -1.461235816981835,
+      "06i_direct_strict_score": -1.0120100503797023,
+      "rank_06g_surrogate": 55
+    },
+    {
+      "recipe_id": "G_4299",
+      "fd_strict_pass_prob": 0.4666666666666667,
+      "fd_FD_MC_strict_score": 0.5642521235625821,
+      "06g_surrogate_strict_score": 0.6143115721574158,
+      "06h_surrogate_strict_score": 0.7013490284915659,
+      "06i_direct_strict_score": 0.5967763033510768,
+      "rank_06g_surrogate": 47
+    }
+  ],
+  "interpretation": "If spearman_06i_direct_vs_fd_strict_pass_prob is meaningfully higher than the 06g/06h surrogate values (e.g. > 0.3 vs ~ -0.4), the 4-target loss IS the bottleneck and a strict_score head should be added to the 06H surrogate stack. Otherwise the FD rank flip is intrinsic to the saturated regime and the FD ranking authority decision in 06H stands."
+}

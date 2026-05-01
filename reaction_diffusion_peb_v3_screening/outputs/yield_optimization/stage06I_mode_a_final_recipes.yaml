@@ -1,0 +1,423 @@
+stage: 06I
+policy:
+  v2_OP_frozen: true
+  published_data_loaded: false
+  notes: 'Stage 06A is a nominal-model yield-proxy optimisation. The 04C
+
+    surrogate is treated as an oracle for the v2 nominal physics, not
+
+    for a real fab. No external calibration has been performed.
+
+    '
+  external_calibration: none
+scope:
+  mode_a_fixed_design:
+    pitch_nm: 24
+    line_cd_ratio: 0.52
+    abs_len_nm: 50.0
+  mode_b_open_design: out of scope -- deferred to a later stage
+strict_thresholds:
+  cd_tolerance_nm: 0.5
+  ler_cap_nm: 3.0
+  rationale_source: stage06G_threshold_selection.md
+ranking_authority: FD MC strict_pass_prob is the final ranking authority for Mode
+  A recipe selection. The 06G surrogate's strict_score is treated as candidate proposal
+  / screening only. The 06H surrogate refresh did not improve strict ranking (only
+  1 of 6 06G representatives stayed in 06H top-20), so this manifest uses FD truth,
+  not surrogate ranks.
+primary_recommended_recipe: G_4867
+primary_recommended_recipe_kind: fd_stability_best
+primary_selection_note: 'FD MC truth places G_4867 (strict_pass_prob = 0.680) above
+  the 06G surrogate''s strict-score #1 G_3691 (0.430) and above the 06G surrogate''s
+  margin-best G_4299 (0.467). The earlier note in the spec saying ''if G_4299 is the
+  current primary winner'' was written before 06H FD MC ran -- 06H FD truth supersedes
+  that placeholder.'
+representatives:
+- recipe_id: G_4867
+  role: fd_stability_best
+  is_primary: true
+  parameters:
+    pitch_nm: 24.0
+    line_cd_ratio: 0.52
+    dose_mJ_cm2: 52.676753897219896
+    sigma_nm: 0.6776348277926445
+    DH_nm2_s: 0.5002588990144432
+    time_s: 29.275345294736326
+    Hmax_mol_dm3: 0.1706448632106185
+    kdep_s_inv: 0.6455813481472432
+    Q0_mol_dm3: 0.019664063360542057
+    kq_s_inv: 1.0673484671860933
+    abs_len_nm: 50.0
+  nominal_fd:
+    label: robust_valid
+    CD_final_nm: 15.00294885997412
+    CD_error_nm: 0.0029488599741203103
+    CD_locked_nm: 12.48350499225868
+    LER_CD_locked_nm: 2.510559542416033
+    area_frac: 0.6254861111111111
+    P_line_margin: 0.17582805281672076
+    contrast: 0.6149060740548093
+    psd_locked_mid: 1.678824118948136
+    strict_score_06g_surrogate: 0.744115080370199
+    yield_score_06g_surrogate: 0.9538499999999983
+    rank_06g_surrogate_strict: 3
+  mc_fd:
+    n_mc: 100
+    robust_valid_prob: 1.0
+    margin_risk_prob: 0.0
+    defect_prob: 0.0
+    strict_pass_prob: 0.68
+    mean_CD_final_nm: 15.0517386238079
+    std_CD_final_nm: 0.4854749737036034
+    mean_LER_CD_locked_nm: 2.532945551214526
+    std_LER_CD_locked_nm: 0.020880574293053025
+    mean_P_line_margin: 0.175067299088524
+    source: top10_mc
+  selection_rationale: "FD MC strict_pass_prob = 0.680 -- highest probability of clearing\
+    \ the strict CD \xB10.5 nm + LER \u2264 3.0 nm thresholds under 100x process variation.\
+    \ Also dominant on FD nominal CD accuracy (CD_error = 0.003 nm). Was 06G surrogate\
+    \ rank #3 by strict_score; FD ground-truth promoted it above the surrogate's #1\
+    \ (G_3691, FD strict_pass = 0.430)."
+  known_weakness: Mid-range MC std on CD (0.485) and LER (0.021) -- not the absolute
+    lowest variability, but still well within the strict thresholds. The surrogate
+    did not flag this as the winner; the 06H ranking flip is purely an FD discovery.
+  when_to_prefer: Default Mode A recipe. Best overall on FD MC stability and FD nominal
+    CD accuracy at the same time -- no single competing recipe dominates it on both
+    axes.
+- recipe_id: G_1096
+  role: fd_stability_co_winner
+  is_primary: false
+  parameters:
+    pitch_nm: 24.0
+    line_cd_ratio: 0.52
+    dose_mJ_cm2: 54.77498465683311
+    sigma_nm: 0.2990975473076105
+    DH_nm2_s: 0.3910854572430253
+    time_s: 43.31817008089274
+    Hmax_mol_dm3: 0.1618718133959919
+    kdep_s_inv: 0.519607218913734
+    Q0_mol_dm3: 0.01730798020027578
+    kq_s_inv: 1.4007178884930909
+    abs_len_nm: 50.0
+  nominal_fd:
+    label: robust_valid
+    CD_final_nm: 15.122597148840944
+    CD_error_nm: 0.12259714884094386
+    CD_locked_nm: 12.364785451330336
+    LER_CD_locked_nm: 2.522261038653208
+    area_frac: 0.6300694444444445
+    P_line_margin: 0.19503621537005422
+    contrast: 0.6272882461756972
+    psd_locked_mid: 1.718957350809284
+    strict_score_06g_surrogate: 0.6990312374985798
+    yield_score_06g_surrogate: 0.9407333333333343
+    rank_06g_surrogate_strict: 9
+  mc_fd:
+    n_mc: 100
+    robust_valid_prob: 1.0
+    margin_risk_prob: 0.0
+    defect_prob: 0.0
+    strict_pass_prob: 0.68
+    mean_CD_final_nm: 15.06987935744076
+    std_CD_final_nm: 0.48676113666398024
+    mean_LER_CD_locked_nm: 2.5447385160104328
+    std_LER_CD_locked_nm: 0.01924121659169453
+    mean_P_line_margin: 0.1916607732801072
+    source: top10_mc
+  selection_rationale: 'FD MC strict_pass_prob = 0.680, tied with G_4867. Was 06G
+    surrogate rank #9 -- another FD discovery the surrogate ranked far below its actual
+    MC quality.'
+  known_weakness: Slightly worse FD nominal CD accuracy than G_4867 (CD_error 0.123
+    nm vs 0.003 nm). LER very close (2.522 vs 2.511 nm).
+  when_to_prefer: Backup primary if G_4867 fails downstream verification or if hardware
+    constraints rule out G_4867's specific parameter values.
+- recipe_id: G_715
+  role: fd_stability_runner_up
+  is_primary: false
+  parameters:
+    pitch_nm: 24.0
+    line_cd_ratio: 0.52
+    dose_mJ_cm2: 53.13488420192152
+    sigma_nm: 0.8119138386100531
+    DH_nm2_s: 0.4316944188438356
+    time_s: 26.48560533300042
+    Hmax_mol_dm3: 0.20470118842087687
+    kdep_s_inv: 0.5199363170191645
+    Q0_mol_dm3: 0.006908052619546651
+    kq_s_inv: 1.1299748960882425
+    abs_len_nm: 50.0
+  nominal_fd:
+    label: robust_valid
+    CD_final_nm: 14.951426754334392
+    CD_error_nm: 0.048573245665608056
+    CD_locked_nm: 12.536096388438626
+    LER_CD_locked_nm: 2.5093765406102233
+    area_frac: 0.6234722222222222
+    P_line_margin: 0.17621553293701842
+    contrast: 0.6404684927493443
+    psd_locked_mid: 1.7984347850145084
+    strict_score_06g_surrogate: 0.7013104203929961
+    yield_score_06g_surrogate: 0.99995
+    rank_06g_surrogate_strict: 8
+  mc_fd:
+    n_mc: 100
+    robust_valid_prob: 1.0
+    margin_risk_prob: 0.0
+    defect_prob: 0.0
+    strict_pass_prob: 0.63
+    mean_CD_final_nm: 14.906874143325851
+    std_CD_final_nm: 0.4851283800415742
+    mean_LER_CD_locked_nm: 2.5331878737516034
+    std_LER_CD_locked_nm: 0.019221285109186206
+    mean_P_line_margin: 0.17589641645322387
+    source: top10_mc
+  selection_rationale: FD MC strict_pass_prob = 0.630 -- next-best MC stability after
+    the two co-winners. FD nominal CD_error = 0.049 nm and FD nominal LER = 2.509
+    nm -- among the best on both axes.
+  known_weakness: Slightly less stable than the two leaders.
+  when_to_prefer: Third option for MC-robust selection. A reasonable alternate when
+    both G_4867 and G_1096 are unavailable.
+- recipe_id: G_3691
+  role: strict_best
+  is_primary: false
+  parameters:
+    pitch_nm: 24.0
+    line_cd_ratio: 0.52
+    dose_mJ_cm2: 59.27794052939862
+    sigma_nm: 0.19737313874065876
+    DH_nm2_s: 0.48414958752691745
+    time_s: 30.64856923185289
+    Hmax_mol_dm3: 0.18177000988274813
+    kdep_s_inv: 0.6312138759531081
+    Q0_mol_dm3: 0.017799156624823807
+    kq_s_inv: 0.9048012448474765
+    abs_len_nm: 50.0
+  nominal_fd:
+    label: robust_valid
+    CD_final_nm: 15.629857444992311
+    CD_error_nm: 0.6298574449923109
+    CD_locked_nm: 12.249096160085799
+    LER_CD_locked_nm: 2.521759482324201
+    area_frac: 0.6509548611111111
+    P_line_margin: 0.22066422852000522
+    contrast: 0.6394277423603616
+    psd_locked_mid: 1.8043325402869546
+    strict_score_06g_surrogate: 0.7712882024965764
+    yield_score_06g_surrogate: 0.9909500000000024
+    rank_06g_surrogate_strict: 1
+  mc_fd:
+    n_mc: 300
+    robust_valid_prob: 1.0
+    margin_risk_prob: 0.0
+    defect_prob: 0.0
+    strict_pass_prob: 0.43
+    mean_CD_final_nm: .nan
+    std_CD_final_nm: 0.4910961770961183
+    mean_LER_CD_locked_nm: 2.543331877694362
+    std_LER_CD_locked_nm: 0.018372896553405436
+    mean_P_line_margin: 0.21840960272123464
+    source: representative_mc_300var
+  selection_rationale: '06G surrogate strict_score #1. Indicative of where the surrogate
+    believed the strict optimum lives.'
+  known_weakness: 'FD ground truth disagrees: nominal CD_error = 0.630 nm (20x larger
+    than the FD CD-best G_4867''s 0.003 nm) and MC strict_pass_prob = 0.430 -- only
+    #8 by FD. The surrogate''s #1 was incorrect.'
+  when_to_prefer: Reference for studying surrogate-vs-FD discrepancy; not for production
+    deployment.
+- recipe_id: G_2311
+  role: cd_best
+  is_primary: false
+  parameters:
+    pitch_nm: 24.0
+    line_cd_ratio: 0.52
+    dose_mJ_cm2: 56.391260443255305
+    sigma_nm: 0.19335319753736258
+    DH_nm2_s: 0.37178356451913713
+    time_s: 41.44507609773427
+    Hmax_mol_dm3: 0.19898184922523796
+    kdep_s_inv: 0.4564701094292104
+    Q0_mol_dm3: 0.012285866690799594
+    kq_s_inv: 1.5089095500297844
+    abs_len_nm: 50.0
+  nominal_fd:
+    label: robust_valid
+    CD_final_nm: 15.79297785869924
+    CD_error_nm: 0.7929778586992402
+    CD_locked_nm: 12.472825010789588
+    LER_CD_locked_nm: 2.5221279477011715
+    area_frac: 0.6580381944444444
+    P_line_margin: 0.22905114761910927
+    contrast: 0.6465903668971577
+    psd_locked_mid: 1.7886664183077898
+    strict_score_06g_surrogate: 0.5893410985822867
+    yield_score_06g_surrogate: 0.9241250000000001
+    rank_06g_surrogate_strict: 60
+  mc_fd:
+    n_mc: 300
+    robust_valid_prob: 1.0
+    margin_risk_prob: 0.0
+    defect_prob: 0.0
+    strict_pass_prob: 0.2866666666666667
+    mean_CD_final_nm: .nan
+    std_CD_final_nm: 0.45500144130916836
+    mean_LER_CD_locked_nm: 2.544078844564064
+    std_LER_CD_locked_nm: 0.01948208792499214
+    mean_P_line_margin: 0.2281526847225959
+    source: representative_mc_300var
+  selection_rationale: 06G surrogate's CD-best pick. Surrogate predicted nominal CD_error
+    = 0.008 nm -- the smallest in the 06G top-100.
+  known_weakness: 'FD ground truth disagrees by ~100x: actual nominal CD_error = 0.793
+    nm. The aux CD_fixed regressor was off by 0.79 nm on this specific recipe -- this
+    is the largest single-recipe surrogate-vs-FD discrepancy in the manifest. MC strict_pass_prob
+    = 0.287 confirms it is not stable. The actual FD CD-best in this manifest is G_4867
+    at 0.003 nm.'
+  when_to_prefer: Reference only -- the surrogate prediction failed for this recipe.
+    For real CD targeting use G_4867.
+- recipe_id: G_829
+  role: ler_best
+  is_primary: false
+  parameters:
+    pitch_nm: 24.0
+    line_cd_ratio: 0.52
+    dose_mJ_cm2: 51.34562652558088
+    sigma_nm: 1.3784426115453243
+    DH_nm2_s: 0.4245232820510864
+    time_s: 31.817496502771974
+    Hmax_mol_dm3: 0.19978442125953733
+    kdep_s_inv: 0.523987567704171
+    Q0_mol_dm3: 0.011926030134782195
+    kq_s_inv: 1.6099729086272418
+    abs_len_nm: 50.0
+  nominal_fd:
+    label: robust_valid
+    CD_final_nm: 16.200497215158446
+    CD_error_nm: 1.200497215158446
+    CD_locked_nm: 12.184871188513856
+    LER_CD_locked_nm: 2.478949248840196
+    area_frac: 0.6747743055555555
+    P_line_margin: 0.19748750334982434
+    contrast: 0.5969668578196782
+    psd_locked_mid: 1.3783532471540068
+    strict_score_06g_surrogate: 0.603344985614801
+    yield_score_06g_surrogate: 0.9410416666666678
+    rank_06g_surrogate_strict: 55
+  mc_fd:
+    n_mc: 300
+    robust_valid_prob: 1.0
+    margin_risk_prob: 0.0
+    defect_prob: 0.0
+    strict_pass_prob: 0.09
+    mean_CD_final_nm: .nan
+    std_CD_final_nm: 0.5036228616423533
+    mean_LER_CD_locked_nm: 2.5043414437473404
+    std_LER_CD_locked_nm: 0.02132628649605241
+    mean_P_line_margin: 0.19549637071957698
+    source: representative_mc_300var
+  selection_rationale: Lowest FD nominal LER among the manifest (2.479 nm). Was 06G
+    surrogate's LER-best pick.
+  known_weakness: FD nominal CD_error = 1.200 nm -- worst CD accuracy in the manifest.
+    MC strict_pass_prob = 0.090 -- lowest of all manifest recipes; the nominal LER
+    advantage does not survive process variation.
+  when_to_prefer: Reference only -- low LER is offset by poor CD accuracy and very
+    poor MC stability. Not suitable as a production candidate.
+- recipe_id: G_4299
+  role: margin_best
+  is_primary: false
+  parameters:
+    pitch_nm: 24.0
+    line_cd_ratio: 0.52
+    dose_mJ_cm2: 55.62617867812514
+    sigma_nm: 0.06158248521387577
+    DH_nm2_s: 0.3865475097671151
+    time_s: 28.919346518814564
+    Hmax_mol_dm3: 0.2160651913192123
+    kdep_s_inv: 0.5580831694416701
+    Q0_mol_dm3: 0.02315185627900064
+    kq_s_inv: 1.249629085417837
+    abs_len_nm: 50.0
+  nominal_fd:
+    label: robust_valid
+    CD_final_nm: 14.509098107144752
+    CD_error_nm: 0.49090189285524843
+    CD_locked_nm: 12.30054889981564
+    LER_CD_locked_nm: 2.539413321914509
+    area_frac: 0.6043055555555555
+    P_line_margin: 0.2145093678633414
+    contrast: 0.7270036398093431
+    psd_locked_mid: 2.1644169334190226
+    strict_score_06g_surrogate: 0.6143115721574158
+    yield_score_06g_surrogate: 0.9971750000000008
+    rank_06g_surrogate_strict: 47
+  mc_fd:
+    n_mc: 300
+    robust_valid_prob: 1.0
+    margin_risk_prob: 0.0
+    defect_prob: 0.0
+    strict_pass_prob: 0.4666666666666667
+    mean_CD_final_nm: .nan
+    std_CD_final_nm: 0.39519514493359725
+    mean_LER_CD_locked_nm: 2.560723904554267
+    std_LER_CD_locked_nm: 0.018185154278076772
+    mean_P_line_margin: 0.2127566000999596
+    source: representative_mc_300var
+  selection_rationale: Highest 06G surrogate-predicted P_line_margin. FD MC strict_pass_prob
+    = 0.467 -- fifth-best in the manifest.
+  known_weakness: FD nominal CD_error = 0.491 nm and LER = 2.539 nm (highest LER in
+    the manifest, just above the 06G surrogate's nominal LER ranking).
+  when_to_prefer: Solid alternate when margin is the leading metric and MC stability
+    up to ~47% is acceptable. Less robust than the three FD-stability leaders.
+- recipe_id: G_1226
+  role: balanced
+  is_primary: false
+  parameters:
+    pitch_nm: 24.0
+    line_cd_ratio: 0.52
+    dose_mJ_cm2: 53.86767695378512
+    sigma_nm: 0.7991772992536426
+    DH_nm2_s: 0.33591859573498367
+    time_s: 33.01915261428803
+    Hmax_mol_dm3: 0.21817502029240132
+    kdep_s_inv: 0.4995112420059741
+    Q0_mol_dm3: 0.013306531207635999
+    kq_s_inv: 1.3187890541739762
+    abs_len_nm: 50.0
+  nominal_fd:
+    label: robust_valid
+    CD_final_nm: 15.762255253396367
+    CD_error_nm: 0.7622552533963667
+    CD_locked_nm: 12.336879119711556
+    LER_CD_locked_nm: 2.5133638187161247
+    area_frac: 0.6566145833333333
+    P_line_margin: 0.23203934824878047
+    contrast: 0.6921554424914763
+    psd_locked_mid: 1.881504118285802
+    strict_score_06g_surrogate: 0.7363568021215621
+    yield_score_06g_surrogate: 0.9996500000000001
+    rank_06g_surrogate_strict: 5
+  mc_fd:
+    n_mc: 300
+    robust_valid_prob: 1.0
+    margin_risk_prob: 0.0
+    defect_prob: 0.0
+    strict_pass_prob: 0.2966666666666667
+    mean_CD_final_nm: .nan
+    std_CD_final_nm: 0.4126895556310316
+    mean_LER_CD_locked_nm: 2.5331554234516496
+    std_LER_CD_locked_nm: 0.01917772638702576
+    mean_P_line_margin: 0.22997587462277475
+    source: representative_mc_300var
+  selection_rationale: 06G balanced z-score winner across nominal CD_error, LER, MC
+    std, defect_prob and (negative) margin.
+  known_weakness: FD MC strict_pass_prob = 0.297 -- nominal-balanced by 06G weights
+    did not translate to MC-stability winner. FD nominal CD_error = 0.762 nm.
+  when_to_prefer: Reference for surrogate balanced ranking; for FD-stable production
+    use prefer G_4867 / G_1096 / G_715.
+limitations:
+- Nominal v2 physics only -- not externally calibrated.
+- FD ranking authority is internal model truth, not real-fab yield. Do not interpret
+  strict_pass_prob as wafer-level yield.
+- Mode A only -- pitch=24 nm, line_cd_ratio=0.52 fixed.
+- Mode B open-design exploration is deferred to a later stage.
+- The 06H surrogate was retrained at n_estimators=200 on the 4-target regressor to
+  keep the joblib under 100 MB, vs n_estimators=300 on classifier and aux. Test-set
+  metrics are unchanged at 3-decimal precision.
