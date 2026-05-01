@@ -1,0 +1,26 @@
+stage: 06M-B (Mode B stub for J_1453)
+policy:
+  v2_OP_frozen: true
+  published_data_loaded: false
+  external_calibration: none
+primary_recommended_recipe: J_1453
+representatives:
+- recipe_id: J_1453
+  role: mode_b_strict_best
+  is_primary: true
+  parameters:
+    pitch_nm: 24.0
+    line_cd_ratio: 0.45
+    dose_mJ_cm2: 52.48814922384918
+    sigma_nm: 0.34199510235339403
+    DH_nm2_s: 0.40357725620269774
+    time_s: 38.63432072568685
+    Hmax_mol_dm3: 0.21585012060590086
+    kdep_s_inv: 0.49473905460909007
+    Q0_mol_dm3: 0.00692776383832097
+    kq_s_inv: 1.532070079818368
+    abs_len_nm: 90.36870668642223
+  selection_rationale: 06J Mode B strict_score winner; 06J-B FD MC strict_pass=0.747
+    (matches G_4867).
+  known_weakness: open-design (Mode B); time robustness unknown until 06M-B.
+  when_to_prefer: Mode B production alternative pending 06M-B time window comparison.

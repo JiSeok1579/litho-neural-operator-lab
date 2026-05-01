@@ -1,0 +1,71 @@
+stage: 06M-B
+policy:
+  v2_OP_frozen: true
+  published_data_loaded: false
+  external_calibration: none
+comparison_basis:
+  protocol: 11 deterministic offsets x 100 FD + sigma_t = 2 s gaussian x 300 FD
+  n_fd_runs_g4867: 1100
+  n_fd_runs_j1453: 1100
+  strict_thresholds:
+    cd_tol_nm: 0.5
+    ler_cap_nm: 3.0
+G_4867:
+  scope: mode_a_fixed_design
+  nominal_time_s: 29.275345294736326
+  strict_pass_at_zero: 0.78
+  time_budget:
+    strict_pass_ge_0.5:
+    - -2.0
+    - 1.0
+    robust_valid_ge_0.8:
+    - -5.0
+    - 5.0
+    defect_le_0.05:
+    - -5.0
+    - 5.0
+    all_three:
+    - -2.0
+    - 1.0
+    all_three_width: 3.0
+    strict_pass_width: 3.0
+    neg_threshold_strict: -2.0
+    pos_threshold_strict: 1.0
+  primary_failure_neg:
+    kind: cd_error_overshoot_no_label_flip
+    avg_prob: 0.0
+  primary_failure_pos:
+    kind: cd_error_overshoot_no_label_flip
+    avg_prob: 0.0
+J_1453:
+  scope: mode_b_open_design
+  nominal_time_s: 38.63432072568685
+  strict_pass_at_zero: 0.91
+  time_budget:
+    strict_pass_ge_0.5:
+    - -3.0
+    - 2.0
+    robust_valid_ge_0.8:
+    - -5.0
+    - 5.0
+    defect_le_0.05:
+    - -5.0
+    - 5.0
+    all_three:
+    - -3.0
+    - 2.0
+    all_three_width: 5.0
+    strict_pass_width: 5.0
+    neg_threshold_strict: -3.0
+    pos_threshold_strict: 2.0
+  primary_failure_neg:
+    kind: cd_error_overshoot_no_label_flip
+    avg_prob: 0.0
+  primary_failure_pos:
+    kind: cd_error_overshoot_no_label_flip
+    avg_prob: 0.0
+outcome: j1453_wider_window
+decision_label: mode_b_production_alternative
+recommendation: J_1453's time window is meaningfully wider than G_4867's. Promote
+  J_1453 as the Mode B production alternative.
+primary_recipe_after_06m_b: J_1453
