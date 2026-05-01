@@ -589,6 +589,38 @@ acceptance budgets and the false-`robust_valid` rate is 2 %. No
 external calibration has been performed (`published_data_loaded`
 remains `false`); v2's frozen nominal OP is unchanged.
 
+## Yield-management view (presentation layer)
+
+Stage 04D's evaluation figures use internal label names (`robust_valid`,
+`merged`, …) that are not friendly for fab-style 양품/불량 inspection.
+A separate presentation-only script renders the same Stage 04C dataset
+into yield-engineering vocabulary (PASS / MARGINAL / FAIL =
+양품 / 한계 / 불량), with colour-coded tiles, defect Pareto, and a
+process-window scatter:
+
+```bash
+python -m reaction_diffusion_peb_v3_screening.experiments.04d_zone_evaluation.run_yield_view
+```
+
+Outputs (no model retraining, no new FD):
+
+```text
+outputs/figures/04d_zone_evaluation/yield_view/
+  01_yield_summary.png        big-number tile card (PASS / MARGINAL / FAIL)
+  02_defect_pareto.png        defect mode bars + cumulative line
+  03_pass_fail_confusion.png  3×3 colour-coded confusion (위험 셀 강조)
+  04_process_window.png       CD_locked vs P_line_margin scatter
+  05_yield_by_pitch.png       stacked bars + yield-line per pitch_nm
+  yield_summary.json          machine-readable counts + rates
+```
+
+Bucket mapping: `robust_valid` → PASS, `margin_risk` → MARGINAL, all
+other labels → FAIL. The yield numbers reflect the labelled-pool
+composition (which is deliberately failure-biased by the Stage 04B/04C
+samplers) — they are *not* a forecast of fab yield, but a fab-style
+view of the screening-set defect mix and the surrogate's PASS/FAIL
+agreement on it.
+
 ## Optional follow-ups
 
 These are explicitly **not** required for closeout:
