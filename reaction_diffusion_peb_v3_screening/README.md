@@ -886,6 +886,51 @@ batches, send the top tier to FD, and use `strict_pass_prob` to pick
 among the FD-verified survivors. Mode B open-design exploration and
 process-window robustness maps remain future stages.
 
+## Stages 06J – 06P-B — Mode B exploration and blindspot closeout — CLOSED
+
+| stage | what changed | result |
+|---|---|---|
+| **06J** | open-design Mode B Sobol exploration (5 000 candidates → top-100) | `J_1453` wins Mode B `strict_score` rank #1 |
+| **06J-B** | Mode B FD verification at scale (~2 900 FD rows: top-100 nominal + top-10 MC + 6 representative MC kinds) | `J_1453` FD MC strict_pass = 0.747 — matches Mode A `G_4867` (0.68) |
+| **06L** | direct `strict_score` head trained on the 06H ∪ 06J pool | Mode B Spearman vs FD MC = +0.585 |
+| **06M** | `G_4867` deterministic time deep MC (1 100 FD) + Gaussian time-smearing (300 FD) | strict_pass_width 3 s |
+| **06M-B** | `J_1453` deterministic time deep MC + Gaussian time-smearing | strict_pass_width **5 s** — wider than `G_4867`; outcome = `j1453_wider_window`, decision label = `mode_b_production_alternative` |
+| **06N** | comparative deep MC for `G_4867` vs `G_4299` | confirms `G_4867` Mode A primary |
+| **06P** | AL refresh fold-in of 06J-B + 06M-B FD into the surrogate | Mode B Spearman → +0.938; `J_1453` enters Mode B top-10 |
+| **06Q** | blindspot diagnosis (no retraining) | gap = `G_4867` over-prediction at extreme offsets (residual mean +0.215); `J_1453` already calibrated |
+| **06R** | feature-engineered surrogate (raw 11 + 9 derived process-budget features) | relative J − G advantage residual −0.217 → −0.110 (halved); aux CD MAE −33 % |
+| **06P-B** | targeted AL on `G_4867` extreme offsets (~702 FD) | residual −0.110 → **−0.005** (inside both 0.10 preferred and 0.05 stretch targets); Mode B top-10 overlap **10/10** |
+
+The closeout note is `study_notes/09_v3_stage06pb_mode_b_closeout.md`.
+The final recipe manifest is
+`outputs/yield_optimization/stage06PB_final_recipe_manifest.yaml`. The
+preferred-surrogate registry is `outputs/models/preferred_surrogate.json`.
+
+**Final recipe roles**
+- **`G_4867` — Mode A default / CD-accurate fixed-design recipe.**
+  pitch = 24, line_cd_ratio = 0.52, abs_len = 50. FD MC strict_pass =
+  0.68, strict_pass_width = 3 s, FD nominal CD_error = 0.003 nm.
+- **`J_1453` — Mode B production alternative / wider time-window
+  recipe.** pitch = 24, line_cd_ratio = 0.45, abs_len ≈ 90.
+  FD MC strict_pass = 0.747, strict_pass_width = 5 s. Open-design
+  (different pitch / ratio / abs_len from the Mode A template).
+
+**Preferred surrogate**: `stage06PB`
+(`outputs/models/stage06PB_*.joblib`, feature list at
+`outputs/models/stage06R_feature_list.json`). Previous baselines
+remain on disk for comparison: `stage06R` (feature-engineered, no
+targeted AL), `stage06P` (AL refresh, no derived features), `stage06L`
+(direct strict head), `stage06H` (used by 06I Mode A selection).
+
+**Policy preserved across the whole 06J → 06P-B arc**: v2_OP_frozen =
+true, published_data_loaded = false, no external calibration claimed.
+Closed Stage 04C / 04D / 06C / 06I artefacts remain unmodified. FD MC
+`strict_pass_prob` is still the final ranking authority; the 06PB
+surrogate is the screening / candidate-proposal layer.
+
+No further FD sweep is planned under this thread. Run new FD only if
+a new objective family or a new failure mode appears.
+
 ## Optional follow-ups
 
 These are explicitly **not** required for closeout:

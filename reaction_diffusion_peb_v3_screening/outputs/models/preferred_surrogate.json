@@ -1,0 +1,85 @@
+{
+  "preferred_surrogate": "stage06PB",
+  "set_at_stage": "06PB closeout",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "external_calibration": "none"
+  },
+  "models": {
+    "classifier":   "outputs/models/stage06PB_classifier.joblib",
+    "regressor4":   "outputs/models/stage06PB_regressor.joblib",
+    "aux_cd_fixed": "outputs/models/stage06PB_aux_cd_fixed_regressor.joblib",
+    "strict_score": "outputs/models/stage06PB_strict_score_regressor.joblib"
+  },
+  "feature_list_json": "outputs/models/stage06R_feature_list.json",
+  "feature_list_summary": {
+    "raw_feature_count": 11,
+    "derived_feature_count": 9,
+    "total_feature_count": 20
+  },
+  "metrics": {
+    "classifier_balanced_accuracy_04c_holdout": 0.726,
+    "classifier_macro_f1_04c_holdout": 0.750,
+    "classifier_false_robust_valid_rate_04c_holdout": 0.0584,
+    "aux_cd_fixed_mae_nm_04c_holdout": 0.729,
+    "strict_score_mae_04c_holdout": 3.624,
+    "strict_score_spearman_04c_holdout": 0.785,
+    "strict_score_spearman_vs_fd_mc_overall": 0.931,
+    "strict_score_spearman_vs_fd_mc_mode_a": 0.964,
+    "strict_score_spearman_vs_fd_mc_mode_b": 0.925,
+    "j_minus_g_relative_advantage_residual_mean": -0.005,
+    "abs_j_minus_g_relative_advantage_residual_mean": 0.025,
+    "G_4867_strict_pass_residual_mean": 0.008,
+    "J_1453_strict_pass_residual_mean": 0.003,
+    "G_4867_cd_error_residual_mean_nm": -0.032,
+    "j1453_in_mode_b_top10": true,
+    "g4867_in_mode_a_top10": true
+  },
+  "previous_baselines": {
+    "stage06R": {
+      "role": "feature-engineered baseline before targeted AL",
+      "models": {
+        "classifier":   "outputs/models/stage06R_classifier.joblib",
+        "regressor4":   "outputs/models/stage06R_regressor.joblib",
+        "aux_cd_fixed": "outputs/models/stage06R_aux_cd_fixed_regressor.joblib",
+        "strict_score": "outputs/models/stage06R_strict_score_regressor.joblib"
+      }
+    },
+    "stage06P": {
+      "role": "AL refresh before feature engineering",
+      "models": {
+        "classifier":   "outputs/models/stage06P_classifier.joblib",
+        "regressor4":   "outputs/models/stage06P_regressor.joblib",
+        "aux_cd_fixed": "outputs/models/stage06P_aux_cd_fixed_regressor.joblib",
+        "strict_score": "outputs/models/stage06P_strict_score_regressor.joblib"
+      }
+    },
+    "stage06L": {
+      "role": "direct strict_score head, pre-feature-engineering",
+      "models": {
+        "classifier":   "outputs/models/stage06L_classifier.joblib",
+        "regressor4":   "outputs/models/stage06L_regressor.joblib",
+        "aux_cd_fixed": "outputs/models/stage06L_aux_cd_fixed_regressor.joblib",
+        "strict_score": "outputs/models/stage06L_strict_score_regressor.joblib"
+      }
+    },
+    "stage06H": {
+      "role": "prior surrogate refresh used by Stage 06I Mode A selection",
+      "models": {
+        "classifier":   "outputs/models/stage06H_classifier.joblib",
+        "regressor4":   "outputs/models/stage06H_regressor.joblib",
+        "aux_cd_fixed": "outputs/models/stage06H_aux_cd_fixed_regressor.joblib"
+      }
+    },
+    "stage04C_closed_baseline": {
+      "role": "frozen first-pass surrogate (closed; never modified)",
+      "models": {
+        "classifier": "outputs/models/stage04C_classifier.joblib",
+        "regressor4": "outputs/models/stage04C_regressor.joblib"
+      }
+    }
+  },
+  "ranking_authority": "FD MC strict_pass_prob remains the final ranking authority. The 06PB surrogate is the screening / candidate-proposal layer; its calibration to FD truth is documented in stage06PB_blindspot_comparison.json.",
+  "final_recipe_manifest": "outputs/yield_optimization/stage06PB_final_recipe_manifest.yaml"
+}
