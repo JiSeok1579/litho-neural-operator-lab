@@ -1,0 +1,68 @@
+stage: 06Q
+policy:
+  v2_OP_frozen: true
+  published_data_loaded: false
+  external_calibration: none
+preferred_surrogate_baseline: stage06P (unchanged by 06Q)
+blindspot_summary:
+  j1453_advantage_magnitude_under_predicted: true
+  relative_advantage_residual_mean: -0.21727272727272726
+  relative_advantage_residual_early_mean: -0.21799999999999997
+  relative_advantage_residual_late_mean: -0.22400000000000003
+  remaining_false_pass_recipes:
+  - J_175
+  - J_3780
+  - J_3447
+  - J_4516
+  mode_a_geometry_box_recipe_count: 43
+  mode_a_geometry_box_recipes_in_top10:
+  - J_2780
+recommended_corrections:
+- id: B_feature_engineering
+  priority: primary
+  rationale: 06P relies on raw chemistry knobs only. Derived features that aggregate
+    process-window structure are the cheapest way to recover the J_1453 vs G_4867
+    magnitude gap because the rank order is already correct (Spearman 0.736 on relative
+    advantage).
+  candidate_features:
+  - diffusion_length_nm = sqrt(2 * DH_nm2_s * time_s)
+  - reaction_budget    = Hmax_mol_dm3 * kdep_s_inv * time_s
+  - quencher_budget    = Q0_mol_dm3 * kq_s_inv * time_s
+  - blur_to_pitch      = sigma_nm / pitch_nm
+  - line_cd_nm         = pitch_nm * line_cd_ratio
+  - DH_x_time          = DH_nm2_s * time_s
+  - Hmax_kdep_ratio    = Hmax_mol_dm3 * kdep_s_inv
+  - Q0_kq_ratio        = Q0_mol_dm3 * kq_s_inv
+  - dose_x_blur        = dose_mJ_cm2 * sigma_nm
+  next_stage_hint: '06R: feature-engineered surrogate refresh.'
+- id: C_AL_targeting
+  priority: secondary
+  rationale: 06P training pool covers J_1453 / G_4867 nominals and a few representative
+    recipes only. The magnitude gap is sharpest at large negative time offsets, where
+    data density on J_1453-like recipes is the lowest. Targeted AL on time- and margin-boundary
+    candidates would tighten the magnitude bias even without new features.
+  candidate_targets:
+  - J_1453-like time-boundary candidates
+  - Mode A-geometry chemistry candidates with low predicted margin
+  - high-rank Mode B candidates with predicted p_line_margin in [0.18, 0.22]
+  next_stage_hint: '06P-B: targeted AL refresh.'
+- id: D_model_split
+  priority: tertiary
+  rationale: Mode A and Mode B share one strict_score head. If feature engineering
+    does not close the magnitude gap, separate Mode A / Mode B strict_score heads
+    would let the Mode B head learn the J_1453 advantage without being averaged away
+    by the much larger Mode A 04C training pool.
+  next_stage_hint: '06R-2 (only if 06R feature engineering does not close the gap):
+    mode-specific strict_score heads.'
+- id: A_residual_calibration
+  priority: fallback
+  rationale: Per-family strict_pass_prob residual correction (J1453_family / G4867_family)
+    on the existing 06P predictions. Only suggested if 06R cannot be scheduled and
+    operational decisions need an interim fix.
+  next_stage_hint: Apply at usage time; do not bake into the 06P model. Treat as a
+    usage-time correction layer.
+operational_assessment:
+  j1453_in_06p_top10_b_unchanged_by_06q: true
+  g4867_in_06p_top10_a_unchanged_by_06q: true
+  magnitude_gap_operationally_blocking: false
+  rank_order_already_correct: true
