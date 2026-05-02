@@ -1,0 +1,20 @@
+{
+  "stage": "06R",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n"
+  },
+  "G4867_strict_pass_residual_mean_06p": 0.21545454545454545,
+  "G4867_strict_pass_residual_mean_06r": 0.10909090909090907,
+  "J1453_strict_pass_residual_mean_06p": -0.0018181818181818097,
+  "J1453_strict_pass_residual_mean_06r": -0.0009090909090909024,
+  "relative_advantage_residual_mean_06p": -0.21727272727272726,
+  "relative_advantage_residual_mean_06r": -0.10999999999999997,
+  "abs_relative_advantage_residual_mean_06p": 0.2209090909090909,
+  "abs_relative_advantage_residual_mean_06r": 0.10999999999999997,
+  "G4867_cd_error_residual_mean_06p": -0.26846349517611484,
+  "G4867_cd_error_residual_mean_06r": -0.16416827591261524,
+  "improvement_relative_advantage_06r_vs_06p": 0.10727272727272728,
+  "G4867_over_prediction_reduced": true
+}

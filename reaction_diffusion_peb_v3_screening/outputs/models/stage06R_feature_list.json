@@ -1,0 +1,66 @@
+{
+  "stage": "06R",
+  "raw_feature_keys": [
+    "pitch_nm",
+    "line_cd_ratio",
+    "dose_mJ_cm2",
+    "sigma_nm",
+    "DH_nm2_s",
+    "time_s",
+    "Hmax_mol_dm3",
+    "kdep_s_inv",
+    "Q0_mol_dm3",
+    "kq_s_inv",
+    "abs_len_nm"
+  ],
+  "derived_feature_keys": [
+    "diffusion_length_nm",
+    "reaction_budget",
+    "quencher_budget",
+    "blur_to_pitch",
+    "line_cd_nm_derived",
+    "DH_x_time",
+    "Hmax_kdep_ratio",
+    "Q0_kq_ratio",
+    "dose_x_blur"
+  ],
+  "feature_keys": [
+    "pitch_nm",
+    "line_cd_ratio",
+    "dose_mJ_cm2",
+    "sigma_nm",
+    "DH_nm2_s",
+    "time_s",
+    "Hmax_mol_dm3",
+    "kdep_s_inv",
+    "Q0_mol_dm3",
+    "kq_s_inv",
+    "abs_len_nm",
+    "diffusion_length_nm",
+    "reaction_budget",
+    "quencher_budget",
+    "blur_to_pitch",
+    "line_cd_nm_derived",
+    "DH_x_time",
+    "Hmax_kdep_ratio",
+    "Q0_kq_ratio",
+    "dose_x_blur"
+  ],
+  "epsilon": 1e-12,
+  "derived_feature_definitions": {
+    "diffusion_length_nm": "sqrt(2 * DH_nm2_s * time_s)",
+    "reaction_budget": "Hmax_mol_dm3 * kdep_s_inv * time_s",
+    "quencher_budget": "Q0_mol_dm3 * kq_s_inv * time_s",
+    "blur_to_pitch": "sigma_nm / pitch_nm",
+    "line_cd_nm_derived": "pitch_nm * line_cd_ratio",
+    "DH_x_time": "DH_nm2_s * time_s",
+    "Hmax_kdep_ratio": "Hmax_mol_dm3 / kdep_s_inv",
+    "Q0_kq_ratio": "Q0_mol_dm3 / kq_s_inv",
+    "dose_x_blur": "dose_mJ_cm2 * sigma_nm"
+  },
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "external_calibration": "none"
+  }
+}
