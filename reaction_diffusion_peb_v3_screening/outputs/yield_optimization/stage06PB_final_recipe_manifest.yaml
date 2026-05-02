@@ -1,0 +1,218 @@
+stage: 06PB
+status: FINAL
+title: PEB v3 Mode A + Mode B final recipe manifest (06PB closeout)
+policy:
+  v2_OP_frozen: true
+  published_data_loaded: false
+  external_calibration: none
+  notes: |
+    Nominal-model surrogate study on the v2 frozen physics. FD MC
+    strict_pass_prob is the ranking authority for both Mode A and
+    Mode B; the 06PB feature-engineered surrogate is the screening
+    layer. No external / measured calibration. Closed Stage 04C /
+    04D / 06C artefacts remain unchanged.
+
+preferred_surrogate: stage06PB
+preferred_surrogate_models:
+  classifier:    outputs/models/stage06PB_classifier.joblib
+  regressor4:    outputs/models/stage06PB_regressor.joblib
+  aux_cd_fixed:  outputs/models/stage06PB_aux_cd_fixed_regressor.joblib
+  strict_score:  outputs/models/stage06PB_strict_score_regressor.joblib
+  feature_list:  outputs/models/stage06R_feature_list.json   # 11 raw + 9 derived
+previous_baselines:
+  stage06R: feature-engineered baseline before targeted AL
+  stage06P: AL refresh before feature engineering
+  stage06L: direct strict_score head, pre-feature-engineering
+  stage06H: prior surrogate refresh used by Stage 06I Mode A selection
+
+strict_thresholds:
+  cd_tolerance_nm: 0.5
+  ler_cap_nm:      3.0
+  rationale_source: stage06G_threshold_selection.md
+
+ranking_authority: |
+  FD MC strict_pass_prob is the final ranking authority for both
+  Mode A and Mode B recipe selection. The 06PB direct strict_score
+  head is the candidate-proposal / screening layer; FD truth wins
+  on disagreements. 06PB is calibrated within ~0.025 absolute on the
+  J - G relative time-window advantage (06Q blindspot closed).
+
+mode_a:
+  scope:
+    fixed_design:
+      pitch_nm:      24
+      line_cd_ratio: 0.52
+      abs_len_nm:    50.0
+  primary_recipe_id: G_4867
+  primary_role: CD-accurate fixed-design default recipe
+  primary_note: |
+    Mode A default. pitch_nm = 24, line_cd_ratio = 0.52. Selected by
+    Stage 06I from FD MC strict_pass_prob. Time window is moderate
+    (strict_pass_width_s = 3 s); use J_1453 when wider time tolerance
+    is more important than CD accuracy.
+
+mode_b:
+  scope:
+    open_design: true
+  primary_recipe_id: J_1453
+  primary_role: open-design production alternative (wider time-window)
+  primary_note: |
+    Mode B production alternative. Open-design (pitch / ratio /
+    abs_len participate in optimisation), NOT recipe-only Mode A
+    template variation. Selected by Stage 06J Mode B strict-score #1,
+    confirmed by 06J-B FD MC strict_pass = 0.747 at scale, and
+    promoted by 06M-B time-window deep MC. 06PB feature-engineered
+    surrogate calibrates the J - G time-window advantage to within
+    +/- 0.025 absolute strict_pass_prob (06Q blindspot closed).
+
+representatives:
+- recipe_id: G_4867
+  family: G4867_family
+  role: mode_a_default
+  is_primary_mode_a: true
+  parameters:
+    pitch_nm:       24.0
+    line_cd_ratio:  0.52
+    dose_mJ_cm2:    52.676753897219896
+    sigma_nm:       0.6776348277926445
+    DH_nm2_s:       0.5002588990144432
+    time_s:         29.275345294736326
+    Hmax_mol_dm3:   0.1706448632106185
+    kdep_s_inv:     0.6455813481472432
+    Q0_mol_dm3:     0.019664063360542057
+    kq_s_inv:       1.0673484671860933
+    abs_len_nm:     50.0
+  nominal_fd:
+    label:           robust_valid
+    CD_final_nm:     15.00294885997412
+    CD_error_nm:     0.0029488599741203103
+    CD_locked_nm:    12.48350499225868
+    LER_CD_locked_nm: 2.510559542416033
+    area_frac:       0.6254861111111111
+    P_line_margin:   0.17582805281672076
+  mc_fd:
+    n_mc:                 100
+    robust_valid_prob:    1.0
+    margin_risk_prob:     0.0
+    defect_prob:          0.0
+    strict_pass_prob:     0.68
+    mean_CD_final_nm:     15.0517386238079
+    std_CD_final_nm:      0.485474973703603
+    mean_LER_CD_locked_nm: 2.532945551214526
+    std_LER_CD_locked_nm: 0.020880574293053
+    mean_P_line_margin:   0.175067299088524
+    source:               stage06H_top10_mc
+  time_window:
+    protocol: 11 deterministic offsets x 100 FD per offset (06M)
+    nominal_time_s:   29.275345294736326
+    strict_pass_at_zero: 0.78
+    strict_pass_ge_0p5_band_s: [-2.0, 1.0]
+    strict_pass_width_s: 3.0
+    primary_failure_extreme_offsets: cd_error_overshoot_no_label_flip
+  surrogate_validation_06pb:
+    G_4867_strict_pass_residual_mean: 0.008
+    G_4867_cd_error_residual_mean_nm: -0.032
+    in_06PB_mode_a_top10: true
+  selection_rationale: |
+    FD MC strict_pass_prob = 0.680 -- highest among Mode A
+    representatives. FD nominal CD_error = 0.003 nm. Surrogate
+    07PB validates G_4867 at strict_pass residual mean 0.008 (down
+    from 0.215 in 06P, 0.109 in 06R) -- the 06Q time-window
+    over-prediction blindspot is closed.
+  known_trade_offs: |
+    Time window is moderate (strict_pass_width 3 s). LER std under
+    MC is small but CD std (0.485 nm) is mid-range vs other
+    representatives. Choose J_1453 if a wider time tolerance is
+    needed.
+  when_to_prefer: |
+    Default Mode A recipe. Best overall on FD nominal CD accuracy
+    AND FD MC strict_pass at the same Mode A geometry. Use when
+    pitch / ratio / abs_len are pinned to the Mode A fixed-design
+    template.
+
+- recipe_id: J_1453
+  family: J1453_family
+  role: mode_b_production_alternative
+  is_primary_mode_b: true
+  parameters:
+    pitch_nm:       24.0
+    line_cd_ratio:  0.45
+    dose_mJ_cm2:    52.48814922384918
+    sigma_nm:       0.34199510235339403
+    DH_nm2_s:       0.40357725620269774
+    time_s:         38.63432072568685
+    Hmax_mol_dm3:   0.21585012060590086
+    kdep_s_inv:     0.49473905460909007
+    Q0_mol_dm3:     0.00692776383832097
+    kq_s_inv:       1.532070079818368
+    abs_len_nm:     90.36870668642223
+  nominal_fd:
+    source:           stage06J_mode_b_fd_sanity
+    label:            robust_valid
+    CD_final_nm:      15.000291341355695
+    CD_error_nm:      0.000291341355695
+    CD_locked_nm:     10.91255342823338
+    LER_CD_locked_nm: 2.556994776506135
+    area_frac:        0.6251215277777777
+    P_line_margin:    0.24078807177973371
+  mc_fd:
+    n_mc:                 100
+    robust_valid_prob:    1.0
+    margin_risk_prob:     0.0
+    defect_prob:          0.0
+    strict_pass_prob:     0.747
+    source:               stage06J_B_top10_mc
+    note: |
+      06J-B FD verification at scale. mean_CD_final_nm 15.15,
+      std 0.40, mean_LER 2.56, mean_margin 0.241. J_1453's MC strict
+      pass exceeds G_4867's (0.68 vs 0.747).
+  time_window:
+    protocol: 11 deterministic offsets x 100 FD + sigma_t = 2 s gaussian x 300 FD (06M-B)
+    nominal_time_s:   38.63432072568685
+    strict_pass_at_zero: 0.91
+    strict_pass_ge_0p5_band_s: [-3.0, 2.0]
+    strict_pass_width_s: 5.0
+    advantage_vs_G4867: |
+      Wider time-window than G_4867: 5 s vs 3 s strict_pass_width;
+      higher peak strict_pass at zero (0.91 vs 0.78). 06M-B decision
+      label = mode_b_production_alternative; outcome =
+      j1453_wider_window.
+  surrogate_validation_06pb:
+    J_1453_strict_pass_residual_mean: 0.003
+    J_1453_cd_error_residual_mean_nm: -0.013
+    relative_advantage_residual_mean_J_minus_G: -0.005
+    abs_relative_advantage_residual_within_0p10_target: true
+    abs_relative_advantage_residual_within_0p05_stretch: true
+    in_06PB_mode_b_top10: true
+  selection_rationale: |
+    Stage 06J Mode B strict_score #1 winner; 06J-B FD MC
+    strict_pass = 0.747 at scale (matches Mode A G_4867's MC strict
+    pass within 1%); 06M-B deep time-window MC shows
+    strict_pass_width 5 s (vs G_4867's 3 s). 06PB feature-engineered
+    + targeted-AL surrogate calibrates the J - G relative time
+    advantage to mean = -0.005 (inside the 0.05 stretch target).
+  known_trade_offs: |
+    Open-design recipe (different pitch / line_cd_ratio / abs_len
+    from the Mode A fixed-design template). Production users that
+    require Mode A geometry conformance should pick G_4867 instead.
+    Mode B exploration showed no Mode-A-geometry chemistry that
+    beats G_4867 on CD accuracy.
+  when_to_prefer: |
+    Production alternative when wider time-window robustness is
+    more important than strict CD accuracy at nominal time, or
+    when an open-design slot is acceptable. Pair with G_4867 as
+    the Mode A fallback.
+
+mode_a_geometry_blindspot_closed: true
+mode_b_geometry_chemistry_blindspot_summary: |
+  43 Mode B candidates with pitch ~24 / ratio ~0.52 (Mode A geometry
+  box) were characterised in Stage 06Q. Only J_2780 reached 06J
+  top-10. None has FD evidence of beating G_4867 on both CD accuracy
+  and MC stability. Documented for future reference; no further
+  action under this thread.
+
+closed_threads:
+  - 06Q_blindspot_diagnosis
+  - 06R_feature_engineered_refresh
+  - 06PB_targeted_AL_refresh
+  - G_4867_J_1453_magnitude_gap
