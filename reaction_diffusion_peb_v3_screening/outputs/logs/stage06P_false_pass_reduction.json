@@ -1,0 +1,62 @@
+{
+  "stage": "06P",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n"
+  },
+  "false_pass_06j_input_count": 4,
+  "false_pass_06l_demoted_count": 1,
+  "false_pass_06p_demoted_vs_06l_count": 2,
+  "false_pass_06p_demoted_vs_06j_count": 0,
+  "false_pass_demotions": [
+    {
+      "recipe_id": "J_175",
+      "fd_label": "roughness_degraded",
+      "rank_06j": 32,
+      "rank_06l": 31,
+      "rank_06p": 32,
+      "delta_rank_06p_vs_06l": 1,
+      "delta_rank_06p_vs_06j": 0,
+      "strict_score_06j_surrogate": -3.0719840600896156,
+      "strict_score_06l_direct": -7.5506338928670695,
+      "strict_score_06p_direct": -10.126217117795804
+    },
+    {
+      "recipe_id": "J_3780",
+      "fd_label": "roughness_degraded",
+      "rank_06j": 33,
+      "rank_06l": 33,
+      "rank_06p": 33,
+      "delta_rank_06p_vs_06l": 0,
+      "delta_rank_06p_vs_06j": 0,
+      "strict_score_06j_surrogate": -3.5475962245420023,
+      "strict_score_06l_direct": -12.753042036558487,
+      "strict_score_06p_direct": -12.71872261870445
+    },
+    {
+      "recipe_id": "J_3447",
+      "fd_label": "merged",
+      "rank_06j": 30,
+      "rank_06l": 32,
+      "rank_06p": 30,
+      "delta_rank_06p_vs_06l": -2,
+      "delta_rank_06p_vs_06j": 0,
+      "strict_score_06j_surrogate": -1.0171030214236123,
+      "strict_score_06l_direct": -7.644182696733692,
+      "strict_score_06p_direct": -8.026559255133941
+    },
+    {
+      "recipe_id": "J_4516",
+      "fd_label": "roughness_degraded",
+      "rank_06j": 31,
+      "rank_06l": 30,
+      "rank_06p": 31,
+      "delta_rank_06p_vs_06l": 1,
+      "delta_rank_06p_vs_06j": 0,
+      "strict_score_06j_surrogate": -1.6106460939707754,
+      "strict_score_06l_direct": -6.622364294648617,
+      "strict_score_06p_direct": -8.563358807319261
+    }
+  ]
+}
