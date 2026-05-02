@@ -1,0 +1,55 @@
+{
+  "stage": "06Q",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "external_calibration": "none"
+  },
+  "blindspot_dataset_n_rows": 65,
+  "j1453_g4867_residuals": {
+    "J1453_strict_pass_residual_mean": -0.0018181818181818097,
+    "J1453_strict_pass_residual_min": -0.06,
+    "J1453_strict_pass_residual_min_offset": 4.0,
+    "G4867_strict_pass_residual_mean": 0.21545454545454545,
+    "relative_advantage_residual_mean": -0.21727272727272726,
+    "relative_advantage_residual_early_mean": -0.21799999999999997,
+    "relative_advantage_residual_late_mean": -0.22400000000000003,
+    "relative_advantage_residual_zero": -0.17999999999999994,
+    "j1453_advantage_under_predicted_at_offsets": [
+      -5.0,
+      -4.0,
+      -3.0,
+      -2.0,
+      -1.0,
+      0.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0
+    ]
+  },
+  "false_pass_diagnostics_summary": {
+    "n_recipes": 4,
+    "by_dominant_cause": {
+      "cd_error_under_predicted": 3,
+      "margin_over_predicted": 1
+    },
+    "n_class_overconfident": 0,
+    "n_cd_under_predicted": 3,
+    "n_ler_under_predicted": 0,
+    "n_margin_over_predicted": 1,
+    "n_geometry_extrapolation": 4
+  },
+  "mode_a_geometry_blindspot_summary": {
+    "n_recipes_in_box": 43,
+    "n_with_fd_evidence": 4,
+    "n_fd_strict_pass": 1,
+    "n_fd_label_robust_valid": 4,
+    "top10_06j_recipes_in_box": [
+      "J_2780"
+    ],
+    "top100_06j_recipes_in_box_count": 21
+  },
+  "recommended_primary_correction": "B_feature_engineering (next stage hint: 06R feature-engineered surrogate refresh)",
+  "j1453_g4867_recipes_unchanged_by_06q": true
+}
