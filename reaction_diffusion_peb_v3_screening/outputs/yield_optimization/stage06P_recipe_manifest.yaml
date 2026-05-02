@@ -1,0 +1,55 @@
+stage: 06P
+policy:
+  v2_OP_frozen: true
+  published_data_loaded: false
+  external_calibration: none
+purpose: |
+  Stage 06P recipe-manifest pre-step. Records the Mode A / Mode B
+  recipe families that subsequent 06P artefacts (training dataset,
+  surrogate stack, ranking, time-window check) reference. Does NOT
+  mutate the closed Stage 04C / 04D / 06C / 06I artefacts.
+families:
+  G4867_family:
+    role: mode_a_default
+    description: |
+      CD-accurate fixed-design recipe family centred on G_4867 (the
+      Stage 06I primary Mode A recipe). Fixed-design means
+      pitch_nm = 24, line_cd_ratio = 0.52, abs_len_nm = 50; only the
+      reaction/exposure/time axes vary within the recipe.
+    primary_recipe_id: G_4867
+    fixed_design:
+      pitch_nm: 24
+      line_cd_ratio: 0.52
+      abs_len_nm: 50.0
+    optimization_kind: recipe_only
+    selection_basis: 06I FD MC strict_pass_prob (G_4867 primary)
+  J1453_family:
+    role: mode_b_production_alternative
+    description: |
+      Wider time-window Mode B recipe family centred on J_1453 (the
+      Stage 06J Mode B strict-best winner, confirmed by 06J-B FD MC
+      and 06M-B time deep MC). J_1453 is open-design (pitch / ratio /
+      abs_len participate in the optimisation), NOT recipe-only.
+    primary_recipe_id: J_1453
+    open_design: true
+    optimization_kind: open_design
+    selection_basis: |
+      06J Mode B strict_score #1 winner; 06J-B FD MC strict_pass = 0.747
+      at scale; 06M-B deterministic-offset + Gaussian-time deep MC
+      shows wider time-window than G_4867 (J_1453 strict_pass_width
+      = 5 s vs G_4867 = 3 s).
+    j1453_vs_g4867_time_window_advantage:
+      strict_pass_width_g4867_s: 3.0
+      strict_pass_width_j1453_s: 5.0
+      outcome: j1453_wider_window
+      decision_label: mode_b_production_alternative
+mode_a_recipes_in_scope: G4867_family
+mode_b_recipes_in_scope: J1453_family + 06J Mode B top recipes
+notes: |
+  - This manifest is informational. It is consumed by the Stage 06P
+    dataset/training/analysis scripts to tag rows by recipe_family.
+  - J_1453 is recorded explicitly as open-design so future readers do
+    not interpret it as a recipe-only optimisation around the Mode A
+    fixed-design template.
+  - Closed Stage 04C / 04D / 06C and the 06I Mode A final manifest are
+    not modified. Mode A primary remains G_4867.

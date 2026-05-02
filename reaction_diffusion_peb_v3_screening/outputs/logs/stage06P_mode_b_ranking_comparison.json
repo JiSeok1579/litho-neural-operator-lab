@@ -1,0 +1,29 @@
+{
+  "stage": "06P",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "notes": "Stage 06A is a nominal-model yield-proxy optimisation. The 04C\nsurrogate is treated as an oracle for the v2 nominal physics, not\nfor a real fab. No external calibration has been performed.\n"
+  },
+  "n_pairs_06p_overall": 27,
+  "n_pairs_06p_mode_a": 13,
+  "n_pairs_06p_mode_b": 14,
+  "n_pairs_06l_overall": 27,
+  "n_pairs_06l_mode_a": 13,
+  "n_pairs_06l_mode_b": 14,
+  "spearman_06p_overall": 0.9711235500722513,
+  "spearman_06p_mode_a": 0.9834748062012769,
+  "spearman_06p_mode_b": 0.9381989893577897,
+  "spearman_06l_overall": 0.7783044940321031,
+  "spearman_06l_mode_a": 0.9917393003710356,
+  "spearman_06l_mode_b": 0.5849946639525042,
+  "delta_spearman_overall_06p_minus_06l": 0.19281905604014815,
+  "delta_spearman_mode_b_06p_minus_06l": 0.35320432540528546,
+  "rank_spearman_06l_vs_06p_mode_b": 0.6038523852385238,
+  "rank_spearman_06j_vs_06p_mode_b": 0.4602700270027002,
+  "top10_overlap_mode_b_06l_vs_06p": 6,
+  "top10_overlap_mode_b_06j_vs_06p": 4,
+  "top10_overlap_mode_b_pred_vs_fd": 10,
+  "j1453_in_06p_top10_mode_b": true,
+  "g4867_in_06p_top10_mode_a": true
+}

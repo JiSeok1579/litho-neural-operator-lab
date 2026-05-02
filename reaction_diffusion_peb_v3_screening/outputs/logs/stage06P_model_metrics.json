@@ -1,0 +1,902 @@
+{
+  "stage": "06P",
+  "policy": {
+    "v2_OP_frozen": true,
+    "published_data_loaded": false,
+    "external_calibration": "none"
+  },
+  "split": {
+    "seed": 13,
+    "n_test_04c_only": 1074,
+    "note": "06P trained on 06L pool union 06J-B FD additions (top-100 nominal, top-10 MC, representative MC) and 06M-B J_1453 time-window FD additions (deterministic offsets and Gaussian time smearing). The 04C held-out test set is strictly removed. Closed Stage 04C / 04D / 06C / 06L joblibs are not modified."
+  },
+  "feature_keys": [
+    "pitch_nm",
+    "line_cd_ratio",
+    "dose_mJ_cm2",
+    "sigma_nm",
+    "DH_nm2_s",
+    "time_s",
+    "Hmax_mol_dm3",
+    "kdep_s_inv",
+    "Q0_mol_dm3",
+    "kq_s_inv",
+    "abs_len_nm"
+  ],
+  "labels": [
+    "robust_valid",
+    "margin_risk",
+    "roughness_degraded",
+    "under_exposed",
+    "merged",
+    "numerical_invalid"
+  ],
+  "regression_targets": [
+    "CD_locked_nm",
+    "LER_CD_locked_nm",
+    "area_frac",
+    "P_line_margin"
+  ],
+  "n_train": 13120,
+  "by_source_train": {
+    "stage06H/stage06C/stage04C": 4294,
+    "stage06H/stage06C/stage06B_yield_opt": 1100,
+    "stage06H/stage06E_disagreement": 17,
+    "stage06H/stage06H_top100_nominal": 100,
+    "stage06H/stage06H_top10_mc": 1000,
+    "stage06H/stage06H_representative_mc": 1800,
+    "stage06J_mode_b_nominal": 33,
+    "stage06J_mode_b_mc": 500,
+    "stage06J_B_top100_nominal": 76,
+    "stage06J_B_top10_mc": 1000,
+    "stage06J_B_representative_mc/j1453_pinned": 300,
+    "stage06J_B_representative_mc/strict_best": 300,
+    "stage06J_B_representative_mc/cd_best": 300,
+    "stage06J_B_representative_mc/ler_best": 300,
+    "stage06J_B_representative_mc/balanced_best": 300,
+    "stage06J_B_representative_mc/margin_best": 300,
+    "stage06M_B_J1453_time_deep_mc": 1100,
+    "stage06M_B_gaussian_time_smearing": 300
+  },
+  "by_mode_train": {
+    "mode_b": 12753,
+    "mode_a": 367
+  },
+  "by_family_train": {
+    "general": 8210,
+    "G4867_family": 101,
+    "J1453_family": 1901,
+    "mode_b_other": 2904,
+    "false_promise": 4
+  },
+  "classifier": {
+    "accuracy": 0.7970204841713222,
+    "balanced_accuracy": 0.6929359980425952,
+    "macro_f1": 0.7197112581971257,
+    "per_class": {
+      "robust_valid": {
+        "precision": 0.798941798941799,
+        "recall": 0.888235294117647,
+        "f1": 0.841225626740947,
+        "support": 340
+      },
+      "margin_risk": {
+        "precision": 0.6530612244897959,
+        "recall": 0.49230769230769234,
+        "f1": 0.5614035087719298,
+        "support": 130
+      },
+      "roughness_degraded": {
+        "precision": 0.6666666666666666,
+        "recall": 0.2857142857142857,
+        "f1": 0.4,
+        "support": 63
+      },
+      "under_exposed": {
+        "precision": 0.7802197802197802,
+        "recall": 0.7759562841530054,
+        "f1": 0.7780821917808219,
+        "support": 183
+      },
+      "merged": {
+        "precision": 0.8385269121813032,
+        "recall": 0.9426751592356688,
+        "f1": 0.8875562218890555,
+        "support": 314
+      },
+      "numerical_invalid": {
+        "precision": 0.9444444444444444,
+        "recall": 0.7727272727272727,
+        "f1": 0.85,
+        "support": 44
+      }
+    },
+    "n_predicted_robust_valid": 378,
+    "n_missed_defect_in_pred_pass": 33,
+    "false_robust_valid_rate": 0.0873015873015873,
+    "n_missed_non_robust_in_pred_pass": 76,
+    "false_robust_valid_includes_margin_rate": 0.20105820105820105
+  },
+  "regressor4": {
+    "CD_locked_nm": {
+      "mae": 0.2824315536766754,
+      "rmse": 0.8697439055726325,
+      "n": 1030
+    },
+    "LER_CD_locked_nm": {
+      "mae": 0.06443766789584628,
+      "rmse": 0.10211000200935531,
+      "n": 963
+    },
+    "area_frac": {
+      "mae": 0.08660848693762176,
+      "rmse": 0.1353481605322049,
+      "n": 1074
+    },
+    "P_line_margin": {
+      "mae": 0.053534436482709155,
+      "rmse": 0.07153426434488867,
+      "n": 1074
+    }
+  },
+  "regressor4_zones": {
+    "operational_zone": {
+      "CD_locked_nm": {
+        "mae": 0.1261483811822228,
+        "rmse": 0.16575088606207564,
+        "n": 470
+      },
+      "LER_CD_locked_nm": {
+        "mae": 0.02962127929926518,
+        "rmse": 0.04771141280075222,
+        "n": 465
+      },
+      "area_frac": {
+        "mae": 0.04232814344413886,
+        "rmse": 0.05806098692016213,
+        "n": 470
+      },
+      "P_line_margin": {
+        "mae": 0.03349672029096951,
+        "rmse": 0.0436618355201307,
+        "n": 470
+      }
+    },
+    "failure_zone": {
+      "CD_locked_nm": {
+        "mae": 0.4135977877345195,
+        "rmse": 1.1697341102719574,
+        "n": 560
+      },
+      "LER_CD_locked_nm": {
+        "mae": 0.09694694640470213,
+        "rmse": 0.13429989200017053,
+        "n": 498
+      },
+      "area_frac": {
+        "mae": 0.12106504561632535,
+        "rmse": 0.17306323262465664,
+        "n": 604
+      },
+      "P_line_margin": {
+        "mae": 0.06912669908224166,
+        "rmse": 0.08726750458647738,
+        "n": 604
+      }
+    },
+    "n_operational": 470,
+    "n_failure": 604
+  },
+  "aux_cd_fixed": {
+    "mae": 1.0887367379745272,
+    "rmse": 1.5041514460253391,
+    "n": 1030
+  },
+  "strict_score_regressor": {
+    "mae": 4.289368065014879,
+    "rmse": 6.0323119432863805,
+    "n": 1074,
+    "spearman_rho": 0.7019756163092797
+  },
+  "strict_score_regressor_n_train": 13120,
+  "feature_importance_classifier": [
+    0.09431812521253018,
+    0.06132341637514836,
+    0.13198517644049726,
+    0.18760792928940156,
+    0.112789692439693,
+    0.08352323210518255,
+    0.062376454132987626,
+    0.10855479391497456,
+    0.0742892314342086,
+    0.04317945085127433,
+    0.04005249780410201
+  ],
+  "feature_importance_strict_score": [
+    0.12376778436849692,
+    0.05148366019116634,
+    0.1098445738239133,
+    0.40908876112724785,
+    0.035367632646385566,
+    0.053440505495253365,
+    0.04078067679633954,
+    0.07216142791161412,
+    0.050796766994045714,
+    0.02526399847878196,
+    0.028004212166755523
+  ],
+  "slice_metrics_06p_pool": {
+    "mode_a": {
+      "n": 396,
+      "classifier": {
+        "accuracy": 0.9772727272727273,
+        "balanced_accuracy": 0.9274603174603175,
+        "macro_f1": 0.7847191327754746,
+        "per_class": {
+          "robust_valid": {
+            "precision": 0.9931506849315068,
+            "recall": 1.0,
+            "f1": 0.9965635738831615,
+            "support": 290
+          },
+          "margin_risk": {
+            "precision": 0.9393939393939394,
+            "recall": 0.8611111111111112,
+            "f1": 0.8985507246376812,
+            "support": 36
+          },
+          "roughness_degraded": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "under_exposed": {
+            "precision": 0.868421052631579,
+            "recall": 0.9428571428571428,
+            "f1": 0.9041095890410958,
+            "support": 35
+          },
+          "merged": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 23
+          },
+          "numerical_invalid": {
+            "precision": 1.0,
+            "recall": 0.8333333333333334,
+            "f1": 0.9090909090909091,
+            "support": 12
+          }
+        },
+        "n_predicted_robust_valid": 292,
+        "n_missed_defect_in_pred_pass": 0,
+        "false_robust_valid_rate": 0.0,
+        "n_missed_non_robust_in_pred_pass": 2,
+        "false_robust_valid_includes_margin_rate": 0.00684931506849315
+      },
+      "regressor4": {
+        "CD_locked_nm": {
+          "mae": 0.07041022645440055,
+          "rmse": 0.2039305940391325,
+          "n": 384
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.007828133942849263,
+          "rmse": 0.015257399319915887,
+          "n": 377
+        },
+        "area_frac": {
+          "mae": 0.02373203262786593,
+          "rmse": 0.04876547508671952,
+          "n": 396
+        },
+        "P_line_margin": {
+          "mae": 0.016290334636573874,
+          "rmse": 0.03090472502749235,
+          "n": 396
+        }
+      },
+      "aux_cd_fixed": {
+        "mae": 0.2989391757170268,
+        "rmse": 0.5086163384139513,
+        "n": 384
+      },
+      "strict_score_regressor": {
+        "mae": 1.3119665622878047,
+        "rmse": 2.430558441518987,
+        "n": 396,
+        "spearman_rho": 0.9269426722667805
+      }
+    },
+    "mode_b": {
+      "n": 13798,
+      "classifier": {
+        "accuracy": 0.9848528772285838,
+        "balanced_accuracy": 0.9425639828510871,
+        "macro_f1": 0.9553013163189478,
+        "per_class": {
+          "robust_valid": {
+            "precision": 0.9928106480132128,
+            "recall": 0.996295213025251,
+            "f1": 0.9945498783454988,
+            "support": 10257
+          },
+          "margin_risk": {
+            "precision": 0.9389312977099237,
+            "recall": 0.8896925858951176,
+            "f1": 0.9136490250696379,
+            "support": 553
+          },
+          "roughness_degraded": {
+            "precision": 0.96875,
+            "recall": 0.8611111111111112,
+            "f1": 0.9117647058823529,
+            "support": 324
+          },
+          "under_exposed": {
+            "precision": 0.9629237288135594,
+            "recall": 0.9588607594936709,
+            "f1": 0.9608879492600423,
+            "support": 948
+          },
+          "merged": {
+            "precision": 0.9631782945736435,
+            "recall": 0.9880715705765407,
+            "f1": 0.9754661432777233,
+            "support": 1509
+          },
+          "numerical_invalid": {
+            "precision": 0.9900497512437811,
+            "recall": 0.961352657004831,
+            "f1": 0.9754901960784313,
+            "support": 207
+          }
+        },
+        "n_predicted_robust_valid": 10293,
+        "n_missed_defect_in_pred_pass": 33,
+        "false_robust_valid_rate": 0.0032060623724861556,
+        "n_missed_non_robust_in_pred_pass": 74,
+        "false_robust_valid_includes_margin_rate": 0.007189351986787137
+      },
+      "regressor4": {
+        "CD_locked_nm": {
+          "mae": 0.10601571186928023,
+          "rmse": 0.5061019026877513,
+          "n": 13588
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.01278746346057626,
+          "rmse": 0.03547428653354692,
+          "n": 13266
+        },
+        "area_frac": {
+          "mae": 0.022328123924894784,
+          "rmse": 0.06407440815154344,
+          "n": 13798
+        },
+        "P_line_margin": {
+          "mae": 0.014439137239790378,
+          "rmse": 0.03476216824469677,
+          "n": 13798
+        }
+      },
+      "aux_cd_fixed": {
+        "mae": 0.2382144466463713,
+        "rmse": 0.5271180353463493,
+        "n": 13588
+      },
+      "strict_score_regressor": {
+        "mae": 0.8953488739979388,
+        "rmse": 2.092777758106182,
+        "n": 13798,
+        "spearman_rho": 0.9690942849591135
+      }
+    },
+    "G4867_family": {
+      "n": 101,
+      "classifier": {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "macro_f1": 0.16666666666666666,
+        "per_class": {
+          "robust_valid": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 101
+          },
+          "margin_risk": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "roughness_degraded": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "under_exposed": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "merged": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "numerical_invalid": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          }
+        },
+        "n_predicted_robust_valid": 101,
+        "n_missed_defect_in_pred_pass": 0,
+        "false_robust_valid_rate": 0.0,
+        "n_missed_non_robust_in_pred_pass": 0,
+        "false_robust_valid_includes_margin_rate": 0.0
+      },
+      "regressor4": {
+        "CD_locked_nm": {
+          "mae": 0.04182679647034525,
+          "rmse": 0.049331122324498496,
+          "n": 101
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.0012809982468938686,
+          "rmse": 0.0016137447509407244,
+          "n": 101
+        },
+        "area_frac": {
+          "mae": 0.003667936213264239,
+          "rmse": 0.004456269116806158,
+          "n": 101
+        },
+        "P_line_margin": {
+          "mae": 0.0039055678270335284,
+          "rmse": 0.0049933067591274435,
+          "n": 101
+        }
+      },
+      "aux_cd_fixed": {
+        "mae": 0.05875859256475151,
+        "rmse": 0.07218125727835423,
+        "n": 101
+      },
+      "strict_score_regressor": {
+        "mae": 0.0979539070306878,
+        "rmse": 0.14926302471713648,
+        "n": 101,
+        "spearman_rho": 0.7276528829353524
+      }
+    },
+    "J1453_family": {
+      "n": 1901,
+      "classifier": {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "macro_f1": 0.16666666666666666,
+        "per_class": {
+          "robust_valid": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 1901
+          },
+          "margin_risk": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "roughness_degraded": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "under_exposed": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "merged": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "numerical_invalid": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          }
+        },
+        "n_predicted_robust_valid": 1901,
+        "n_missed_defect_in_pred_pass": 0,
+        "false_robust_valid_rate": 0.0,
+        "n_missed_non_robust_in_pred_pass": 0,
+        "false_robust_valid_includes_margin_rate": 0.0
+      },
+      "regressor4": {
+        "CD_locked_nm": {
+          "mae": 0.040694714792650556,
+          "rmse": 0.04855312129477115,
+          "n": 1901
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.000920757055033193,
+          "rmse": 0.0012054199294446425,
+          "n": 1901
+        },
+        "area_frac": {
+          "mae": 0.00254689848388067,
+          "rmse": 0.003460609953432466,
+          "n": 1901
+        },
+        "P_line_margin": {
+          "mae": 0.0015397192055826565,
+          "rmse": 0.002143852841076158,
+          "n": 1901
+        }
+      },
+      "aux_cd_fixed": {
+        "mae": 0.032459854095337234,
+        "rmse": 0.04247224213061645,
+        "n": 1901
+      },
+      "strict_score_regressor": {
+        "mae": 0.06496373195793835,
+        "rmse": 0.10211990583420741,
+        "n": 1901,
+        "spearman_rho": 0.8281332867179405
+      }
+    },
+    "time_boundary": {
+      "n": 1400,
+      "classifier": {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "macro_f1": 0.16666666666666666,
+        "per_class": {
+          "robust_valid": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 1400
+          },
+          "margin_risk": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "roughness_degraded": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "under_exposed": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "merged": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "numerical_invalid": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          }
+        },
+        "n_predicted_robust_valid": 1400,
+        "n_missed_defect_in_pred_pass": 0,
+        "false_robust_valid_rate": 0.0,
+        "n_missed_non_robust_in_pred_pass": 0,
+        "false_robust_valid_includes_margin_rate": 0.0
+      },
+      "regressor4": {
+        "CD_locked_nm": {
+          "mae": 0.04084403683086566,
+          "rmse": 0.04875446997593749,
+          "n": 1400
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.0009335398160843199,
+          "rmse": 0.0012232842512909549,
+          "n": 1400
+        },
+        "area_frac": {
+          "mae": 0.002733419873157605,
+          "rmse": 0.0037193823813831306,
+          "n": 1400
+        },
+        "P_line_margin": {
+          "mae": 0.0016247587123943243,
+          "rmse": 0.0023009617985968707,
+          "n": 1400
+        }
+      },
+      "aux_cd_fixed": {
+        "mae": 0.03308638097805392,
+        "rmse": 0.04350683364007966,
+        "n": 1400
+      },
+      "strict_score_regressor": {
+        "mae": 0.07066536015561553,
+        "rmse": 0.10801607090647537,
+        "n": 1400,
+        "spearman_rho": 0.8748850017634849
+      }
+    },
+    "strict_top_tier_ge_0p7": {
+      "n": 4384,
+      "classifier": {
+        "accuracy": 0.9986313868613139,
+        "balanced_accuracy": 0.9986313868613139,
+        "macro_f1": 0.16655253747241877,
+        "per_class": {
+          "robust_valid": {
+            "precision": 1.0,
+            "recall": 0.9986313868613139,
+            "f1": 0.9993152248345126,
+            "support": 4384
+          },
+          "margin_risk": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "roughness_degraded": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "under_exposed": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "merged": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "numerical_invalid": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          }
+        },
+        "n_predicted_robust_valid": 4378,
+        "n_missed_defect_in_pred_pass": 0,
+        "false_robust_valid_rate": 0.0,
+        "n_missed_non_robust_in_pred_pass": 0,
+        "false_robust_valid_includes_margin_rate": 0.0
+      },
+      "regressor4": {
+        "CD_locked_nm": {
+          "mae": 0.04232846967802721,
+          "rmse": 0.05199597215014136,
+          "n": 4384
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.0021573116470753697,
+          "rmse": 0.005839163369980359,
+          "n": 4383
+        },
+        "area_frac": {
+          "mae": 0.0037855877109142515,
+          "rmse": 0.008912449535991827,
+          "n": 4384
+        },
+        "P_line_margin": {
+          "mae": 0.0033183638173330267,
+          "rmse": 0.0067081791529430695,
+          "n": 4384
+        }
+      },
+      "aux_cd_fixed": {
+        "mae": 0.06830111988225598,
+        "rmse": 0.16613072874332524,
+        "n": 4384
+      },
+      "strict_score_regressor": {
+        "mae": 0.25638861579748307,
+        "rmse": 0.8858951174577042,
+        "n": 4384,
+        "spearman_rho": 0.6949329160873253
+      }
+    },
+    "false_promise": {
+      "n": 4,
+      "classifier": {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "macro_f1": 0.3333333333333333,
+        "per_class": {
+          "robust_valid": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "margin_risk": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "roughness_degraded": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 3
+          },
+          "under_exposed": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "merged": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 1
+          },
+          "numerical_invalid": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          }
+        },
+        "n_predicted_robust_valid": 0,
+        "n_missed_defect_in_pred_pass": 0,
+        "false_robust_valid_rate": null,
+        "n_missed_non_robust_in_pred_pass": 0,
+        "false_robust_valid_includes_margin_rate": null
+      },
+      "regressor4": {
+        "CD_locked_nm": {
+          "mae": 0.05827400393200133,
+          "rmse": 0.058893456276530164,
+          "n": 4
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.0868248129323802,
+          "rmse": 0.12953850890291535,
+          "n": 4
+        },
+        "area_frac": {
+          "mae": 0.06661531498015946,
+          "rmse": 0.07003924227319029,
+          "n": 4
+        },
+        "P_line_margin": {
+          "mae": 0.01961911102904698,
+          "rmse": 0.02474494426376564,
+          "n": 4
+        }
+      },
+      "aux_cd_fixed": {
+        "mae": 0.6752075785990326,
+        "rmse": 0.7015242642240578,
+        "n": 4
+      },
+      "strict_score_regressor": {
+        "mae": 2.106539574395301,
+        "rmse": 2.412238250422508,
+        "n": 4,
+        "spearman_rho": -0.39999999999999997
+      }
+    },
+    "disagreement_candidate": {
+      "n": 17,
+      "classifier": {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "macro_f1": 0.16666666666666666,
+        "per_class": {
+          "robust_valid": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 17
+          },
+          "margin_risk": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "roughness_degraded": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "under_exposed": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "merged": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          },
+          "numerical_invalid": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 0
+          }
+        },
+        "n_predicted_robust_valid": 17,
+        "n_missed_defect_in_pred_pass": 0,
+        "false_robust_valid_rate": 0.0,
+        "n_missed_non_robust_in_pred_pass": 0,
+        "false_robust_valid_includes_margin_rate": 0.0
+      },
+      "regressor4": {
+        "CD_locked_nm": {
+          "mae": 0.034886322138875145,
+          "rmse": 0.040559644037225756,
+          "n": 17
+        },
+        "LER_CD_locked_nm": {
+          "mae": 0.0019329857990124002,
+          "rmse": 0.0029033506852089368,
+          "n": 17
+        },
+        "area_frac": {
+          "mae": 0.005949536064425844,
+          "rmse": 0.00792322216775891,
+          "n": 17
+        },
+        "P_line_margin": {
+          "mae": 0.007319695652222347,
+          "rmse": 0.008964060458856537,
+          "n": 17
+        }
+      },
+      "aux_cd_fixed": {
+        "mae": 0.12089992383440418,
+        "rmse": 0.14786926751150217,
+        "n": 17
+      },
+      "strict_score_regressor": {
+        "mae": 0.25315350690525223,
+        "rmse": 0.3301487446989275,
+        "n": 17,
+        "spearman_rho": 0.9093137254901962
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+stage: 06P
+policy:
+  v2_OP_frozen: true
+  published_data_loaded: false
+  external_calibration: none
+preferred_surrogate: stage06P
+preferred_recipes:
+  mode_a:
+    primary: G_4867
+    selection_basis: 06I FD MC + 06H stability; 06P preserves
+  mode_b:
+    primary: J_1453
+    selection_basis: '06J Mode B strict_score #1; 06J-B FD MC strict_pass = 0.747;
+      06M-B time-window wider than G_4867; 06P direct strict_score head ranks J_1453
+      in Mode B top-10 = True.'
+    j1453_in_06p_top10_b: true
+ranking_notes:
+  ranking_strict_score_spearman_overall_06p_vs_fd: 0.9711235500722513
+  ranking_strict_score_spearman_mode_b_06p_vs_fd: 0.9381989893577897
+  ranking_strict_score_spearman_mode_a_06p_vs_fd: 0.9834748062012769
+  ranking_strict_score_spearman_mode_b_06l_vs_fd: 0.5849946639525042
+  improved_over_06l_mode_b: true
+false_pass:
+  n_input: 4
+  n_demoted_06p_vs_06l: 2
+  n_demoted_06p_vs_06j: 0
+time_window_learning:
+  G_4867:
+    spearman_strict_pass: 0.8363636363636365
+    spearman_robust_valid: .nan
+    spearman_defect: .nan
+    spearman_mean_strict_score: 0.9636363636363637
+  J_1453:
+    spearman_strict_pass: 0.9886130432447054
+    spearman_robust_valid: .nan
+    spearman_defect: .nan
+    spearman_mean_strict_score: 0.990909090909091
+  J_minus_G_strict_pass:
+    spearman_pred_vs_fd: 0.7363636363636363
+    n_pred_advantage: 3
+    n_fd_advantage: 8
+    mean_pred_advantage: -0.1590909090909091
+    mean_fd_advantage: 0.058181818181818175
+models:
+  classifier: /home/Jiseok/litho-neural-operator-lab/reaction_diffusion_peb_v3_screening/outputs/models/stage06P_classifier.joblib
+  regressor4: /home/Jiseok/litho-neural-operator-lab/reaction_diffusion_peb_v3_screening/outputs/models/stage06P_regressor.joblib
+  aux_cd_fixed: /home/Jiseok/litho-neural-operator-lab/reaction_diffusion_peb_v3_screening/outputs/models/stage06P_aux_cd_fixed_regressor.joblib
+  strict_score: /home/Jiseok/litho-neural-operator-lab/reaction_diffusion_peb_v3_screening/outputs/models/stage06P_strict_score_regressor.joblib
+datasets:
+  training_csv: /home/Jiseok/litho-neural-operator-lab/reaction_diffusion_peb_v3_screening/outputs/labels/stage06P_training_dataset.csv
+  recipe_manifest: /home/Jiseok/litho-neural-operator-lab/reaction_diffusion_peb_v3_screening/outputs/yield_optimization/stage06P_recipe_manifest.yaml
